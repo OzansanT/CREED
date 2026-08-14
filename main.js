@@ -11,6 +11,7 @@ import { bindKeyboard } from "./keyboard.js";
 import { bindSidebarMenu } from "./sidebar-input.js";
 import { bindPrimarySidebar } from "./primary-sidebar-input.js";
 import { bindSecondarySidebar } from "./secondary-sidebar-input.js";
+import { bindTerminalPanel } from "./terminal-panel-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
 import { bindWorkbenchFiles } from "./workbench-input.js?v=20260814-2";
@@ -80,6 +81,12 @@ bindSecondarySidebar({
   app: elements.app,
   panel: elements.chatPanel,
   layoutButton: elements.secondarySidebarLayoutBtn,
+  onLayoutChange: scheduleViewportCenterPreservation
+});
+bindTerminalPanel({
+  workbench: elements.workbench,
+  panel: elements.terminalPanel,
+  layoutButton: elements.panelLayoutBtn,
   onLayoutChange: scheduleViewportCenterPreservation
 });
 window.addEventListener("resize", () => { lastSize = preserveCenterOnResize({ state, canvas: elements.canvas, oldSize: lastSize, update, persist }); });
