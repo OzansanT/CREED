@@ -6,7 +6,7 @@
   <title>CREED — Infinite Canvas Workbench</title>
 
   <!-- Single CSS entry point. It imports root-canvas.css + all CSS colonies. -->
-  <link rel="stylesheet" href="./main-canvas.css?v=20260814-3" />
+  <link rel="stylesheet" href="./main-canvas.css?v=20260814-4" />
 </head>
 <body>
   <div id="app" class="app">
@@ -40,7 +40,7 @@
         <div class="layout-controls" aria-label="Layout controls">
           <button id="primarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle primary sidebar" aria-label="Toggle primary sidebar" aria-controls="sidebar" aria-expanded="true">◧</button>
           <button class="layout-control" type="button" title="Toggle panel" aria-label="Panel layout">▤</button>
-          <button class="layout-control" type="button" title="Toggle secondary sidebar" aria-label="Secondary sidebar layout">◨</button>
+          <button id="secondarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="chatPanel" aria-expanded="true">◨</button>
         </div>
         <button id="homeBtn" class="chrome-action" title="Return to origin">Home</button>
         <button id="resetBtn" class="chrome-action danger" title="Reset pan, zoom, sidebar menu, card positions and anchor">
@@ -256,7 +256,7 @@
       </section>
     </div>
 
-    <aside class="chat-panel" aria-label="Sohbet">
+    <aside id="chatPanel" class="chat-panel" aria-label="Sohbet">
       <div class="chat-panel__header">
         <span class="chat-panel__title">Sohbet</span>
         <span class="chat-panel__actions" aria-hidden="true">＋ ⚙ ··· □ ×</span>
@@ -294,6 +294,6 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js?v=20260814-3"></script>
+  <script type="module" src="./main.js?v=20260814-4"></script>
 </body>
 </html>

@@ -9,6 +9,8 @@ export function getElements() {
     sidebar: document.getElementById("sidebar"),
     primarySidebarLayoutBtn: document.getElementById("primarySidebarLayoutBtn"),
     explorerActivityBtn: document.getElementById("explorerActivityBtn"),
+    secondarySidebarLayoutBtn: document.getElementById("secondarySidebarLayoutBtn"),
+    chatPanel: document.getElementById("chatPanel"),
     canvasMenuBtn: document.getElementById("canvasMenuBtn"),
     infiniteCanvasMenuBtn: document.getElementById("infiniteCanvasMenuBtn"),
     componentsMenuBtn: document.getElementById("componentsMenuBtn"),

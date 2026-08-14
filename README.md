@@ -19,6 +19,7 @@ Then open `http://localhost:8000`. Opening `index.html` directly with a `file://
 - Press `0` to return to the world origin.
 - Press `A` to save the current view and `Shift + A` to return to it.
 - Use either the **Toggle primary sidebar** layout control or the **Explorer** activity button to repeatedly collapse and reopen the primary sidebar.
+- Use **Toggle secondary sidebar** to repeatedly collapse and reopen the chat panel.
 - Use **Canvas Controls** for coordinates, grid LOD, shortcuts, and saved-view actions.
 - Use **Infinite Canvas** to return to the canvas editor; it intentionally opens no secondary sidebar panel.
 - Select any Explorer file to load and display its real repository source.
@@ -71,6 +72,7 @@ CREED/
 ├── responsive.css
 ├── restricted-banner.css
 ├── root-canvas.css
+├── secondary-sidebar-input.js
 ├── sidebar-input.js
 ├── sidebar-stats.css
 ├── sidebar.css
@@ -135,6 +137,7 @@ index.html
     ├── sidebar-input.js
     │   └── coordinates.js
     ├── primary-sidebar-input.js
+    ├── secondary-sidebar-input.js
     ├── card-input.js
     ├── json-file.js
     └── workbench-input.js
