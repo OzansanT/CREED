@@ -1,13 +1,5 @@
 import { getViewportWorldCenter } from "./coordinates.js";
 
-export function bindSidebarToggle({ button, state, update, persist }) {
-  button.addEventListener("click", () => {
-    state.sidebarCollapsed = !state.sidebarCollapsed;
-    update();
-    persist?.();
-  });
-}
-
 function playCardClick(card) {
   card.classList.remove("was-clicked");
   void card.offsetWidth;
@@ -16,6 +8,7 @@ function playCardClick(card) {
 
 export function bindSidebarMenu({
   canvasButton,
+  infiniteCanvasButton,
   componentsButton,
   addJsonCardButton,
   canvas,
@@ -31,6 +24,7 @@ export function bindSidebarMenu({
   }
 
   canvasButton.addEventListener("click", () => setView("canvas"));
+  infiniteCanvasButton.addEventListener("click", () => setView("infiniteCanvas"));
   componentsButton.addEventListener("click", () => setView("components"));
 
   addJsonCardButton.addEventListener("click", () => {
