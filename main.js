@@ -45,6 +45,10 @@ const workbench = bindWorkbenchFiles({
   canvasView: elements.canvasEditorView,
   codeView: elements.codeEditorView,
   codeContent: elements.sourceCode,
+  codeMinimap: elements.sourceMinimap,
+  chatContextKind: elements.chatContextKind,
+  chatContextName: elements.chatContextName,
+  statusLanguage: elements.statusLanguage,
   onCanvasShow: update,
   onError: (message) => showToast(elements.toast, message)
 });
