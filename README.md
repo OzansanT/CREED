@@ -21,6 +21,9 @@ Then open `http://localhost:8000`. Opening `index.html` directly with a `file://
 - Use either the **Toggle primary sidebar** layout control or the **Explorer** activity button to repeatedly collapse and reopen the primary sidebar.
 - Use **Toggle secondary sidebar** to repeatedly collapse and reopen the chat panel.
 - Use **Toggle panel** to repeatedly collapse and reopen the bottom Terminal panel.
+- Drag the primary sidebar's right edge, the secondary sidebar's left edge, or the Terminal panel's top edge to resize the layout. Arrow keys resize a focused separator; hold Shift for larger steps.
+- Use **Canvas Reset** to reset the canvas view, saved location, and components without changing the current sidebar menu.
+- Use **Infinite Reset** to restore the complete infinite workspace, panel visibility, and default panel sizes.
 - Use **Canvas Controls** for coordinates, grid LOD, shortcuts, and saved-view actions.
 - Use **Infinite Canvas** to return to the canvas editor; it intentionally opens no secondary sidebar panel.
 - Select any Explorer file to load and display its real repository source.
@@ -68,8 +71,11 @@ CREED/
 ├── main.js
 ├── navbar.css
 ├── pan-input.js
+├── panel-resize-input.js
+├── panel-resize.css
 ├── primary-sidebar-input.js
 ├── README.md
+├── reset-input.js
 ├── responsive.css
 ├── restricted-banner.css
 ├── root-canvas.css
@@ -114,6 +120,7 @@ index.html
 │   ├── zoom-controls.css
 │   ├── feedback.css
 │   ├── chat-panel.css
+│   ├── panel-resize.css
 │   ├── status-bar.css
 │   └── responsive.css
 └── main.js
@@ -141,6 +148,11 @@ index.html
     ├── primary-sidebar-input.js
     ├── secondary-sidebar-input.js
     ├── terminal-panel-input.js
+    ├── panel-resize-input.js
+    │   └── state.js
+    ├── reset-input.js
+    │   ├── storage.js
+    │   └── viewport.js
     ├── card-input.js
     ├── json-file.js
     └── workbench-input.js

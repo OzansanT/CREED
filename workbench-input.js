@@ -1,4 +1,4 @@
-import { WORKSPACE_FILES } from "./source-files.js?v=20260814-2";
+import { WORKSPACE_FILES } from "./source-files.js?v=20260814-3";
 
 function getFileExtension(fileName) {
   return fileName.split(".").pop()?.toLowerCase() || "";

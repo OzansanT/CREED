@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { getElements } from "./elements.js";
-import { loadState, saveState, clearStoredState } from "./storage.js";
+import { loadState, saveState } from "./storage.js";
 import { updateUI } from "./ui.js";
 import { showToast } from "./toast.js";
 import { setZoomFromCenter, returnToOrigin, preserveCenterOnResize } from "./viewport.js";
@@ -12,9 +12,11 @@ import { bindSidebarMenu } from "./sidebar-input.js";
 import { bindPrimarySidebar } from "./primary-sidebar-input.js";
 import { bindSecondarySidebar } from "./secondary-sidebar-input.js";
 import { bindTerminalPanel } from "./terminal-panel-input.js";
+import { bindPanelResize } from "./panel-resize-input.js";
+import { bindResetControls } from "./reset-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
-import { bindWorkbenchFiles } from "./workbench-input.js?v=20260814-2";
+import { bindWorkbenchFiles } from "./workbench-input.js?v=20260814-3";
 
 const elements = getElements();
 const update = () => updateUI(elements, state);
@@ -24,7 +26,6 @@ function home() { returnToOrigin({ state, canvas: elements.canvas, update, persi
 function saveAnchor() { setAnchor({ state, canvas: elements.canvas, update, persist }); showToast(elements.toast, "Anchor saved at current view"); }
 function restoreAnchor() { const moved = goToAnchor({ state, canvas: elements.canvas, update, persist }); if (moved) showToast(elements.toast, "Returned to anchor"); }
 function removeAnchor() { clearAnchor({ state, update, persist }); showToast(elements.toast, "Anchor cleared"); }
-function factoryReset() { const confirmed = confirm("Factory reset will restore the default pan, zoom, sidebar menu, card positions and remove the saved canvas location. Continue?"); if (!confirmed) return; clearStoredState(); state.anchor = null; state.sidebarView = "canvas"; state.originCard = { worldX: 0, worldY: 0 }; state.jsonCard = { visible: false, worldX: 0, worldY: 0 }; returnToOrigin({ state, canvas: elements.canvas, update, persist }); showToast(elements.toast, "Factory settings restored"); }
 function initializePosition() { const restored = loadState(); if (!restored) { const center = { x: elements.canvas.clientWidth/2, y: elements.canvas.clientHeight/2 }; state.x = center.x; state.y = center.y; state.zoom = 1; } update(); }
 
 elements.zoomRange.addEventListener("input", () => setZoomFromCenter({ state, canvas: elements.canvas, nextZoom: Number(elements.zoomRange.value)/100, update, persist }));
@@ -34,7 +35,6 @@ elements.setAnchorBtn.addEventListener("click", saveAnchor);
 elements.goAnchorBtn.addEventListener("click", restoreAnchor);
 elements.clearAnchorBtn.addEventListener("click", removeAnchor);
 elements.homeBtn.addEventListener("click", home);
-elements.resetBtn.addEventListener("click", factoryReset);
 bindPan({ canvas: elements.canvas, state, update, persist });
 bindWheel({ canvas: elements.canvas, state, update, persist });
 const workbench = bindWorkbenchFiles({
@@ -70,24 +70,50 @@ function scheduleViewportCenterPreservation() {
   });
 }
 
-bindPrimarySidebar({
+const primarySidebar = bindPrimarySidebar({
   app: elements.app,
   sidebar: elements.sidebar,
   layoutButton: elements.primarySidebarLayoutBtn,
   explorerButton: elements.explorerActivityBtn,
   onLayoutChange: scheduleViewportCenterPreservation
 });
-bindSecondarySidebar({
+const secondarySidebar = bindSecondarySidebar({
   app: elements.app,
   panel: elements.chatPanel,
   layoutButton: elements.secondarySidebarLayoutBtn,
   onLayoutChange: scheduleViewportCenterPreservation
 });
-bindTerminalPanel({
+const terminalPanel = bindTerminalPanel({
   workbench: elements.workbench,
   panel: elements.terminalPanel,
   layoutButton: elements.panelLayoutBtn,
   onLayoutChange: scheduleViewportCenterPreservation
+});
+const panelResize = bindPanelResize({
+  app: elements.app,
+  workbench: elements.workbench,
+  primaryPanel: elements.sidebar,
+  secondaryPanel: elements.chatPanel,
+  terminalPanel: elements.terminalPanel,
+  primaryHandle: elements.primarySidebarResizeHandle,
+  secondaryHandle: elements.secondarySidebarResizeHandle,
+  terminalHandle: elements.terminalPanelResizeHandle,
+  onLayoutChange: scheduleViewportCenterPreservation
+});
+bindResetControls({
+  canvasButton: elements.canvasResetBtn,
+  infiniteButton: elements.infiniteResetBtn,
+  state,
+  canvas: elements.canvas,
+  update,
+  persist,
+  notify: (message) => showToast(elements.toast, message),
+  onInfiniteReset: () => {
+    primarySidebar.setVisible(true, false);
+    secondarySidebar.setVisible(true, false);
+    terminalPanel.setVisible(true, false);
+    panelResize.reset(false);
+  }
 });
 window.addEventListener("resize", () => { lastSize = preserveCenterOnResize({ state, canvas: elements.canvas, oldSize: lastSize, update, persist }); });
 requestAnimationFrame(initializePosition);

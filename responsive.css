@@ -31,7 +31,8 @@
     padding: 0;
   }
   .chrome-action::before { content: "⌂"; font-size: 13px; }
-  .chrome-action.danger::before { content: "↺"; }
+  #canvasResetBtn::before { content: "⟲"; }
+  #infiniteResetBtn::before { content: "↺"; }
   .command-center { width: 42vw; }
   .terminal-tab:nth-child(-n+3) { display: none; }
   .hint,

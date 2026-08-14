@@ -7,7 +7,7 @@
   left: calc(var(--activity-w) + var(--sidebar-w));
   min-width: 0;
   display: grid;
-  grid-template-rows: minmax(0, 63fr) minmax(210px, 37fr);
+  grid-template-rows: minmax(0, 1fr) var(--terminal-h);
   overflow: hidden;
   background: #fcfcfe;
 }
