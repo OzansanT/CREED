@@ -179,3 +179,49 @@
 .prompt-user { color: #25822e; }
 .prompt-path { color: #075c9a; font-weight: 700; }
 .prompt-branch { color: #b02531; }
+.code-editor-view {
+  scrollbar-width: thin;
+  scrollbar-color: #c9c9ce transparent;
+}
+.source-code {
+  padding-right: 112px;
+}
+.source-minimap {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  right: 0;
+  float: right;
+  width: 102px;
+  height: 100%;
+  min-height: 120px;
+  margin-left: -102px;
+  overflow: hidden;
+  border-left: 1px solid #eeeef1;
+  background: rgba(249,249,252,.94);
+  cursor: pointer;
+}
+.minimap-line {
+  height: 2px;
+  min-width: 4px;
+  max-width: 94px;
+  margin: 1px 4px;
+  border-radius: 1px;
+  background: #b9bcc3;
+  opacity: .78;
+}
+.minimap-line.css { background: #8bafb5; }
+.minimap-line.js { background: #b8aa60; }
+.minimap-line.html { background: #c9977e; }
+.minimap-line.md { background: #89a4b0; }
+.syntax-comment { color: #16813c; }
+.syntax-string { color: #a31515; }
+.syntax-keyword { color: #0000ff; }
+.syntax-number { color: #098658; }
+.syntax-property { color: #0451a5; }
+.syntax-selector { color: #800000; }
+.syntax-color { color: #811f8c; }
+.syntax-tag { color: #800000; }
+.syntax-entity { color: #098658; }
+.syntax-heading { color: #0451a5; font-weight: 700; }
+.syntax-code { color: #a31515; }
