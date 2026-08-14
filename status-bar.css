@@ -1,0 +1,32 @@
+.status-bar {
+  position: absolute;
+  z-index: 110;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--status-h);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: var(--vscode-blue);
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.status-bar__remote {
+  height: 100%;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  background: #0069b4;
+}
+.status-bar__item {
+  height: 100%;
+  padding: 0 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-bar__spacer {
+  flex: 1;
+}
