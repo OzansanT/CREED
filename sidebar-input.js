@@ -13,6 +13,7 @@ export function bindSidebarMenu({
   addJsonCardButton,
   canvas,
   jsonCard,
+  showCanvas,
   state,
   update,
   persist
@@ -24,7 +25,10 @@ export function bindSidebarMenu({
   }
 
   canvasButton.addEventListener("click", () => setView("canvas"));
-  infiniteCanvasButton.addEventListener("click", () => setView("infiniteCanvas"));
+  infiniteCanvasButton.addEventListener("click", () => {
+    setView("infiniteCanvas");
+    showCanvas?.();
+  });
   componentsButton.addEventListener("click", () => setView("components"));
 
   addJsonCardButton.addEventListener("click", () => {
