@@ -1,0 +1,7 @@
+.lod-list { display:grid;gap:7px;margin-top:8px; }
+.lod-row { display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:8px;color:var(--muted);font-size:11px; }
+.lod-swatch { height:6px;overflow:hidden;border-radius:999px;background:#e2e8f0; }
+.lod-swatch::after { content:"";display:block;width:100%;height:100%;background:#94a3b8; }
+.lod-row.active { color:var(--text);font-weight:700; }
+.lod-row.active .lod-swatch::after { background:var(--accent); }
+.lod-badge { min-width:72px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:var(--radius-sm);background:#f1f5f9;color:#475569;font-size:11px;font-weight:750;text-align:center;white-space:nowrap; }

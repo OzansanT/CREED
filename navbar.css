@@ -1,0 +1,10 @@
+.navbar {
+  position: absolute; inset: 0 0 auto 0; z-index: 50; height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 16px;
+  background: var(--panel); border-bottom: 1px solid var(--panel-border);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.navbar-left,.navbar-right { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 750; letter-spacing: -.02em; white-space: nowrap; }
+.brand-mark { width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:radial-gradient(circle,#fff 1.2px,transparent 1.4px) 0 0 / 8px 8px,#111827;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); }
+.nav-badge { padding:5px 8px;border:1px solid #e2e8f0;border-radius:999px;background:#f1f5f9;color:var(--muted);font-size:12px; }
