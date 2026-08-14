@@ -59,3 +59,10 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.activity-button--menu {
+  height: 34px;
+}
+.activity-button--menu svg {
+  width: 18px;
+  height: 18px;
+}
