@@ -11,7 +11,7 @@ import { bindKeyboard } from "./keyboard.js";
 import { bindSidebarMenu } from "./sidebar-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
-import { bindWorkbenchFiles } from "./workbench-input.js";
+import { bindWorkbenchFiles } from "./workbench-input.js?v=20260814-1";
 
 const elements = getElements();
 const update = () => updateUI(elements, state);
