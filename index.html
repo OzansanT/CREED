@@ -37,6 +37,11 @@
       </div>
 
       <div class="navbar-right">
+        <div class="layout-controls" aria-label="Layout controls">
+          <button class="layout-control" type="button" title="Toggle primary sidebar" aria-label="Primary sidebar layout">◧</button>
+          <button class="layout-control" type="button" title="Toggle panel" aria-label="Panel layout">▤</button>
+          <button class="layout-control" type="button" title="Toggle secondary sidebar" aria-label="Secondary sidebar layout">◨</button>
+        </div>
         <button id="homeBtn" class="chrome-action" title="Return to origin">Home</button>
         <button id="resetBtn" class="chrome-action danger" title="Reset pan, zoom, sidebar menu, card positions and anchor">
           Factory Reset
@@ -46,6 +51,9 @@
 
     <nav class="activity-bar" aria-label="Primary activity">
       <div class="activity-bar__group">
+        <button class="activity-button activity-button--menu" type="button" aria-label="Application menu" title="Application menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12M6 12h12M6 16h12"/></svg>
+        </button>
         <button class="activity-button active" type="button" aria-label="Explorer" title="Explorer">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8l4 4v14.4H6z"/><path d="M14 2.8v4h4"/></svg>
         </button>
@@ -86,6 +94,12 @@
           <span aria-hidden="true">⌄</span>
           <strong>CREED</strong>
           <span class="project-row__remote">[Codespaces: friendly fishstick]</span>
+          <div class="project-actions" aria-label="Explorer actions">
+            <button type="button" title="New file" aria-label="New file">＋</button>
+            <button type="button" title="New folder" aria-label="New folder">⊞</button>
+            <button type="button" title="Refresh Explorer" aria-label="Refresh Explorer">↻</button>
+            <button type="button" title="More Explorer actions" aria-label="More Explorer actions">•••</button>
+          </div>
         </div>
 
         <div class="file-tree" role="listbox" aria-label="CREED files">
@@ -248,6 +262,7 @@
 
           <div id="codeEditorView" class="editor-view code-editor-view" role="tabpanel" aria-labelledby="workspaceCodeTab" hidden>
             <div id="sourceCode" class="source-code" aria-live="polite"></div>
+            <div id="sourceMinimap" class="source-minimap" aria-label="Source minimap" title="Click to navigate"></div>
           </div>
         </div>
       </section>
@@ -281,7 +296,7 @@
         <span>Yapay zeka yanıtları hatalı olabilir</span>
       </div>
       <div class="chat-composer">
-        <div class="chat-context"><span>＋</span><span class="file-kind">#</span><em>canvas-shell.css</em></div>
+        <div class="chat-context"><span>＋</span><span id="chatContextKind" class="file-kind">◇</span><em id="chatContextName">Infinite Canvas</em></div>
         <div class="chat-placeholder">Ne oluşturulacağını açıkla</div>
         <div class="chat-tools"><span>＋</span><span>∅ Agent</span><span>Models</span><span>≡</span><span class="chat-tools__send">↑</span></div>
       </div>
@@ -300,7 +315,7 @@
       <span class="status-bar__item">Boşluklar: 4</span>
       <span class="status-bar__item">UTF-8</span>
       <span class="status-bar__item">LF</span>
-      <span class="status-bar__item">{ } CSS</span>
+      <span id="statusLanguage" class="status-bar__item">{ } Canvas</span>
       <span class="status-bar__item">Oturum Aç</span>
     </footer>
   </div>
