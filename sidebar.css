@@ -196,3 +196,30 @@
 .explorer-footer span {
   padding: 5px 12px;
 }
+.project-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: 0 0 auto;
+}
+.project-actions button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: #65656a;
+  font-size: 11px;
+  box-shadow: none;
+}
+.project-actions button:hover:not(:disabled) {
+  transform: none;
+  border-color: transparent;
+  background: #e4e4e8;
+  color: #29292d;
+  box-shadow: none;
+}
