@@ -3,7 +3,6 @@ export const state = {
   y: 0,
   zoom: 1,
   anchor: null,
-  sidebarCollapsed: false,
   sidebarView: "canvas",
   originCard: { worldX: 0, worldY: 0 },
   jsonCard: { visible: false, worldX: 0, worldY: 0 }
