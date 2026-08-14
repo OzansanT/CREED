@@ -25,6 +25,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "main.js",
   "navbar.css",
   "pan-input.js",
+  "primary-sidebar-input.js",
   "README.md",
   "responsive.css",
   "restricted-banner.css",

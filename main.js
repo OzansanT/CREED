@@ -9,6 +9,7 @@ import { bindPan } from "./pan-input.js";
 import { bindWheel } from "./wheel-input.js";
 import { bindKeyboard } from "./keyboard.js";
 import { bindSidebarMenu } from "./sidebar-input.js";
+import { bindPrimarySidebar } from "./primary-sidebar-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
 import { bindWorkbenchFiles } from "./workbench-input.js?v=20260814-2";
@@ -58,5 +59,18 @@ bindCardDrag({ card: elements.jsonComponentCard, state, positionKey: "jsonCard",
 bindJsonFileButton({ button: elements.openJsonFileBtn });
 bindKeyboard({ onHome: home, onSetAnchor: saveAnchor, onGoAnchor: restoreAnchor });
 let lastSize = { w: elements.canvas.clientWidth, h: elements.canvas.clientHeight };
+let sidebarLayoutFrame = 0;
+bindPrimarySidebar({
+  app: elements.app,
+  sidebar: elements.sidebar,
+  layoutButton: elements.primarySidebarLayoutBtn,
+  explorerButton: elements.explorerActivityBtn,
+  onLayoutChange: () => {
+    cancelAnimationFrame(sidebarLayoutFrame);
+    sidebarLayoutFrame = requestAnimationFrame(() => {
+      lastSize = preserveCenterOnResize({ state, canvas: elements.canvas, oldSize: lastSize, update, persist });
+    });
+  }
+});
 window.addEventListener("resize", () => { lastSize = preserveCenterOnResize({ state, canvas: elements.canvas, oldSize: lastSize, update, persist }); });
 requestAnimationFrame(initializePosition);

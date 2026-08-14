@@ -18,6 +18,7 @@ Then open `http://localhost:8000`. Opening `index.html` directly with a `file://
 - Use `Ctrl/Cmd + wheel` or the zoom controls to zoom around a fixed pivot.
 - Press `0` to return to the world origin.
 - Press `A` to save the current view and `Shift + A` to return to it.
+- Use either the **Toggle primary sidebar** layout control or the **Explorer** activity button to repeatedly collapse and reopen the primary sidebar.
 - Use **Canvas Controls** for coordinates, grid LOD, shortcuts, and saved-view actions.
 - Use **Infinite Canvas** to return to the canvas editor; it intentionally opens no secondary sidebar panel.
 - Select any Explorer file to load and display its real repository source.
@@ -65,6 +66,7 @@ CREED/
 ├── main.js
 ├── navbar.css
 ├── pan-input.js
+├── primary-sidebar-input.js
 ├── README.md
 ├── responsive.css
 ├── restricted-banner.css
@@ -132,6 +134,7 @@ index.html
     ├── keyboard.js
     ├── sidebar-input.js
     │   └── coordinates.js
+    ├── primary-sidebar-input.js
     ├── card-input.js
     ├── json-file.js
     └── workbench-input.js

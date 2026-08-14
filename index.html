@@ -6,10 +6,10 @@
   <title>CREED — Infinite Canvas Workbench</title>
 
   <!-- Single CSS entry point. It imports root-canvas.css + all CSS colonies. -->
-  <link rel="stylesheet" href="./main-canvas.css" />
+  <link rel="stylesheet" href="./main-canvas.css?v=20260814-3" />
 </head>
 <body>
-  <div class="app">
+  <div id="app" class="app">
     <div class="restricted-banner" role="status">
       <svg class="restricted-banner__shield" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 2 4.5 5v5.5c0 4.8 3 8.8 7.5 11.5 4.5-2.7 7.5-6.7 7.5-11.5V5L12 2Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
@@ -38,7 +38,7 @@
 
       <div class="navbar-right">
         <div class="layout-controls" aria-label="Layout controls">
-          <button class="layout-control" type="button" title="Toggle primary sidebar" aria-label="Primary sidebar layout">◧</button>
+          <button id="primarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle primary sidebar" aria-label="Toggle primary sidebar" aria-controls="sidebar" aria-expanded="true">◧</button>
           <button class="layout-control" type="button" title="Toggle panel" aria-label="Panel layout">▤</button>
           <button class="layout-control" type="button" title="Toggle secondary sidebar" aria-label="Secondary sidebar layout">◨</button>
         </div>
@@ -54,7 +54,7 @@
         <button class="activity-button activity-button--menu" type="button" aria-label="Application menu" title="Application menu">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12M6 12h12M6 16h12"/></svg>
         </button>
-        <button class="activity-button active" type="button" aria-label="Explorer" title="Explorer">
+        <button id="explorerActivityBtn" class="activity-button active" type="button" aria-label="Explorer" title="Explorer" aria-controls="sidebar" aria-expanded="true">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8l4 4v14.4H6z"/><path d="M14 2.8v4h4"/></svg>
         </button>
         <button class="activity-button" type="button" aria-label="Search" title="Search">
@@ -294,6 +294,6 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js?v=20260814-2"></script>
+  <script type="module" src="./main.js?v=20260814-3"></script>
 </body>
 </html>
