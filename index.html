@@ -28,18 +28,6 @@
     </header>
 
     <aside id="sidebar" class="sidebar">
-      <button
-        id="sidebarToggle"
-        class="sidebar-toggle"
-        type="button"
-        aria-label="Collapse sidebar"
-        aria-expanded="true"
-        aria-controls="sidebarContent"
-        title="Collapse sidebar"
-      >
-        &lt;
-      </button>
-
       <div id="sidebarContent" class="sidebar-content">
         <div class="sidebar-menu">
           <h2>Main Menu</h2>
@@ -53,6 +41,16 @@
               aria-controls="canvasControlsPanel"
             >
               Canvas Controls
+            </button>
+            <button
+              id="infiniteCanvasMenuBtn"
+              class="sidebar-menu-button"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="infiniteCanvasPanel"
+            >
+              Infinite Canvas
             </button>
             <button
               id="componentsMenuBtn"
@@ -73,15 +71,6 @@
             Drag anywhere to pan. The dot grid automatically changes density as you
             zoom out so it never collapses into visual noise.
           </p>
-
-      <div class="section">
-        <span class="label">Anchor</span>
-        <div class="button-stack">
-          <button id="setAnchorBtn" class="primary">Set Anchor Here</button>
-          <button id="goAnchorBtn" disabled>Return to Anchor</button>
-          <button id="clearAnchorBtn" disabled>Clear Anchor</button>
-        </div>
-      </div>
 
       <div class="section">
         <span class="label">Position</span>
@@ -133,6 +122,23 @@
           <b>Shift + A</b> — return to anchor
         </p>
       </div>
+        </section>
+
+        <section id="infiniteCanvasPanel" class="sidebar-panel" role="tabpanel" hidden>
+          <h3>Infinite Canvas</h3>
+          <p>
+            Save a location inside the infinite canvas, return to it later, or clear
+            it when it is no longer needed.
+          </p>
+
+          <div class="section">
+            <span class="label">Saved Canvas Location</span>
+            <div class="button-stack">
+              <button id="setAnchorBtn" class="primary">Save Current View</button>
+              <button id="goAnchorBtn" disabled>Return to Saved View</button>
+              <button id="clearAnchorBtn" disabled>Clear Saved View</button>
+            </div>
+          </div>
         </section>
 
         <section id="componentsPanel" class="sidebar-panel" role="tabpanel" hidden>
