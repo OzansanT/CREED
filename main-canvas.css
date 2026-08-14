@@ -9,14 +9,19 @@
 
 @import url("./app-layout.css");
 @import url("./buttons.css");
+@import url("./restricted-banner.css");
 @import url("./navbar.css");
+@import url("./activity-bar.css");
 @import url("./sidebar.css");
 @import url("./sidebar-stats.css");
 @import url("./lod-indicator.css");
+@import url("./workbench.css");
 @import url("./canvas-shell.css");
 @import url("./dotted-background.css");
 @import url("./world-content.css");
 @import url("./anchor.css");
 @import url("./zoom-controls.css");
 @import url("./feedback.css");
+@import url("./chat-panel.css");
+@import url("./status-bar.css");
 @import url("./responsive.css");
