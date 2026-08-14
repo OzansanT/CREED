@@ -9,18 +9,17 @@ function cleanCoordinate(value) {
 export function updateUI(elements, state) {
   updateGridLOD(elements, state);
 
-  const sidebarCollapsed = Boolean(state.sidebarCollapsed);
-  elements.sidebar.classList.toggle("collapsed", sidebarCollapsed);
-  elements.sidebarToggle.textContent = sidebarCollapsed ? ">" : "<";
-  elements.sidebarToggle.title = sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar";
-  elements.sidebarToggle.setAttribute("aria-label", elements.sidebarToggle.title);
-  elements.sidebarToggle.setAttribute("aria-expanded", String(!sidebarCollapsed));
-  const sidebarView = state.sidebarView === "components" ? "components" : "canvas";
+  const sidebarView = ["canvas", "infiniteCanvas", "components"].includes(state.sidebarView)
+    ? state.sidebarView
+    : "canvas";
   elements.canvasMenuBtn.classList.toggle("active", sidebarView === "canvas");
+  elements.infiniteCanvasMenuBtn.classList.toggle("active", sidebarView === "infiniteCanvas");
   elements.componentsMenuBtn.classList.toggle("active", sidebarView === "components");
   elements.canvasMenuBtn.setAttribute("aria-selected", String(sidebarView === "canvas"));
+  elements.infiniteCanvasMenuBtn.setAttribute("aria-selected", String(sidebarView === "infiniteCanvas"));
   elements.componentsMenuBtn.setAttribute("aria-selected", String(sidebarView === "components"));
   elements.canvasControlsPanel.hidden = sidebarView !== "canvas";
+  elements.infiniteCanvasPanel.hidden = sidebarView !== "infiniteCanvas";
   elements.componentsPanel.hidden = sidebarView !== "components";
 
   elements.world.style.transform =
