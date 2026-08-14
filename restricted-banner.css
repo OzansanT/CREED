@@ -1,0 +1,28 @@
+.restricted-banner {
+  position: absolute;
+  z-index: 100;
+  inset: 0 0 auto;
+  height: var(--restricted-h);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 7px;
+  overflow: hidden;
+  border-bottom: 1px solid #c5c5c8;
+  background: #d7d7da;
+  color: #3f3f42;
+  font-size: 12px;
+  line-height: var(--restricted-h);
+  white-space: nowrap;
+}
+.restricted-banner__shield {
+  width: 13px;
+  height: 13px;
+  color: #1473b8;
+  flex: 0 0 auto;
+}
+.restricted-banner a {
+  color: #333337;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
