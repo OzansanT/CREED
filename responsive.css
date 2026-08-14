@@ -1,8 +1,40 @@
-@media (max-width:760px) {
-  :root { --sidebar-w:230px; }
-  .nav-badge { display:none; }
-  .sidebar { top:calc(var(--nav-h) + 10px);left:10px;bottom:72px; }
-  .zoom-control { left:10px;right:10px;bottom:10px; }
-  .zoom-control input[type="range"] { flex:1;width:auto; }
-  .hint,.lod-badge { display:none; }
+@media (max-width: 1500px) {
+  :root {
+    --sidebar-w: 270px;
+    --chat-w: 250px;
+  }
+  .command-center { width: min(520px, 42vw); }
+  .editor-tab:first-child { display: none; }
+}
+
+@media (max-width: 1180px) {
+  :root { --chat-w: 0px; }
+  .chat-panel { display: none; }
+  .workbench { right: 0; }
+  .toast {
+    left: calc(var(--activity-w) + var(--sidebar-w) + (100vw - var(--activity-w) - var(--sidebar-w)) / 2);
+  }
+  .command-center { width: 40vw; }
+}
+
+@media (max-width: 820px) {
+  :root {
+    --activity-w: 36px;
+    --sidebar-w: 230px;
+  }
+  .activity-bar,
+  .activity-button { width: 36px; }
+  .brand span:last-child,
+  .chrome-action { font-size: 0; }
+  .chrome-action {
+    width: 27px;
+    padding: 0;
+  }
+  .chrome-action::before { content: "⌂"; font-size: 13px; }
+  .chrome-action.danger::before { content: "↺"; }
+  .command-center { width: 42vw; }
+  .terminal-tab:nth-child(-n+3) { display: none; }
+  .hint,
+  .lod-badge { display: none; }
+  .zoom-control input[type="range"] { width: 90px; }
 }
