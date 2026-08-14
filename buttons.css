@@ -1,10 +1,35 @@
 button {
-  border: 1px solid var(--panel-border); background: #fff; color: var(--text);
-  border-radius: var(--radius-md); padding: 9px 12px; cursor: pointer;
-  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
 }
-button:hover:not(:disabled) { transform: translateY(-1px); border-color: #b8c3d1; box-shadow: 0 4px 14px rgba(15,23,42,.08); }
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #bfc0c7;
+  box-shadow: 0 3px 10px rgba(20,20,30,.07);
+}
 button:active:not(:disabled) { transform: translateY(0); }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-button.danger { color: var(--danger); border-color: #fecaca; background: #fff; }
-button:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+button.primary {
+  border-color: #0e639c;
+  background: #0e639c;
+  color: #fff;
+}
+button.primary:hover:not(:disabled) {
+  border-color: #1177bb;
+  background: #1177bb;
+}
+button.danger {
+  border-color: #e5c8c5;
+  background: #fff;
+  color: var(--danger);
+}
+button:disabled {
+  opacity: .44;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
