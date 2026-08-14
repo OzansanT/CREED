@@ -1,4 +1,35 @@
-.zoom-control { position:absolute;z-index:45;right:18px;bottom:18px;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-lg);box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px); }
-.zoom-control button { width:34px;height:34px;display:grid;place-items:center;padding:0;border-radius:9px;font-size:18px; }
-.zoom-readout { min-width:54px;text-align:center;font-size:12px;font-weight:750;font-variant-numeric:tabular-nums; }
-.zoom-control input[type="range"] { width:min(220px,30vw);accent-color:var(--accent);cursor:pointer; }
+.zoom-control {
+  position: absolute;
+  z-index: 18;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 7px;
+  border: 1px solid #dcdce1;
+  border-radius: 5px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 3px 12px rgba(25,25,35,.08);
+}
+.zoom-control button {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 3px;
+  font-size: 16px;
+}
+.zoom-readout {
+  min-width: 48px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.zoom-control input[type="range"] {
+  width: min(180px, 20vw);
+  accent-color: var(--vscode-blue);
+  cursor: pointer;
+}
