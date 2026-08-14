@@ -2,8 +2,8 @@
 // Keep this sorted and update it whenever a repository file is added, renamed, or removed.
 // Source text is loaded from the real relative file; do not embed source-code snapshots here.
 export const WORKSPACE_FILES = Object.freeze([
-  "activity-bar.css",
   "AGENTS.md",
+  "activity-bar.css",
   "anchor.css",
   "anchors.js",
   "app-layout.css",

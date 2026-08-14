@@ -42,8 +42,8 @@ When adding, renaming, or deleting a repository file:
 
 ```text
 CREED/
-├── activity-bar.css
 ├── AGENTS.md
+├── activity-bar.css
 ├── anchor.css
 ├── anchors.js
 ├── app-layout.css
