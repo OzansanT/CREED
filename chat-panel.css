@@ -1,3 +1,9 @@
+.app.secondary-sidebar-collapsed {
+  --chat-w: 0px;
+}
+.chat-panel[hidden] {
+  display: none;
+}
 .chat-panel {
   position: absolute;
   z-index: 30;

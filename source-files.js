@@ -30,6 +30,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "responsive.css",
   "restricted-banner.css",
   "root-canvas.css",
+  "secondary-sidebar-input.js",
   "sidebar-input.js",
   "sidebar-stats.css",
   "sidebar.css",
