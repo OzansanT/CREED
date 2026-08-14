@@ -6,7 +6,7 @@
   <title>CREED — Infinite Canvas Workbench</title>
 
   <!-- Single CSS entry point. It imports root-canvas.css + all CSS colonies. -->
-  <link rel="stylesheet" href="./main-canvas.css?v=20260814-4" />
+  <link rel="stylesheet" href="./main-canvas.css?v=20260814-5" />
 </head>
 <body>
   <div id="app" class="app">
@@ -39,7 +39,7 @@
       <div class="navbar-right">
         <div class="layout-controls" aria-label="Layout controls">
           <button id="primarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle primary sidebar" aria-label="Toggle primary sidebar" aria-controls="sidebar" aria-expanded="true">◧</button>
-          <button class="layout-control" type="button" title="Toggle panel" aria-label="Panel layout">▤</button>
+          <button id="panelLayoutBtn" class="layout-control" type="button" title="Toggle panel" aria-label="Toggle panel" aria-controls="terminalPanel" aria-expanded="true">▤</button>
           <button id="secondarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="chatPanel" aria-expanded="true">◨</button>
         </div>
         <button id="homeBtn" class="chrome-action" title="Return to origin">Home</button>
@@ -177,7 +177,7 @@
       </div>
     </aside>
 
-    <div class="workbench">
+    <div id="workbench" class="workbench">
       <section class="editor-pane" aria-label="Infinite canvas and source editor">
         <div class="editor-tabs" role="tablist" aria-label="Editor tabs">
           <button id="workspaceCanvasTab" class="editor-tab active" type="button" role="tab" aria-selected="true" aria-controls="canvasEditorView">
@@ -241,7 +241,7 @@
         </div>
       </section>
 
-      <section class="terminal-panel" aria-label="Terminal">
+      <section id="terminalPanel" class="terminal-panel" aria-label="Terminal">
         <div class="terminal-tabs">
           <span class="terminal-tab">Sorunlar</span>
           <span class="terminal-tab">Çıktı</span>
@@ -294,6 +294,6 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js?v=20260814-4"></script>
+  <script type="module" src="./main.js?v=20260814-5"></script>
 </body>
 </html>

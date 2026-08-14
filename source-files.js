@@ -38,6 +38,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "state.js",
   "status-bar.css",
   "storage.js",
+  "terminal-panel-input.js",
   "toast.js",
   "ui.js",
   "viewport.js",

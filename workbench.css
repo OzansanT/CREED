@@ -11,6 +11,9 @@
   overflow: hidden;
   background: #fcfcfe;
 }
+.workbench.panel-collapsed {
+  grid-template-rows: minmax(0, 1fr);
+}
 .editor-pane,
 .terminal-panel {
   min-width: 0;
@@ -141,6 +144,9 @@
   flex-direction: column;
   border-top: 1px solid var(--chrome-border);
   background: #fafafe;
+}
+.terminal-panel[hidden] {
+  display: none;
 }
 .terminal-tabs {
   height: 38px;
