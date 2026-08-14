@@ -6,10 +6,10 @@
   <title>CREED — Infinite Canvas Workbench</title>
 
   <!-- Single CSS entry point. It imports root-canvas.css + all CSS colonies. -->
-  <link rel="stylesheet" href="./main-canvas.css" />
+  <link rel="stylesheet" href="./main-canvas.css?v=20260814-3" />
 </head>
 <body>
-  <div class="app">
+  <div id="app" class="app">
     <div class="restricted-banner" role="status">
       <svg class="restricted-banner__shield" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 2 4.5 5v5.5c0 4.8 3 8.8 7.5 11.5 4.5-2.7 7.5-6.7 7.5-11.5V5L12 2Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
@@ -38,7 +38,7 @@
 
       <div class="navbar-right">
         <div class="layout-controls" aria-label="Layout controls">
-          <button class="layout-control" type="button" title="Toggle primary sidebar" aria-label="Primary sidebar layout">◧</button>
+          <button id="primarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle primary sidebar" aria-label="Toggle primary sidebar" aria-controls="sidebar" aria-expanded="true">◧</button>
           <button class="layout-control" type="button" title="Toggle panel" aria-label="Panel layout">▤</button>
           <button class="layout-control" type="button" title="Toggle secondary sidebar" aria-label="Secondary sidebar layout">◨</button>
         </div>
@@ -54,7 +54,7 @@
         <button class="activity-button activity-button--menu" type="button" aria-label="Application menu" title="Application menu">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12M6 12h12M6 16h12"/></svg>
         </button>
-        <button class="activity-button active" type="button" aria-label="Explorer" title="Explorer">
+        <button id="explorerActivityBtn" class="activity-button active" type="button" aria-label="Explorer" title="Explorer" aria-controls="sidebar" aria-expanded="true">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8l4 4v14.4H6z"/><path d="M14 2.8v4h4"/></svg>
         </button>
         <button class="activity-button" type="button" aria-label="Search" title="Search">
@@ -102,29 +102,7 @@
           </div>
         </div>
 
-        <div class="file-tree" role="listbox" aria-label="CREED files">
-          <button class="file-row" type="button" data-file="AGENTS.md" aria-selected="false"><span class="file-icon md">◆</span>AGENTS.md</button>
-          <button class="file-row" type="button" data-file="activity-bar.css" aria-selected="false"><span class="file-icon css">#</span>activity-bar.css</button>
-          <button class="file-row" type="button" data-file="anchor.css" aria-selected="false"><span class="file-icon css">#</span>anchor.css</button>
-          <button class="file-row" type="button" data-file="anchors.js" aria-selected="false"><span class="file-icon js">JS</span>anchors.js</button>
-          <button class="file-row" type="button" data-file="app-layout.css" aria-selected="false"><span class="file-icon css">#</span>app-layout.css</button>
-          <button class="file-row" type="button" data-file="buttons.css" aria-selected="false"><span class="file-icon css">#</span>buttons.css</button>
-          <button class="file-row" type="button" data-file="canvas-shell.css" aria-selected="false"><span class="file-icon css">#</span>canvas-shell.css</button>
-          <button class="file-row" type="button" data-file="card-input.js" aria-selected="false"><span class="file-icon js">JS</span>card-input.js</button>
-          <button class="file-row" type="button" data-file="chat-panel.css" aria-selected="false"><span class="file-icon css">#</span>chat-panel.css</button>
-          <button class="file-row" type="button" data-file="config.js" aria-selected="false"><span class="file-icon js">JS</span>config.js</button>
-          <button class="file-row" type="button" data-file="coordinates.js" aria-selected="false"><span class="file-icon js">JS</span>coordinates.js</button>
-          <button class="file-row" type="button" data-file="dotted-background.css" aria-selected="false"><span class="file-icon css">#</span>dotted-background.css</button>
-          <button class="file-row" type="button" data-file="elements.js" aria-selected="false"><span class="file-icon js">JS</span>elements.js</button>
-          <button class="file-row" type="button" data-file="feedback.css" aria-selected="false"><span class="file-icon css">#</span>feedback.css</button>
-          <button class="file-row" type="button" data-file="grid-lod.js" aria-selected="false"><span class="file-icon js">JS</span>grid-lod.js</button>
-          <button class="file-row" type="button" data-file="index.html" aria-selected="false"><span class="file-icon html">&lt;&gt;</span>index.html</button>
-          <button class="file-row" type="button" data-file="main-canvas.css" aria-selected="false"><span class="file-icon css">#</span>main-canvas.css</button>
-          <button class="file-row" type="button" data-file="main.js" aria-selected="false"><span class="file-icon js">JS</span>main.js</button>
-          <button class="file-row" type="button" data-file="sidebar-input.js" aria-selected="false"><span class="file-icon js">JS</span>sidebar-input.js</button>
-          <button class="file-row" type="button" data-file="workbench-input.js" aria-selected="false"><span class="file-icon js">JS</span>workbench-input.js</button>
-          <button class="file-row" type="button" data-file="workbench.css" aria-selected="false"><span class="file-icon css">#</span>workbench.css</button>
-        </div>
+        <div id="workspaceFileTree" class="file-tree" role="listbox" aria-label="CREED files"></div>
 
         <div class="sidebar-menu">
           <h2>CREED Tools</h2>
@@ -132,7 +110,7 @@
             <button id="canvasMenuBtn" class="sidebar-menu-button active" type="button" role="tab" aria-selected="true" aria-controls="canvasControlsPanel">
               Canvas Controls
             </button>
-            <button id="infiniteCanvasMenuBtn" class="sidebar-menu-button" type="button" role="tab" aria-selected="false" aria-controls="infiniteCanvasPanel">
+            <button id="infiniteCanvasMenuBtn" class="sidebar-menu-button" type="button" role="tab" aria-selected="false" aria-controls="canvasEditorView">
               Infinite Canvas
             </button>
             <button id="componentsMenuBtn" class="sidebar-menu-button" type="button" role="tab" aria-selected="false" aria-controls="componentsPanel">
@@ -170,11 +148,7 @@
               <span class="label">Shortcuts</span>
               <p class="shortcut-copy"><b>Drag</b> — pan<br><b>Ctrl/Cmd + wheel</b> — zoom<br><b>0</b> — origin<br><b>A</b> — save view<br><b>Shift + A</b> — return</p>
             </div>
-          </section>
 
-          <section id="infiniteCanvasPanel" class="sidebar-panel" role="tabpanel" hidden>
-            <h3>Infinite Canvas</h3>
-            <p>Save a canvas location, return to it later, or clear it when it is no longer needed.</p>
             <div class="section">
               <span class="label">Saved Canvas Location</span>
               <div class="button-stack">
@@ -320,6 +294,6 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js?v=20260814-1"></script>
+  <script type="module" src="./main.js?v=20260814-3"></script>
 </body>
 </html>

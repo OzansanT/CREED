@@ -1,21 +1,23 @@
 export function getElements() {
   return {
+    app: document.getElementById("app"),
     canvas: document.getElementById("canvas"),
     world: document.getElementById("world"),
     originCard: document.getElementById("originCard"),
     jsonComponentCard: document.getElementById("jsonComponentCard"),
 
     sidebar: document.getElementById("sidebar"),
+    primarySidebarLayoutBtn: document.getElementById("primarySidebarLayoutBtn"),
+    explorerActivityBtn: document.getElementById("explorerActivityBtn"),
     canvasMenuBtn: document.getElementById("canvasMenuBtn"),
     infiniteCanvasMenuBtn: document.getElementById("infiniteCanvasMenuBtn"),
     componentsMenuBtn: document.getElementById("componentsMenuBtn"),
     canvasControlsPanel: document.getElementById("canvasControlsPanel"),
-    infiniteCanvasPanel: document.getElementById("infiniteCanvasPanel"),
     componentsPanel: document.getElementById("componentsPanel"),
     addJsonCardBtn: document.getElementById("addJsonCardBtn"),
     openJsonFileBtn: document.getElementById("openJsonFileBtn"),
 
-    workspaceFileButtons: [...document.querySelectorAll(".file-row[data-file]")],
+    workspaceFileTree: document.getElementById("workspaceFileTree"),
     workspaceCanvasTab: document.getElementById("workspaceCanvasTab"),
     workspaceCodeTab: document.getElementById("workspaceCodeTab"),
     workspaceCodeTabKind: document.getElementById("workspaceCodeTabKind"),
