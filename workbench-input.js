@@ -34,6 +34,7 @@ export function bindWorkbenchFiles({
   fileButtons,
   canvasTab,
   codeTab,
+  codeTabKind,
   codeTabName,
   breadcrumbKind,
   breadcrumbName,
@@ -87,8 +88,10 @@ export function bindWorkbenchFiles({
     setSelectedFile(fileName);
 
     codeTab.hidden = false;
+    const fileKind = getFileKind(fileName);
+    codeTabKind.textContent = fileKind;
     codeTabName.textContent = fileName;
-    breadcrumbKind.textContent = getFileKind(fileName);
+    breadcrumbKind.textContent = fileKind;
     breadcrumbName.textContent = fileName;
     codeContent.setAttribute("aria-busy", "true");
     codeContent.textContent = "Loading…";
