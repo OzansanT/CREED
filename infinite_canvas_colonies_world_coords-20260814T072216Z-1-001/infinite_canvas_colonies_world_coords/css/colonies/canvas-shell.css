@@ -1,3 +1,0 @@
-.canvas-shell { position:absolute;inset:var(--nav-h) 0 0 0;overflow:hidden;cursor:grab;touch-action:none;user-select:none;background-color:var(--bg); }
-.canvas-shell.dragging { cursor:grabbing; }
-.canvas-world { position:absolute;left:0;top:0;width:1px;height:1px;transform-origin:0 0;will-change:transform;pointer-events:none; }

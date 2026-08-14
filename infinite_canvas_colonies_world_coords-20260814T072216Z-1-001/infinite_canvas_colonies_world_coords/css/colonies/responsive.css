@@ -1,8 +1,0 @@
-@media (max-width:760px) {
-  :root { --sidebar-w:230px; }
-  .nav-badge { display:none; }
-  .sidebar { top:calc(var(--nav-h) + 10px);left:10px;bottom:72px; }
-  .zoom-control { left:10px;right:10px;bottom:10px; }
-  .zoom-control input[type="range"] { flex:1;width:auto; }
-  .hint,.lod-badge { display:none; }
-}
