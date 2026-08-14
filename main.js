@@ -11,6 +11,7 @@ import { bindKeyboard } from "./keyboard.js";
 import { bindSidebarMenu } from "./sidebar-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
+import { bindWorkbenchFiles } from "./workbench-input.js";
 
 const elements = getElements();
 const update = () => updateUI(elements, state);
@@ -33,7 +34,21 @@ elements.homeBtn.addEventListener("click", home);
 elements.resetBtn.addEventListener("click", factoryReset);
 bindPan({ canvas: elements.canvas, state, update, persist });
 bindWheel({ canvas: elements.canvas, state, update, persist });
-bindSidebarMenu({ canvasButton: elements.canvasMenuBtn, infiniteCanvasButton: elements.infiniteCanvasMenuBtn, componentsButton: elements.componentsMenuBtn, addJsonCardButton: elements.addJsonCardBtn, canvas: elements.canvas, jsonCard: elements.jsonComponentCard, state, update, persist });
+const workbench = bindWorkbenchFiles({
+  fileButtons: elements.workspaceFileButtons,
+  canvasTab: elements.workspaceCanvasTab,
+  codeTab: elements.workspaceCodeTab,
+  codeTabKind: elements.workspaceCodeTabKind,
+  codeTabName: elements.workspaceCodeTabName,
+  breadcrumbKind: elements.workspaceBreadcrumbKind,
+  breadcrumbName: elements.workspaceBreadcrumbName,
+  canvasView: elements.canvasEditorView,
+  codeView: elements.codeEditorView,
+  codeContent: elements.sourceCode,
+  onCanvasShow: update,
+  onError: (message) => showToast(elements.toast, message)
+});
+bindSidebarMenu({ canvasButton: elements.canvasMenuBtn, infiniteCanvasButton: elements.infiniteCanvasMenuBtn, componentsButton: elements.componentsMenuBtn, addJsonCardButton: elements.addJsonCardBtn, canvas: elements.canvas, jsonCard: elements.jsonComponentCard, showCanvas: workbench.showCanvas, state, update, persist });
 bindCardDrag({ card: elements.originCard, state, positionKey: "originCard", update, persist });
 bindCardDrag({ card: elements.jsonComponentCard, state, positionKey: "jsonCard", update, persist });
 bindJsonFileButton({ button: elements.openJsonFileBtn });
