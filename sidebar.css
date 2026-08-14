@@ -45,6 +45,8 @@
   white-space: nowrap;
 }
 .project-row__remote {
+  min-width: 0;
+  flex: 1;
   overflow: hidden;
   color: #5e5e64;
   text-overflow: ellipsis;
