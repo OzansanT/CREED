@@ -6,7 +6,7 @@
   <title>CREED — Infinite Canvas Workbench</title>
 
   <!-- Single CSS entry point. It imports root-canvas.css + all CSS colonies. -->
-  <link rel="stylesheet" href="./main-canvas.css?v=20260814-5" />
+  <link rel="stylesheet" href="./main-canvas.css?v=20260814-6" />
 </head>
 <body>
   <div id="app" class="app">
@@ -43,9 +43,8 @@
           <button id="secondarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="chatPanel" aria-expanded="true">◨</button>
         </div>
         <button id="homeBtn" class="chrome-action" title="Return to origin">Home</button>
-        <button id="resetBtn" class="chrome-action danger" title="Reset pan, zoom, sidebar menu, card positions and anchor">
-          Factory Reset
-        </button>
+        <button id="canvasResetBtn" class="chrome-action" type="button" title="Reset canvas view, saved location and components">Canvas Reset</button>
+        <button id="infiniteResetBtn" class="chrome-action danger" type="button" title="Reset the entire infinite workspace and panel layout">Infinite Reset</button>
       </div>
     </header>
 
@@ -84,6 +83,7 @@
     </nav>
 
     <aside id="sidebar" class="sidebar" aria-label="Explorer and CREED tools">
+      <div id="primarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--primary" role="separator" aria-label="Resize primary sidebar" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="900" aria-valuenow="293" tabindex="0"></div>
       <div class="explorer-header">
         <span>Gezgin</span>
         <span aria-hidden="true">•••</span>
@@ -242,6 +242,7 @@
       </section>
 
       <section id="terminalPanel" class="terminal-panel" aria-label="Terminal">
+        <div id="terminalPanelResizeHandle" class="panel-resize-handle panel-resize-handle--horizontal panel-resize-handle--terminal" role="separator" aria-label="Resize Terminal panel" aria-orientation="horizontal" aria-valuemin="120" aria-valuemax="700" aria-valuenow="320" tabindex="0"></div>
         <div class="terminal-tabs">
           <span class="terminal-tab">Sorunlar</span>
           <span class="terminal-tab">Çıktı</span>
@@ -257,6 +258,7 @@
     </div>
 
     <aside id="chatPanel" class="chat-panel" aria-label="Sohbet">
+      <div id="secondarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--secondary" role="separator" aria-label="Resize secondary sidebar" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="900" aria-valuenow="290" tabindex="0"></div>
       <div class="chat-panel__header">
         <span class="chat-panel__title">Sohbet</span>
         <span class="chat-panel__actions" aria-hidden="true">＋ ⚙ ··· □ ×</span>
@@ -294,6 +296,6 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js?v=20260814-5"></script>
+  <script type="module" src="./main.js?v=20260814-6"></script>
 </body>
 </html>
