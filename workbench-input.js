@@ -63,6 +63,9 @@ export function bindWorkbenchFiles({
     canvasTab.setAttribute("aria-selected", "true");
     codeTab.classList.remove("active");
     codeTab.setAttribute("aria-selected", "false");
+    codeTab.hidden = true;
+    breadcrumbKind.textContent = "◇";
+    breadcrumbName.textContent = "Infinite Canvas";
     setSelectedFile("");
     onCanvasShow?.();
   }
