@@ -88,22 +88,28 @@
           <span class="project-row__remote">[Codespaces: friendly fishstick]</span>
         </div>
 
-        <div class="file-tree" aria-label="CREED files">
-          <div class="file-row"><span class="file-icon md">◆</span>AGENTS.md</div>
-          <div class="file-row"><span class="file-icon css">#</span>anchor.css</div>
-          <div class="file-row"><span class="file-icon js">JS</span>anchors.js</div>
-          <div class="file-row"><span class="file-icon css">#</span>app-layout.css</div>
-          <div class="file-row"><span class="file-icon css">#</span>buttons.css</div>
-          <div class="file-row selected"><span class="file-icon css">#</span>canvas-shell.css</div>
-          <div class="file-row"><span class="file-icon js">JS</span>card-input.js</div>
-          <div class="file-row"><span class="file-icon js">JS</span>config.js</div>
-          <div class="file-row"><span class="file-icon js">JS</span>coordinates.js</div>
-          <div class="file-row"><span class="file-icon css">#</span>dotted-background.css</div>
-          <div class="file-row"><span class="file-icon js">JS</span>elements.js</div>
-          <div class="file-row"><span class="file-icon css">#</span>feedback.css</div>
-          <div class="file-row"><span class="file-icon js">JS</span>grid-lod.js</div>
-          <div class="file-row"><span class="file-icon html">&lt;&gt;</span>index.html</div>
-          <div class="file-row"><span class="file-icon js">JS</span>main.js</div>
+        <div class="file-tree" role="listbox" aria-label="CREED files">
+          <button class="file-row" type="button" data-file="AGENTS.md" aria-selected="false"><span class="file-icon md">◆</span>AGENTS.md</button>
+          <button class="file-row" type="button" data-file="activity-bar.css" aria-selected="false"><span class="file-icon css">#</span>activity-bar.css</button>
+          <button class="file-row" type="button" data-file="anchor.css" aria-selected="false"><span class="file-icon css">#</span>anchor.css</button>
+          <button class="file-row" type="button" data-file="anchors.js" aria-selected="false"><span class="file-icon js">JS</span>anchors.js</button>
+          <button class="file-row" type="button" data-file="app-layout.css" aria-selected="false"><span class="file-icon css">#</span>app-layout.css</button>
+          <button class="file-row" type="button" data-file="buttons.css" aria-selected="false"><span class="file-icon css">#</span>buttons.css</button>
+          <button class="file-row" type="button" data-file="canvas-shell.css" aria-selected="false"><span class="file-icon css">#</span>canvas-shell.css</button>
+          <button class="file-row" type="button" data-file="card-input.js" aria-selected="false"><span class="file-icon js">JS</span>card-input.js</button>
+          <button class="file-row" type="button" data-file="chat-panel.css" aria-selected="false"><span class="file-icon css">#</span>chat-panel.css</button>
+          <button class="file-row" type="button" data-file="config.js" aria-selected="false"><span class="file-icon js">JS</span>config.js</button>
+          <button class="file-row" type="button" data-file="coordinates.js" aria-selected="false"><span class="file-icon js">JS</span>coordinates.js</button>
+          <button class="file-row" type="button" data-file="dotted-background.css" aria-selected="false"><span class="file-icon css">#</span>dotted-background.css</button>
+          <button class="file-row" type="button" data-file="elements.js" aria-selected="false"><span class="file-icon js">JS</span>elements.js</button>
+          <button class="file-row" type="button" data-file="feedback.css" aria-selected="false"><span class="file-icon css">#</span>feedback.css</button>
+          <button class="file-row" type="button" data-file="grid-lod.js" aria-selected="false"><span class="file-icon js">JS</span>grid-lod.js</button>
+          <button class="file-row" type="button" data-file="index.html" aria-selected="false"><span class="file-icon html">&lt;&gt;</span>index.html</button>
+          <button class="file-row" type="button" data-file="main-canvas.css" aria-selected="false"><span class="file-icon css">#</span>main-canvas.css</button>
+          <button class="file-row" type="button" data-file="main.js" aria-selected="false"><span class="file-icon js">JS</span>main.js</button>
+          <button class="file-row" type="button" data-file="sidebar-input.js" aria-selected="false"><span class="file-icon js">JS</span>sidebar-input.js</button>
+          <button class="file-row" type="button" data-file="workbench-input.js" aria-selected="false"><span class="file-icon js">JS</span>workbench-input.js</button>
+          <button class="file-row" type="button" data-file="workbench.css" aria-selected="false"><span class="file-icon css">#</span>workbench.css</button>
         </div>
 
         <div class="sidebar-menu">
@@ -184,60 +190,64 @@
     </aside>
 
     <div class="workbench">
-      <section class="editor-pane" aria-label="Infinite canvas editor">
-        <div class="editor-tabs">
-          <div class="editor-tab"><span class="file-kind">◇</span>[Önizleme] README.md</div>
-          <div class="editor-tab active"><span class="file-kind">#</span><em>canvas-shell.css</em></div>
+      <section class="editor-pane" aria-label="Infinite canvas and source editor">
+        <div class="editor-tabs" role="tablist" aria-label="Editor tabs">
+          <button id="workspaceCanvasTab" class="editor-tab active" type="button" role="tab" aria-selected="true" aria-controls="canvasEditorView">
+            <span class="file-kind">◇</span>
+            <span>Infinite Canvas</span>
+          </button>
+          <button id="workspaceCodeTab" class="editor-tab" type="button" role="tab" aria-selected="false" aria-controls="codeEditorView" hidden>
+            <span id="workspaceCodeTabKind" class="file-kind">#</span>
+            <em id="workspaceCodeTabName">canvas-shell.css</em>
+          </button>
           <div class="editor-actions" aria-hidden="true">◫ ···</div>
         </div>
 
         <div class="editor-breadcrumbs">
-          <span class="file-kind">#</span>
-          <span>canvas-shell.css</span>
-          <span>›</span>
-          <span class="code-selector">.canvas-shell</span>
+          <span id="workspaceBreadcrumbKind" class="file-kind">◇</span>
+          <span id="workspaceBreadcrumbName">Infinite Canvas</span>
         </div>
 
-        <div class="editor-viewport">
-          <main id="canvas" class="canvas-shell" aria-label="CREED infinite canvas">
-            <div id="grid1" class="grid-layer"></div>
-            <div id="grid2" class="grid-layer"></div>
-            <div id="grid4" class="grid-layer"></div>
-            <div id="grid8" class="grid-layer"></div>
+        <div class="editor-body">
+          <div id="canvasEditorView" class="editor-view editor-viewport" role="tabpanel" aria-labelledby="workspaceCanvasTab">
+            <main id="canvas" class="canvas-shell" aria-label="CREED infinite canvas">
+              <div id="grid1" class="grid-layer"></div>
+              <div id="grid2" class="grid-layer"></div>
+              <div id="grid4" class="grid-layer"></div>
+              <div id="grid8" class="grid-layer"></div>
 
-            <div id="world" class="canvas-world">
-              <section id="originCard" class="origin-card" tabindex="0" aria-label="Draggable CREED origin card">
-                <small>● WORLD ORIGIN</small>
-                <h1>CREED</h1>
-                <p>Infinite canvas inside a Codespaces-inspired workbench. Pan, zoom, save views and place components.</p>
-              </section>
+              <div id="world" class="canvas-world">
+                <section id="originCard" class="origin-card" tabindex="0" aria-label="Draggable CREED origin card">
+                  <small>● WORLD ORIGIN</small>
+                  <h1>CREED</h1>
+                  <p>Infinite canvas inside a Codespaces-inspired workbench. Pan, zoom, save views and place components.</p>
+                </section>
 
-              <section id="jsonComponentCard" class="component-card json-component-card" tabindex="0" aria-label="JSON file component" hidden>
-                <small>COMPONENT</small>
-                <h2>JSON File</h2>
-                <button id="openJsonFileBtn" class="primary" type="button">Open JSON File</button>
-              </section>
+                <section id="jsonComponentCard" class="component-card json-component-card" tabindex="0" aria-label="JSON file component" hidden>
+                  <small>COMPONENT</small>
+                  <h2>JSON File</h2>
+                  <button id="openJsonFileBtn" class="primary" type="button">Open JSON File</button>
+                </section>
 
-              <div id="anchorMarker" class="anchor-marker">
-                <span class="anchor-label">Saved canvas view</span>
+                <div id="anchorMarker" class="anchor-marker">
+                  <span class="anchor-label">Saved canvas view</span>
+                </div>
               </div>
-            </div>
-          </main>
+            </main>
 
-          <div class="code-preview" aria-hidden="true">
-            <div class="code-line"><span class="code-line__number">1</span><span class="code-line__code"><span class="code-selector">.canvas-shell</span> { <span class="code-property">position</span>:absolute; inset:0; overflow:hidden; cursor:grab; touch-action:none; }</span></div>
-            <div class="code-line"><span class="code-line__number">2</span><span class="code-line__code"><span class="code-selector">.canvas-shell.dragging</span> { <span class="code-property">cursor</span>:grabbing; }</span></div>
-            <div class="code-line"><span class="code-line__number">3</span><span class="code-line__code"><span class="code-selector">.canvas-world</span> { <span class="code-property">position</span>:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; }</span></div>
+            <div class="hint">Drag to pan · Ctrl/Cmd + wheel to zoom</div>
+
+            <div class="zoom-control" aria-label="Zoom control">
+              <button id="zoomOutBtn" title="Zoom out">−</button>
+              <input id="zoomRange" type="range" min="20" max="300" value="100" step="1" aria-label="Zoom percentage" />
+              <div id="zoomReadout" class="zoom-readout">100%</div>
+              <div id="lodBadge" class="lod-badge">GRID 1×</div>
+              <button id="zoomInBtn" title="Zoom in">+</button>
+            </div>
           </div>
 
-          <div class="hint">Drag to pan · Ctrl/Cmd + wheel to zoom</div>
-
-          <div class="zoom-control" aria-label="Zoom control">
-            <button id="zoomOutBtn" title="Zoom out">−</button>
-            <input id="zoomRange" type="range" min="20" max="300" value="100" step="1" aria-label="Zoom percentage" />
-            <div id="zoomReadout" class="zoom-readout">100%</div>
-            <div id="lodBadge" class="lod-badge">GRID 1×</div>
-            <button id="zoomInBtn" title="Zoom in">+</button>
+          <div id="codeEditorView" class="editor-view code-editor-view" role="tabpanel" aria-labelledby="workspaceCodeTab" hidden>
+            <div id="sourceCode" class="source-code" aria-live="polite"></div>
           </div>
         </div>
       </section>
