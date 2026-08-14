@@ -1,3 +1,5 @@
+import { SOURCE_FILES } from "./source-files.js";
+
 function getFileExtension(fileName) {
   return fileName.split(".").pop()?.toLowerCase() || "";
 }
@@ -193,10 +195,17 @@ export function bindWorkbenchFiles({
     codeTabKind.textContent = fileKind;
     codeTabName.textContent = fileName;
     setFileContext(fileKind, fileName, getLanguageLabel(fileName));
+    const fallbackSource = SOURCE_FILES[fileName];
+    const hasFallback = typeof fallbackSource === "string";
     codeContent.setAttribute("aria-busy", "true");
-    codeContent.textContent = "Loading…";
     codeMinimap.replaceChildren();
     showCode();
+
+    if (hasFallback) {
+      renderCode(fallbackSource, codeContent, codeMinimap, fileName);
+    } else {
+      codeContent.textContent = "Loading…";
+    }
 
     try {
       const response = await fetch("./" + encodeURIComponent(fileName), {
@@ -207,8 +216,10 @@ export function bindWorkbenchFiles({
       renderCode(await response.text(), codeContent, codeMinimap, fileName);
     } catch (error) {
       if (error.name === "AbortError") return;
-      codeContent.textContent = "Unable to display " + fileName + ".";
-      onError?.(error.message);
+      if (!hasFallback) {
+        codeContent.textContent = "Unable to display " + fileName + ".";
+        onError?.(error.message);
+      }
     } finally {
       codeContent.removeAttribute("aria-busy");
     }
