@@ -25,6 +25,10 @@ export function getElements() {
     canvasEditorView: document.getElementById("canvasEditorView"),
     codeEditorView: document.getElementById("codeEditorView"),
     sourceCode: document.getElementById("sourceCode"),
+    sourceMinimap: document.getElementById("sourceMinimap"),
+    chatContextKind: document.getElementById("chatContextKind"),
+    chatContextName: document.getElementById("chatContextName"),
+    statusLanguage: document.getElementById("statusLanguage"),
 
     grids: {
       1: document.getElementById("grid1"),
