@@ -94,3 +94,26 @@
   color: var(--danger);
   border-color: #e7c5c2;
 }
+.layout-controls {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-right: 4px;
+}
+.layout-control {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #5f5f65;
+  font-size: 14px;
+  box-shadow: none;
+}
+.layout-control:hover:not(:disabled) {
+  transform: none;
+  border-color: transparent;
+  background: #ececef;
+  box-shadow: none;
+}
