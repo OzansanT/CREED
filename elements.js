@@ -10,12 +10,11 @@ export function getElements() {
     infiniteCanvasMenuBtn: document.getElementById("infiniteCanvasMenuBtn"),
     componentsMenuBtn: document.getElementById("componentsMenuBtn"),
     canvasControlsPanel: document.getElementById("canvasControlsPanel"),
-    infiniteCanvasPanel: document.getElementById("infiniteCanvasPanel"),
     componentsPanel: document.getElementById("componentsPanel"),
     addJsonCardBtn: document.getElementById("addJsonCardBtn"),
     openJsonFileBtn: document.getElementById("openJsonFileBtn"),
 
-    workspaceFileButtons: [...document.querySelectorAll(".file-row[data-file]")],
+    workspaceFileTree: document.getElementById("workspaceFileTree"),
     workspaceCanvasTab: document.getElementById("workspaceCanvasTab"),
     workspaceCodeTab: document.getElementById("workspaceCodeTab"),
     workspaceCodeTabKind: document.getElementById("workspaceCodeTabKind"),

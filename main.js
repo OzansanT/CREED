@@ -11,7 +11,7 @@ import { bindKeyboard } from "./keyboard.js";
 import { bindSidebarMenu } from "./sidebar-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
-import { bindWorkbenchFiles } from "./workbench-input.js?v=20260814-1";
+import { bindWorkbenchFiles } from "./workbench-input.js?v=20260814-2";
 
 const elements = getElements();
 const update = () => updateUI(elements, state);
@@ -35,7 +35,7 @@ elements.resetBtn.addEventListener("click", factoryReset);
 bindPan({ canvas: elements.canvas, state, update, persist });
 bindWheel({ canvas: elements.canvas, state, update, persist });
 const workbench = bindWorkbenchFiles({
-  fileButtons: elements.workspaceFileButtons,
+  fileTree: elements.workspaceFileTree,
   canvasTab: elements.workspaceCanvasTab,
   codeTab: elements.workspaceCodeTab,
   codeTabKind: elements.workspaceCodeTabKind,

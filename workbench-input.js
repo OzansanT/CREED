@@ -1,4 +1,4 @@
-import { SOURCE_FILES } from "./source-files.js";
+import { WORKSPACE_FILES } from "./source-files.js?v=20260814-2";
 
 function getFileExtension(fileName) {
   return fileName.split(".").pop()?.toLowerCase() || "";
@@ -20,6 +20,29 @@ function getLanguageLabel(fileName) {
   if (extension === "html") return "<> HTML";
   if (extension === "md") return "◆ Markdown";
   return "Plain Text";
+}
+
+function createFileButton(fileName) {
+  const button = document.createElement("button");
+  const icon = document.createElement("span");
+  const extension = getFileExtension(fileName);
+
+  button.className = "file-row";
+  button.type = "button";
+  button.dataset.file = fileName;
+  button.setAttribute("aria-selected", "false");
+
+  icon.className = "file-icon " + (extension || "file");
+  icon.textContent = getFileKind(fileName);
+  button.append(icon, document.createTextNode(fileName));
+  return button;
+}
+
+function renderFileTree(fileTree) {
+  const fragment = document.createDocumentFragment();
+  WORKSPACE_FILES.forEach((fileName) => fragment.append(createFileButton(fileName)));
+  fileTree.replaceChildren(fragment);
+  return [...fileTree.querySelectorAll(".file-row[data-file]")];
 }
 
 const TOKEN_PATTERNS = Object.freeze({
@@ -120,7 +143,7 @@ function renderCode(source, target, minimap, fileName) {
 }
 
 export function bindWorkbenchFiles({
-  fileButtons,
+  fileTree,
   canvasTab,
   codeTab,
   codeTabKind,
@@ -137,6 +160,7 @@ export function bindWorkbenchFiles({
   onCanvasShow,
   onError
 }) {
+  const fileButtons = renderFileTree(fileTree);
   let openedFile = "";
   let requestController = null;
 
@@ -195,20 +219,14 @@ export function bindWorkbenchFiles({
     codeTabKind.textContent = fileKind;
     codeTabName.textContent = fileName;
     setFileContext(fileKind, fileName, getLanguageLabel(fileName));
-    const fallbackSource = SOURCE_FILES[fileName];
-    const hasFallback = typeof fallbackSource === "string";
     codeContent.setAttribute("aria-busy", "true");
     codeMinimap.replaceChildren();
+    codeContent.textContent = "Loading…";
     showCode();
 
-    if (hasFallback) {
-      renderCode(fallbackSource, codeContent, codeMinimap, fileName);
-    } else {
-      codeContent.textContent = "Loading…";
-    }
-
     try {
-      const response = await fetch("./" + encodeURIComponent(fileName), {
+      const filePath = fileName.split("/").map(encodeURIComponent).join("/");
+      const response = await fetch("./" + filePath, {
         cache: "no-store",
         signal: requestController.signal
       });
@@ -216,10 +234,8 @@ export function bindWorkbenchFiles({
       renderCode(await response.text(), codeContent, codeMinimap, fileName);
     } catch (error) {
       if (error.name === "AbortError") return;
-      if (!hasFallback) {
-        codeContent.textContent = "Unable to display " + fileName + ".";
-        onError?.(error.message);
-      }
+      codeContent.textContent = "Unable to display " + fileName + ".";
+      onError?.(error.message);
     } finally {
       codeContent.removeAttribute("aria-busy");
     }

@@ -19,7 +19,6 @@ export function updateUI(elements, state) {
   elements.infiniteCanvasMenuBtn.setAttribute("aria-selected", String(sidebarView === "infiniteCanvas"));
   elements.componentsMenuBtn.setAttribute("aria-selected", String(sidebarView === "components"));
   elements.canvasControlsPanel.hidden = sidebarView !== "canvas";
-  elements.infiniteCanvasPanel.hidden = sidebarView !== "infiniteCanvas";
   elements.componentsPanel.hidden = sidebarView !== "components";
 
   elements.world.style.transform =
