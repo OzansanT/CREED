@@ -1,13 +1,15 @@
 import { clamp } from "./state.js";
 import {
+  DEFAULT_PRIMARY_WIDTH,
+  DEFAULT_SECONDARY_WIDTH,
+  DEFAULT_TERMINAL_HEIGHT
+} from "./config.js";
+import {
   clearPanelLayout,
   loadPanelLayout,
   savePanelLayout
 } from "./storage.js";
 
-const DEFAULT_PRIMARY_WIDTH = 293;
-const DEFAULT_SECONDARY_WIDTH = 290;
-const DEFAULT_TERMINAL_HEIGHT = 320;
 const MIN_PRIMARY_WIDTH = 180;
 const MIN_SECONDARY_WIDTH = 220;
 const MIN_TERMINAL_HEIGHT = 120;
@@ -158,9 +160,10 @@ export function bindPanelResize({
     }
 
     function finish(event) {
-      if (activePointerId === null || event.pointerId !== activePointerId) return;
-      if (handle.hasPointerCapture?.(activePointerId)) {
-        handle.releasePointerCapture(activePointerId);
+      if (activePointerId === null || (event?.pointerId != null && event.pointerId !== activePointerId)) return;
+      const pointerId = activePointerId;
+      if (handle.hasPointerCapture?.(pointerId)) {
+        handle.releasePointerCapture(pointerId);
       }
       activePointerId = null;
       handle.classList.remove("is-resizing");
@@ -170,7 +173,7 @@ export function bindPanelResize({
     }
 
     handle.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) return;
+      if (event.button !== 0 || activePointerId !== null) return;
       event.preventDefault();
       activePointerId = event.pointerId;
       startCoordinate = coordinateFrom(event);
@@ -188,6 +191,7 @@ export function bindPanelResize({
 
     handle.addEventListener("pointerup", finish);
     handle.addEventListener("pointercancel", finish);
+    handle.addEventListener("lostpointercapture", finish);
 
     handle.addEventListener("keydown", (event) => {
       const coordinateDelta = axis === "x"
@@ -236,9 +240,35 @@ export function bindPanelResize({
     if (notify) onLayoutChange?.();
   }
 
+  function getState() {
+    return {
+      ...layoutState,
+      primaryVisible: primaryController.isVisible(),
+      secondaryVisible: secondaryController.isVisible(),
+      terminalVisible: terminalController.isVisible()
+    };
+  }
+
+  function applyLayout(nextLayout = {}, notify = true) {
+    if (typeof nextLayout.primaryVisible === "boolean") primaryController.setVisible(nextLayout.primaryVisible, false);
+    if (typeof nextLayout.secondaryVisible === "boolean") secondaryController.setVisible(nextLayout.secondaryVisible, false);
+    if (typeof nextLayout.terminalVisible === "boolean") terminalController.setVisible(nextLayout.terminalVisible, false);
+    configurations.forEach((configuration) => {
+      const requested = Number(nextLayout[configuration.storageKey]);
+      if (Number.isFinite(requested) && requested > 0) applySize(configuration, requested, false);
+    });
+    layoutState = { ...layoutState, ...getState() };
+    persistLayout();
+    configurations.forEach(synchronize);
+    if (notify) onLayoutChange?.();
+    return getState();
+  }
+
   return Object.freeze({
     persist: persistLayout,
     reset,
-    synchronize: () => configurations.forEach(synchronize)
+    synchronize: () => configurations.forEach(synchronize),
+    getState,
+    applyLayout
   });
 }

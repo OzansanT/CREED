@@ -1,0 +1,16 @@
+{
+  "name": "creed-infinite-canvas-workbench",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Infinite-canvas website builder and browser source workbench.",
+  "scripts": {
+    "check": "node scripts/validate-repo.mjs",
+    "test": "node --test",
+    "smoke": "node scripts/smoke-server.mjs",
+    "test:all": "npm run check && npm test && npm run smoke"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

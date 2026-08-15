@@ -1,0 +1,81 @@
+.overlay-scrim {
+  position: fixed;
+  z-index: 72;
+  inset: var(--workbench-top) 0 calc(var(--status-h) + 44px);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(10, 12, 18, .36);
+  box-shadow: none;
+}
+.overlay-scrim[hidden] { display: none; }
+
+@media (max-width: 600px) {
+  :root {
+    --activity-w: 0px;
+    --sidebar-w: min(86vw, 320px);
+    --chat-w: min(90vw, 340px);
+    --terminal-h: min(48vh, 360px);
+  }
+  .activity-bar {
+    top: auto;
+    right: 0;
+    bottom: var(--status-h);
+    left: 0;
+    width: 100%;
+    height: 44px;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-top: 1px solid var(--chrome-border);
+    border-right: 0;
+  }
+  .activity-bar__group { width: auto; display: flex; }
+  .activity-bar__group:last-child { margin-top: 0; margin-left: auto; padding: 0; }
+  .activity-button,
+  .activity-bar { min-width: 42px; }
+  .activity-button { width: 42px; height: 42px; }
+  .activity-button.active::before { inset: auto 4px 0; width: auto; height: 2px; }
+  .workbench {
+    right: 0;
+    bottom: calc(var(--status-h) + 44px);
+    left: 0;
+  }
+  .sidebar,
+  .chat-panel { bottom: calc(var(--status-h) + 44px); }
+  .sidebar { left: 0; }
+  .chat-panel { right: 0; z-index: 75; }
+  #statusIndentation,
+  #statusWarnings { display: none; }
+  .navbar { gap: 4px; }
+  .navbar-left .brand,
+  .navbar-left .chrome-button { display: none; }
+  .command-center {
+    position: static;
+    width: auto;
+    min-width: 0;
+    flex: 1;
+    transform: none;
+  }
+  .command-center:hover:not(:disabled),
+  .command-center:focus-visible { transform: none; }
+  .navbar-right .layout-controls { display: none; }
+  .navbar-right .chrome-action:not(#installAppBtn) { display: none; }
+  .editor-actions button { min-width: 34px; min-height: 34px; }
+  .editor-actions #editorSaveBtn { font-size: 0; }
+  .editor-actions #editorSaveBtn::after { content: "◆"; font-size: 12px; }
+  .terminal-panel { z-index: 15; }
+  .terminal-tabs { min-height: 42px; padding: 0 4px; }
+  .terminal-tab { min-height: 38px; }
+  .terminal-tools { position: sticky; right: 0; background: var(--panel); }
+  .zoom-control { max-width: calc(100vw - 24px); }
+  .canvas-minimap { display: none; }
+  .chat-composer textarea { min-height: 70px; }
+}
+
+@media (max-width: 420px) {
+  #runActivityBtn,
+  #githubActivityBtn { display: none; }
+  .editor-actions #editorMoreBtn { display: none; }
+  #workspaceDirtyStatus { display: none; }
+}

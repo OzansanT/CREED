@@ -231,3 +231,70 @@
   color: #29292d;
   box-shadow: none;
 }
+.component-library {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+.component-library button {
+  min-height: 30px;
+  padding: 5px 6px;
+  font-size: 10px;
+}
+.component-library #addJsonCardBtn {
+  grid-column: 1 / -1;
+}
+.saved-views-list,
+.layers-list {
+  display: grid;
+  gap: 3px;
+  margin-top: 7px;
+}
+.alignment-controls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  margin-bottom: 8px;
+}
+.alignment-controls button {
+  min-width: 0;
+  height: 27px;
+  padding: 0;
+}
+.saved-view-row,
+.layer-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  border-radius: 3px;
+  background: #f0f0f3;
+}
+.saved-view-row.is-active,
+.layer-row.is-selected {
+  background: #dcecf8;
+}
+.saved-view-row button,
+.layer-row button {
+  min-width: 24px;
+  height: 26px;
+  padding: 0 5px;
+  border: 0;
+  background: transparent;
+  font-size: 10px;
+  box-shadow: none;
+}
+.saved-view-row button:first-child,
+.layer-row__name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saved-view-row button:hover:not(:disabled),
+.layer-row button:hover:not(:disabled) {
+  transform: none;
+  background: rgba(0,0,0,.05);
+  box-shadow: none;
+}

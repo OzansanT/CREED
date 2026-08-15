@@ -1,0 +1,54 @@
+.selection-bounds {
+  position: absolute;
+  border: 1px solid var(--vscode-blue);
+  pointer-events: none;
+}
+.selection-bounds[hidden] { display: none; }
+.selection-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 1px solid var(--vscode-blue);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: none;
+  pointer-events: auto;
+}
+.selection-handle:hover { transform: none !important; }
+.selection-handle--nw { top: -6px; left: -6px; cursor: nwse-resize; }
+.selection-handle--ne { top: -6px; right: -6px; cursor: nesw-resize; }
+.selection-handle--sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+.selection-handle--se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.selection-handle--rotate {
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+.selection-handle--rotate::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 4px;
+  width: 1px;
+  height: 20px;
+  background: var(--vscode-blue);
+}
+.lasso-rect {
+  position: absolute;
+  z-index: 30;
+  border: 1px solid var(--vscode-blue);
+  background: rgba(0,122,204,.10);
+  pointer-events: none;
+}
+.lasso-rect[hidden],
+.alignment-guide[hidden] { display: none; }
+.alignment-guide {
+  position: absolute;
+  z-index: 29;
+  pointer-events: none;
+  background: #e11d8a;
+}
+.alignment-guide--vertical { top: 0; bottom: 0; width: 1px; }
+.alignment-guide--horizontal { right: 0; left: 0; height: 1px; }

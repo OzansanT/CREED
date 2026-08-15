@@ -1,10 +1,10 @@
-export const state = {
-  x: 0,
-  y: 0,
-  zoom: 1,
-  anchor: null,
-  sidebarView: "canvas",
-  originCard: { worldX: 0, worldY: 0 },
-  jsonCard: { visible: false, worldX: 0, worldY: 0 }
-};
-export function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+import { createCreedDocument, normalizeCreedDocument } from "./creed-document.js";
+import { clamp, replaceObjectContents } from "./state-utils.js";
+
+export const state = createCreedDocument();
+
+export function replaceState(document) {
+  return replaceObjectContents(state, normalizeCreedDocument(document));
+}
+
+export { clamp };

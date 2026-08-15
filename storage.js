@@ -1,27 +1,106 @@
 import {
-  STORAGE_KEY,
-  PANEL_LAYOUT_STORAGE_KEY,
   LEGACY_PANEL_LAYOUT_STORAGE_KEY,
-  MIN_ZOOM,
-  MAX_ZOOM
+  LEGACY_STATE_STORAGE_KEYS,
+  PANEL_LAYOUT_STORAGE_KEY,
+  STATE_SAVE_DELAY,
+  STORAGE_KEY
 } from "./config.js";
-import { state, clamp } from "./state.js";
-export function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-export function loadState() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!saved) return false;
-    state.x = Number.isFinite(saved.x) ? saved.x : 0;
-    state.y = Number.isFinite(saved.y) ? saved.y : 0;
-    state.zoom = Number.isFinite(saved.zoom) ? clamp(saved.zoom, MIN_ZOOM, MAX_ZOOM) : 1;
-    if (saved.anchor && Number.isFinite(saved.anchor.worldX) && Number.isFinite(saved.anchor.worldY)) state.anchor = saved.anchor; else state.anchor = null;
-    state.sidebarView = ["canvas", "infiniteCanvas", "components"].includes(saved.sidebarView) ? saved.sidebarView : "canvas";
-    if (saved.originCard && Number.isFinite(saved.originCard.worldX) && Number.isFinite(saved.originCard.worldY)) state.originCard = saved.originCard; else state.originCard = { worldX: 0, worldY: 0 };
-    if (saved.jsonCard && Number.isFinite(saved.jsonCard.worldX) && Number.isFinite(saved.jsonCard.worldY)) state.jsonCard = { visible: saved.jsonCard.visible === true, worldX: saved.jsonCard.worldX, worldY: saved.jsonCard.worldY }; else state.jsonCard = { visible: false, worldX: 0, worldY: 0 };
-    return true;
-  } catch { return false; }
+import { normalizeCreedDocument, serializeCreedDocument } from "./creed-document.js";
+import { replaceState, state } from "./state.js";
+
+let stateSaveTimer = 0;
+let pendingStorage = null;
+
+function getDefaultStorage() {
+  return globalThis.localStorage;
 }
-export function clearStoredState() { localStorage.removeItem(STORAGE_KEY); }
+
+function safeGetItem(storage, key) {
+  try {
+    return storage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(storage, key, value) {
+  try {
+    storage?.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function safeRemoveItem(storage, key) {
+  try {
+    storage?.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function parseStoredJson(storage, key) {
+  const raw = safeGetItem(storage, key);
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw);
+    return value && typeof value === "object" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveState(storage = getDefaultStorage()) {
+  try {
+    state.updatedAt = new Date().toISOString();
+    const payload = JSON.stringify(serializeCreedDocument(state));
+    return safeSetItem(storage, STORAGE_KEY, payload);
+  } catch {
+    return false;
+  }
+}
+
+export function queueStateSave(delay = STATE_SAVE_DELAY, storage = getDefaultStorage()) {
+  pendingStorage = storage;
+  globalThis.clearTimeout(stateSaveTimer);
+  stateSaveTimer = globalThis.setTimeout(() => {
+    stateSaveTimer = 0;
+    saveState(pendingStorage);
+    pendingStorage = null;
+  }, delay);
+}
+
+export function flushStateSave(storage = pendingStorage || getDefaultStorage()) {
+  globalThis.clearTimeout(stateSaveTimer);
+  stateSaveTimer = 0;
+  pendingStorage = null;
+  return saveState(storage);
+}
+
+export function loadState(storage = getDefaultStorage()) {
+  const keys = [STORAGE_KEY, ...LEGACY_STATE_STORAGE_KEYS];
+  for (const key of keys) {
+    const saved = parseStoredJson(storage, key);
+    if (!saved) continue;
+    replaceState(normalizeCreedDocument(saved));
+    if (key !== STORAGE_KEY && saveState(storage)) safeRemoveItem(storage, key);
+    return true;
+  }
+  return false;
+}
+
+export function clearStoredState(storage = getDefaultStorage()) {
+  globalThis.clearTimeout(stateSaveTimer);
+  stateSaveTimer = 0;
+  pendingStorage = null;
+  const results = [
+    safeRemoveItem(storage, STORAGE_KEY),
+    ...LEGACY_STATE_STORAGE_KEYS.map((key) => safeRemoveItem(storage, key))
+  ];
+  return results.every(Boolean);
+}
 
 function normalizePanelDimensions(saved) {
   if (!saved) return null;
@@ -35,15 +114,7 @@ function normalizePanelDimensions(saved) {
     : null;
 }
 
-function readStoredJson(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key));
-  } catch {
-    return null;
-  }
-}
-
-export function savePanelLayout(layoutState) {
+export function savePanelLayout(layoutState, storage = getDefaultStorage()) {
   const dimensions = normalizePanelDimensions(layoutState);
   const visibility = {
     primaryVisible: layoutState?.primaryVisible,
@@ -53,20 +124,16 @@ export function savePanelLayout(layoutState) {
   if (!dimensions || !Object.values(visibility).every((value) => typeof value === "boolean")) {
     return false;
   }
-  try {
-    localStorage.setItem(PANEL_LAYOUT_STORAGE_KEY, JSON.stringify({
-      ...dimensions,
-      ...visibility
-    }));
-    localStorage.removeItem(LEGACY_PANEL_LAYOUT_STORAGE_KEY);
-    return true;
-  } catch {
-    return false;
-  }
+  const saved = safeSetItem(storage, PANEL_LAYOUT_STORAGE_KEY, JSON.stringify({
+    ...dimensions,
+    ...visibility
+  }));
+  if (saved) safeRemoveItem(storage, LEGACY_PANEL_LAYOUT_STORAGE_KEY);
+  return saved;
 }
 
-export function loadPanelLayout() {
-  const saved = readStoredJson(PANEL_LAYOUT_STORAGE_KEY);
+export function loadPanelLayout(storage = getDefaultStorage()) {
+  const saved = parseStoredJson(storage, PANEL_LAYOUT_STORAGE_KEY);
   const dimensions = normalizePanelDimensions(saved);
   const visibility = {
     primaryVisible: saved?.primaryVisible,
@@ -78,7 +145,7 @@ export function loadPanelLayout() {
   }
 
   const legacyDimensions = normalizePanelDimensions(
-    readStoredJson(LEGACY_PANEL_LAYOUT_STORAGE_KEY)
+    parseStoredJson(storage, LEGACY_PANEL_LAYOUT_STORAGE_KEY)
   );
   if (!legacyDimensions) return null;
   const migrated = {
@@ -87,11 +154,13 @@ export function loadPanelLayout() {
     secondaryVisible: true,
     terminalVisible: true
   };
-  savePanelLayout(migrated);
+  savePanelLayout(migrated, storage);
   return migrated;
 }
 
-export function clearPanelLayout() {
-  localStorage.removeItem(PANEL_LAYOUT_STORAGE_KEY);
-  localStorage.removeItem(LEGACY_PANEL_LAYOUT_STORAGE_KEY);
+export function clearPanelLayout(storage = getDefaultStorage()) {
+  return [
+    safeRemoveItem(storage, PANEL_LAYOUT_STORAGE_KEY),
+    safeRemoveItem(storage, LEGACY_PANEL_LAYOUT_STORAGE_KEY)
+  ].every(Boolean);
 }

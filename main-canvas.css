@@ -1,28 +1,10 @@
-/*
-  MAIN CSS ENTRY POINT
+/* Global document baseline. Component and layout CSS colonies are linked in parallel. */
 
-  Keep index.html connected to only this file.
-  Each capability lives in its own "CSS colony".
-*/
-
-@import url("./root-canvas.css");
-
-@import url("./app-layout.css");
-@import url("./buttons.css");
-@import url("./restricted-banner.css");
-@import url("./navbar.css");
-@import url("./activity-bar.css");
-@import url("./sidebar.css");
-@import url("./sidebar-stats.css");
-@import url("./lod-indicator.css");
-@import url("./workbench.css");
-@import url("./canvas-shell.css");
-@import url("./dotted-background.css");
-@import url("./world-content.css");
-@import url("./anchor.css");
-@import url("./zoom-controls.css");
-@import url("./feedback.css");
-@import url("./chat-panel.css");
-@import url("./panel-resize.css");
-@import url("./status-bar.css");
-@import url("./responsive.css");
+*, *::before, *::after { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+button, input { font: inherit; }

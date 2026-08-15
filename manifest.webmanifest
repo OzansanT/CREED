@@ -1,0 +1,32 @@
+{
+  "name": "CREED Infinite Canvas Workbench",
+  "short_name": "CREED",
+  "description": "An offline-capable infinite-canvas website builder and browser source workbench.",
+  "id": "./",
+  "start_url": "./#canvas",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbfbfd",
+  "theme_color": "#007acc",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./creed-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Infinite Canvas",
+      "url": "./#canvas",
+      "icons": [{ "src": "./creed-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Workspace Search",
+      "url": "./#search",
+      "icons": [{ "src": "./creed-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}

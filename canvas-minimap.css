@@ -1,0 +1,36 @@
+.canvas-minimap {
+  position: absolute;
+  z-index: 18;
+  right: 12px;
+  bottom: 58px;
+  width: 176px;
+  height: 112px;
+  overflow: hidden;
+  border: 1px solid #d8dce2;
+  border-radius: 5px;
+  background: rgba(248,250,252,.94);
+  box-shadow: 0 5px 16px rgba(15,23,42,.10);
+  cursor: crosshair;
+}
+.canvas-minimap:focus-visible {
+  outline: 2px solid var(--vscode-blue);
+  outline-offset: 2px;
+}
+.canvas-minimap__content {
+  position: absolute;
+  inset: 0;
+}
+.canvas-minimap__item {
+  position: absolute;
+  min-width: 2px;
+  min-height: 2px;
+  border-radius: 1px;
+  background: #7591aa;
+}
+.canvas-minimap__item.is-selected { background: var(--vscode-blue); }
+.canvas-minimap__viewport {
+  position: absolute;
+  border: 1px solid #e11d48;
+  background: rgba(225,29,72,.06);
+  pointer-events: none;
+}

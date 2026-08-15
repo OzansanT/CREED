@@ -27,6 +27,14 @@
   align-items: center;
   gap: 4px;
 }
+.status-bar button.status-bar__item {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+.status-bar button.status-bar__item:hover { transform: none; background: rgba(255,255,255,.14); box-shadow: none; }
 .status-bar__spacer {
   flex: 1;
 }

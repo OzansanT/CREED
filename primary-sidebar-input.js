@@ -13,7 +13,6 @@ export function bindPrimarySidebar({
     app.classList.toggle("primary-sidebar-collapsed", !visible);
     layoutButton.setAttribute("aria-expanded", String(visible));
     explorerButton.setAttribute("aria-expanded", String(visible));
-    explorerButton.classList.toggle("active", visible);
     if (notify) onLayoutChange?.(visible);
   }
 
@@ -22,7 +21,10 @@ export function bindPrimarySidebar({
   }
 
   layoutButton.addEventListener("click", toggle);
-  explorerButton.addEventListener("click", toggle);
+  explorerButton.addEventListener("click", () => {
+    if (visible && explorerButton.classList.contains("active")) setVisible(false);
+    else setVisible(true);
+  });
   setVisible(visible, false);
 
   return Object.freeze({

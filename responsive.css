@@ -4,13 +4,15 @@
     --chat-w: 250px;
   }
   .command-center { width: min(520px, 42vw); }
-  .editor-tab:first-child { display: none; }
 }
 
 @media (max-width: 1180px) {
-  :root { --chat-w: 0px; }
-  .chat-panel { display: none; }
   .workbench { right: 0; }
+  .chat-panel {
+    z-index: 70;
+    width: min(var(--chat-w), 86vw);
+    box-shadow: -8px 0 24px rgba(20, 20, 30, .12);
+  }
   .toast {
     left: calc(var(--activity-w) + var(--sidebar-w) + (100vw - var(--activity-w) - var(--sidebar-w)) / 2);
   }
@@ -34,8 +36,21 @@
   #canvasResetBtn::before { content: "⟲"; }
   #infiniteResetBtn::before { content: "↺"; }
   .command-center { width: 42vw; }
-  .terminal-tab:nth-child(-n+3) { display: none; }
   .hint,
   .lod-badge { display: none; }
   .zoom-control input[type="range"] { width: 90px; }
+}
+
+@media (max-width: 600px) {
+  .workbench {
+    left: var(--activity-w);
+  }
+  .sidebar {
+    z-index: 75;
+    width: min(var(--sidebar-w), calc(100vw - var(--activity-w)));
+    box-shadow: 8px 0 24px rgba(20, 20, 30, .12);
+  }
+  .toast {
+    left: calc(var(--activity-w) + (100vw - var(--activity-w)) / 2);
+  }
 }

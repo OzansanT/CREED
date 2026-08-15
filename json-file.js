@@ -7,12 +7,12 @@ function downloadJson(url) {
   link.remove();
 }
 
-export function openGeneratedJsonFile() {
+export function openGeneratedJsonFile(data = {}) {
   const payload = {
     app: "CREED",
     component: "JSON File",
     createdAt: new Date().toISOString(),
-    data: {}
+    data
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);

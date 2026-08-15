@@ -1,256 +1,161 @@
-import { WORKSPACE_FILES } from "./source-files.js?v=20260814-3";
-
-function getFileExtension(fileName) {
-  return fileName.split(".").pop()?.toLowerCase() || "";
-}
-
-function getFileKind(fileName) {
-  const extension = getFileExtension(fileName);
-  if (extension === "css") return "#";
-  if (extension === "js") return "JS";
-  if (extension === "html") return "<>";
-  if (extension === "md") return "◆";
-  return "•";
-}
-
-function getLanguageLabel(fileName) {
-  const extension = getFileExtension(fileName);
-  if (extension === "css") return "{ } CSS";
-  if (extension === "js") return "{ } JavaScript";
-  if (extension === "html") return "<> HTML";
-  if (extension === "md") return "◆ Markdown";
-  return "Plain Text";
-}
-
-function createFileButton(fileName) {
-  const button = document.createElement("button");
-  const icon = document.createElement("span");
-  const extension = getFileExtension(fileName);
-
-  button.className = "file-row";
-  button.type = "button";
-  button.dataset.file = fileName;
-  button.setAttribute("aria-selected", "false");
-
-  icon.className = "file-icon " + (extension || "file");
-  icon.textContent = getFileKind(fileName);
-  button.append(icon, document.createTextNode(fileName));
-  return button;
-}
-
-function renderFileTree(fileTree) {
-  const fragment = document.createDocumentFragment();
-  WORKSPACE_FILES.forEach((fileName) => fragment.append(createFileButton(fileName)));
-  fileTree.replaceChildren(fragment);
-  return [...fileTree.querySelectorAll(".file-row[data-file]")];
-}
-
-const TOKEN_PATTERNS = Object.freeze({
-  js: /(\/\/.*$|\/\*.*?\*\/|\x60(?:\\.|[^\x60])*\x60|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|\b(?:import|from|export|function|return|const|let|var|if|else|for|while|class|new|try|catch|finally|throw|async|await|true|false|null|undefined)\b|\b\d+(?:\.\d+)?\b)/g,
-  css: /(\/\*.*?\*\/|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|#[0-9a-fA-F]{3,8}\b|--[\w-]+|[.#]?-?[\w-]+(?=\s*\{)|\b[a-z-]+(?=\s*:)|-?\b\d+(?:\.\d+)?(?:px|%|em|rem|vh|vw|s|ms)?\b)/g,
-  html: /(<!--.*?-->|<!DOCTYPE[^>]*>|<\/?[A-Za-z][^>]*>|&[A-Za-z0-9#]+;)/gi,
-  md: /(^#{1,6}\s.*$|\x60[^\x60]+\x60|\*\*[^*]+\*\*)/g
-});
-
-function getTokenClass(token, extension) {
-  if (token.startsWith("//") || token.startsWith("/*") || token.startsWith("<!--")) {
-    return "syntax-comment";
-  }
-  if (/^["'\x60]/.test(token)) return "syntax-string";
-
-  if (extension === "js") {
-    if (/^\d/.test(token)) return "syntax-number";
-    return "syntax-keyword";
-  }
-
-  if (extension === "css") {
-    if (/^#[0-9a-fA-F]{3,8}$/.test(token)) return "syntax-color";
-    if (/^-?\d/.test(token)) return "syntax-number";
-    if (/^[.#]/.test(token)) return "syntax-selector";
-    return "syntax-property";
-  }
-
-  if (extension === "html") {
-    if (token.startsWith("&")) return "syntax-entity";
-    return "syntax-tag";
-  }
-
-  if (extension === "md") {
-    if (token.startsWith("#")) return "syntax-heading";
-    return "syntax-code";
-  }
-
-  return "";
-}
-
-function appendHighlightedCode(line, target, extension) {
-  const pattern = TOKEN_PATTERNS[extension];
-  if (!pattern || !line) {
-    target.textContent = line || " ";
-    return;
-  }
-
-  pattern.lastIndex = 0;
-  let cursor = 0;
-
-  for (const match of line.matchAll(pattern)) {
-    if (match.index > cursor) {
-      target.append(document.createTextNode(line.slice(cursor, match.index)));
-    }
-
-    const token = document.createElement("span");
-    token.className = getTokenClass(match[0], extension);
-    token.textContent = match[0];
-    target.append(token);
-    cursor = match.index + match[0].length;
-  }
-
-  if (cursor < line.length) {
-    target.append(document.createTextNode(line.slice(cursor)));
-  }
-  if (!target.hasChildNodes()) target.textContent = " ";
-}
-
-function renderCode(source, target, minimap, fileName) {
-  const codeFragment = document.createDocumentFragment();
-  const minimapFragment = document.createDocumentFragment();
-  const lines = source.replace(/\r\n/g, "\n").split("\n");
-  const extension = getFileExtension(fileName);
-
-  lines.forEach((line, index) => {
-    const row = document.createElement("div");
-    row.className = "source-line";
-
-    const number = document.createElement("span");
-    number.className = "source-line__number";
-    number.textContent = String(index + 1);
-
-    const code = document.createElement("span");
-    code.className = "source-line__code";
-    appendHighlightedCode(line, code, extension);
-
-    const minimapLine = document.createElement("div");
-    minimapLine.className = "minimap-line " + extension;
-    minimapLine.style.width = Math.min(94, Math.max(4, line.trim().length * 0.72)) + "px";
-
-    row.append(number, code);
-    codeFragment.append(row);
-    minimapFragment.append(minimapLine);
-  });
-
-  target.replaceChildren(codeFragment);
-  minimap.replaceChildren(minimapFragment);
-}
+import { createWorkspaceStore } from "./workspace-store.js";
+import { createVirtualSourceRenderer } from "./source-renderer.js";
+import { bindEditorWorkbench } from "./editor-workbench.js";
+import { bindExplorer } from "./explorer-input.js";
+import { bindQuickOpen } from "./quick-open.js";
 
 export function bindWorkbenchFiles({
+  extensionHost,
   fileTree,
+  newFileButton,
+  newFolderButton,
+  refreshExplorerButton,
+  moreExplorerButton,
   canvasTab,
-  codeTab,
-  codeTabKind,
-  codeTabName,
+  tabsContainer,
   breadcrumbKind,
   breadcrumbName,
   canvasView,
   codeView,
+  previewView,
   codeContent,
+  editorInput,
   codeMinimap,
+  minimapViewport,
   chatContextKind,
   chatContextName,
   statusLanguage,
+  statusCursor,
+  statusIndentation,
+  workspaceDirtyStatus,
+  previewModeButton,
+  editModeButton,
+  saveButton,
+  runButton,
+  moreButton,
+  backButton,
+  forwardButton,
+  findBar,
+  findInput,
+  replaceInput,
+  findPreviousButton,
+  findNextButton,
+  replaceButton,
+  replaceAllButton,
+  findCount,
+  findCloseButton,
+  quickOpenDialog,
+  quickOpenInput,
+  quickOpenResults,
+  quickOpenCloseButton,
+  commandCenterButton,
+  commandCenterLabel,
+  applicationMenuButton,
   onCanvasShow,
   onError
 }) {
-  const fileButtons = renderFileTree(fileTree);
-  let openedFile = "";
-  let requestController = null;
-
-  function setSelectedFile(fileName) {
-    fileButtons.forEach((button) => {
-      const selected = button.dataset.file === fileName;
-      button.classList.toggle("selected", selected);
-      button.setAttribute("aria-selected", String(selected));
-    });
-  }
-
-  function setFileContext(kind, name, language) {
-    breadcrumbKind.textContent = kind;
-    breadcrumbName.textContent = name;
-    chatContextKind.textContent = kind;
-    chatContextName.textContent = name;
-    statusLanguage.textContent = language;
-  }
-
-  function showCanvas() {
-    requestController?.abort();
-    canvasView.hidden = false;
-    codeView.hidden = true;
-    canvasTab.classList.add("active");
-    canvasTab.setAttribute("aria-selected", "true");
-    codeTab.classList.remove("active");
-    codeTab.setAttribute("aria-selected", "false");
-    codeTab.hidden = true;
-    setFileContext("◇", "Infinite Canvas", "{ } Canvas");
-    setSelectedFile("");
-    onCanvasShow?.();
-  }
-
-  function showCode() {
-    if (!openedFile) return;
-    canvasView.hidden = true;
-    codeView.hidden = false;
-    canvasTab.classList.remove("active");
-    canvasTab.setAttribute("aria-selected", "false");
-    codeTab.hidden = false;
-    codeTab.classList.add("active");
-    codeTab.setAttribute("aria-selected", "true");
-  }
-
-  async function openFile(button) {
-    const fileName = button.dataset.file;
-    if (!fileName) return;
-
-    requestController?.abort();
-    requestController = new AbortController();
-    openedFile = fileName;
-    setSelectedFile(fileName);
-
-    const fileKind = getFileKind(fileName);
-    codeTab.hidden = false;
-    codeTabKind.textContent = fileKind;
-    codeTabName.textContent = fileName;
-    setFileContext(fileKind, fileName, getLanguageLabel(fileName));
-    codeContent.setAttribute("aria-busy", "true");
-    codeMinimap.replaceChildren();
-    codeContent.textContent = "Loading…";
-    showCode();
-
-    try {
-      const filePath = fileName.split("/").map(encodeURIComponent).join("/");
-      const response = await fetch("./" + filePath, {
-        cache: "no-store",
-        signal: requestController.signal
-      });
-      if (!response.ok) throw new Error("Unable to load " + fileName + " (" + response.status + ")");
-      renderCode(await response.text(), codeContent, codeMinimap, fileName);
-    } catch (error) {
-      if (error.name === "AbortError") return;
-      codeContent.textContent = "Unable to display " + fileName + ".";
-      onError?.(error.message);
-    } finally {
-      codeContent.removeAttribute("aria-busy");
-    }
-  }
-
-  fileButtons.forEach((button) => {
-    button.addEventListener("click", () => openFile(button));
+  const store = createWorkspaceStore();
+  const renderer = createVirtualSourceRenderer({
+    scroller: codeView,
+    target: codeContent,
+    minimap: codeMinimap,
+    minimapViewport
   });
-  canvasTab.addEventListener("click", showCanvas);
-  codeTab.addEventListener("click", showCode);
-  codeMinimap.addEventListener("pointerdown", (event) => {
-    const bounds = codeMinimap.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height));
-    codeView.scrollTop = ratio * Math.max(0, codeView.scrollHeight - codeView.clientHeight);
+  let quickOpen = null;
+  let explorer = null;
+  let runHandler = null;
+  let sessionChangeHandler = null;
+  const editor = bindEditorWorkbench({
+    store,
+    canvasTab,
+    tabsContainer,
+    canvasView,
+    codeView,
+    previewView,
+    codeContent,
+    editorInput,
+    renderer,
+    breadcrumbKind,
+    breadcrumbName,
+    chatContextKind,
+    chatContextName,
+    statusLanguage,
+    statusCursor,
+    statusIndentation,
+    previewModeButton,
+    editModeButton,
+    saveButton,
+    runButton,
+    moreButton,
+    backButton,
+    forwardButton,
+    findBar,
+    findInput,
+    replaceInput,
+    findPreviousButton,
+    findNextButton,
+    replaceButton,
+    replaceAllButton,
+    findCount,
+    findCloseButton,
+    onCanvasShow,
+    onRun: () => runHandler?.(),
+    onOpenCommands: () => quickOpen?.open({ commands: true }),
+    onActiveChange(active) {
+      explorer?.select(active.type === "file" ? active.path : "");
+      commandCenterLabel.textContent = active.type === "file"
+        ? active.path
+        : active.type === "preview"
+          ? "Workspace Preview"
+          : "Search files or run a command (Ctrl+P)";
+    },
+    onSessionChange: () => sessionChangeHandler?.(),
+    notify: onError
+  });
+  explorer = bindExplorer({
+    store,
+    fileTree,
+    newFileButton,
+    newFolderButton,
+    refreshButton: refreshExplorerButton,
+    moreButton: moreExplorerButton,
+    onOpen: editor.openFile,
+    onRename: editor.renamePath,
+    onDelete: editor.closePaths,
+    notify: onError
+  });
+  quickOpen = bindQuickOpen({
+    dialog: quickOpenDialog,
+    input: quickOpenInput,
+    results: quickOpenResults,
+    closeButton: quickOpenCloseButton,
+    commandCenterButton,
+    applicationMenuButton,
+    store,
+    extensionHost,
+    openFile: editor.openFile,
+    notify: onError
   });
 
-  return { showCanvas, showCode };
+  function updateDirtyStatus() {
+    const changes = store.listChanges();
+    const staged = changes.filter((change) => change.staged).length;
+    workspaceDirtyStatus.textContent = changes.length
+      ? `${changes.length} changed${staged ? ` · ${staged} staged` : ""}`
+      : "Workspace clean";
+  }
+  store.subscribe(updateDirtyStatus);
+  updateDirtyStatus();
+
+  return Object.freeze({
+    store,
+    editor,
+    explorer,
+    quickOpen,
+    showCanvas: editor.showCanvas,
+    showCode: editor.showCode,
+    openFile: editor.openFile,
+    setRunHandler(handler) { runHandler = handler; },
+    setSessionChangeHandler(handler) { sessionChangeHandler = handler; }
+  });
 }
