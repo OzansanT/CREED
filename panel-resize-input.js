@@ -39,17 +39,27 @@ export function bindPanelResize({
   primaryPanel,
   secondaryPanel,
   terminalPanel,
+  primaryController,
+  secondaryController,
+  terminalController,
   primaryHandle,
   secondaryHandle,
   terminalHandle,
   onLayoutChange
 }) {
-  let layoutSizes = {
+  let layoutState = {
     primaryWidth: getRenderedSize(primaryPanel, "width", DEFAULT_PRIMARY_WIDTH),
     secondaryWidth: getRenderedSize(secondaryPanel, "width", DEFAULT_SECONDARY_WIDTH),
     terminalHeight: getRenderedSize(terminalPanel, "height", DEFAULT_TERMINAL_HEIGHT),
+    primaryVisible: primaryController.isVisible(),
+    secondaryVisible: secondaryController.isVisible(),
+    terminalVisible: terminalController.isVisible(),
     ...loadPanelLayout()
   };
+
+  primaryController.setVisible(layoutState.primaryVisible, false);
+  secondaryController.setVisible(layoutState.secondaryVisible, false);
+  terminalController.setVisible(layoutState.terminalVisible, false);
 
   function getHorizontalMaximum(otherPanel) {
     const otherWidth = otherPanel.hidden ? 0 : otherPanel.getBoundingClientRect().width;
@@ -103,7 +113,7 @@ export function bindPanelResize({
   function applySize(configuration, requestedSize, notify = true) {
     const maximum = configuration.maximum();
     const size = Math.round(clamp(requestedSize, configuration.minimum, maximum));
-    layoutSizes[configuration.storageKey] = size;
+    layoutState[configuration.storageKey] = size;
     root.style.setProperty(configuration.variable, size + "px");
     setSeparatorValue(
       configuration.handle,
@@ -115,8 +125,11 @@ export function bindPanelResize({
     return size;
   }
 
-  function persistSizes() {
-    savePanelLayout(layoutSizes);
+  function persistLayout() {
+    layoutState.primaryVisible = primaryController.isVisible();
+    layoutState.secondaryVisible = secondaryController.isVisible();
+    layoutState.terminalVisible = terminalController.isVisible();
+    savePanelLayout(layoutState);
   }
 
   function synchronize(configuration) {
@@ -152,7 +165,7 @@ export function bindPanelResize({
       activePointerId = null;
       handle.classList.remove("is-resizing");
       document.body.classList.remove("panel-resizing");
-      persistSizes();
+      persistLayout();
       onLayoutChange?.();
     }
 
@@ -187,40 +200,44 @@ export function bindPanelResize({
         configuration,
         configuration.current() + coordinateDelta * direction * step
       );
-      persistSizes();
+      persistLayout();
     });
   }
 
   configurations.forEach(bindHandle);
   configurations.forEach((configuration) => {
-    applySize(configuration, layoutSizes[configuration.storageKey], false);
+    applySize(configuration, layoutState[configuration.storageKey], false);
   });
-  persistSizes();
+  persistLayout();
   configurations.forEach(synchronize);
 
   window.addEventListener("resize", () => {
     configurations.forEach((configuration) => {
       if (configuration.current() > 0) {
-        applySize(configuration, layoutSizes[configuration.storageKey], false);
+        applySize(configuration, layoutState[configuration.storageKey], false);
       }
     });
-    persistSizes();
+    persistLayout();
     configurations.forEach(synchronize);
   });
 
   function reset(notify = true) {
     clearPanelLayout();
     configurations.forEach(({ variable }) => root.style.removeProperty(variable));
-    layoutSizes = {
+    layoutState = {
       primaryWidth: getRenderedSize(primaryPanel, "width", DEFAULT_PRIMARY_WIDTH),
       secondaryWidth: getRenderedSize(secondaryPanel, "width", DEFAULT_SECONDARY_WIDTH),
-      terminalHeight: getRenderedSize(terminalPanel, "height", DEFAULT_TERMINAL_HEIGHT)
+      terminalHeight: getRenderedSize(terminalPanel, "height", DEFAULT_TERMINAL_HEIGHT),
+      primaryVisible: primaryController.isVisible(),
+      secondaryVisible: secondaryController.isVisible(),
+      terminalVisible: terminalController.isVisible()
     };
     configurations.forEach(synchronize);
     if (notify) onLayoutChange?.();
   }
 
   return Object.freeze({
+    persist: persistLayout,
     reset,
     synchronize: () => configurations.forEach(synchronize)
   });
