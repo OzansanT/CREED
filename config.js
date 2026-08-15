@@ -4,4 +4,5 @@ export const BASE_GRID = 24;
 export const GRID_BREAKPOINTS = Object.freeze({ ORDER_1_MIN: 0.75, ORDER_2_MIN: 0.45, ORDER_4_MIN: 0.28 });
 export const GRID_ORDERS = Object.freeze([1, 2, 4, 8]);
 export const STORAGE_KEY = "infiniteCanvasLODState.v3";
-export const PANEL_LAYOUT_STORAGE_KEY = "creedPanelLayout.v1";
+export const PANEL_LAYOUT_STORAGE_KEY = "creedPanelLayout.v2";
+export const LEGACY_PANEL_LAYOUT_STORAGE_KEY = "creedPanelLayout.v1";
