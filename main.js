@@ -70,31 +70,41 @@ function scheduleViewportCenterPreservation() {
   });
 }
 
+let panelResize = null;
+
+function handlePanelVisibilityChange() {
+  scheduleViewportCenterPreservation();
+  panelResize?.persist();
+}
+
 const primarySidebar = bindPrimarySidebar({
   app: elements.app,
   sidebar: elements.sidebar,
   layoutButton: elements.primarySidebarLayoutBtn,
   explorerButton: elements.explorerActivityBtn,
-  onLayoutChange: scheduleViewportCenterPreservation
+  onLayoutChange: handlePanelVisibilityChange
 });
 const secondarySidebar = bindSecondarySidebar({
   app: elements.app,
   panel: elements.chatPanel,
   layoutButton: elements.secondarySidebarLayoutBtn,
-  onLayoutChange: scheduleViewportCenterPreservation
+  onLayoutChange: handlePanelVisibilityChange
 });
 const terminalPanel = bindTerminalPanel({
   workbench: elements.workbench,
   panel: elements.terminalPanel,
   layoutButton: elements.panelLayoutBtn,
-  onLayoutChange: scheduleViewportCenterPreservation
+  onLayoutChange: handlePanelVisibilityChange
 });
-const panelResize = bindPanelResize({
+panelResize = bindPanelResize({
   app: elements.app,
   workbench: elements.workbench,
   primaryPanel: elements.sidebar,
   secondaryPanel: elements.chatPanel,
   terminalPanel: elements.terminalPanel,
+  primaryController: primarySidebar,
+  secondaryController: secondarySidebar,
+  terminalController: terminalPanel,
   primaryHandle: elements.primarySidebarResizeHandle,
   secondaryHandle: elements.secondarySidebarResizeHandle,
   terminalHandle: elements.terminalPanelResizeHandle,
