@@ -1,4 +1,10 @@
-import { STORAGE_KEY, PANEL_LAYOUT_STORAGE_KEY, MIN_ZOOM, MAX_ZOOM } from "./config.js";
+import {
+  STORAGE_KEY,
+  PANEL_LAYOUT_STORAGE_KEY,
+  LEGACY_PANEL_LAYOUT_STORAGE_KEY,
+  MIN_ZOOM,
+  MAX_ZOOM
+} from "./config.js";
 import { state, clamp } from "./state.js";
 export function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 export function loadState() {
@@ -17,36 +23,75 @@ export function loadState() {
 }
 export function clearStoredState() { localStorage.removeItem(STORAGE_KEY); }
 
-export function savePanelLayout({ primaryWidth, secondaryWidth, terminalHeight }) {
+function normalizePanelDimensions(saved) {
+  if (!saved) return null;
   const layout = {
-    primaryWidth: Math.round(primaryWidth),
-    secondaryWidth: Math.round(secondaryWidth),
-    terminalHeight: Math.round(terminalHeight)
+    primaryWidth: Math.round(Number(saved.primaryWidth)),
+    secondaryWidth: Math.round(Number(saved.secondaryWidth)),
+    terminalHeight: Math.round(Number(saved.terminalHeight))
   };
-  if (!Object.values(layout).every((value) => Number.isFinite(value) && value > 0)) {
-    return false;
-  }
-  localStorage.setItem(PANEL_LAYOUT_STORAGE_KEY, JSON.stringify(layout));
-  return true;
+  return Object.values(layout).every((value) => Number.isFinite(value) && value > 0)
+    ? layout
+    : null;
 }
 
-export function loadPanelLayout() {
+function readStoredJson(key) {
   try {
-    const saved = JSON.parse(localStorage.getItem(PANEL_LAYOUT_STORAGE_KEY));
-    if (!saved) return null;
-    const layout = {
-      primaryWidth: Number(saved.primaryWidth),
-      secondaryWidth: Number(saved.secondaryWidth),
-      terminalHeight: Number(saved.terminalHeight)
-    };
-    return Object.values(layout).every((value) => Number.isFinite(value) && value > 0)
-      ? layout
-      : null;
+    return JSON.parse(localStorage.getItem(key));
   } catch {
     return null;
   }
 }
 
+export function savePanelLayout(layoutState) {
+  const dimensions = normalizePanelDimensions(layoutState);
+  const visibility = {
+    primaryVisible: layoutState?.primaryVisible,
+    secondaryVisible: layoutState?.secondaryVisible,
+    terminalVisible: layoutState?.terminalVisible
+  };
+  if (!dimensions || !Object.values(visibility).every((value) => typeof value === "boolean")) {
+    return false;
+  }
+  try {
+    localStorage.setItem(PANEL_LAYOUT_STORAGE_KEY, JSON.stringify({
+      ...dimensions,
+      ...visibility
+    }));
+    localStorage.removeItem(LEGACY_PANEL_LAYOUT_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function loadPanelLayout() {
+  const saved = readStoredJson(PANEL_LAYOUT_STORAGE_KEY);
+  const dimensions = normalizePanelDimensions(saved);
+  const visibility = {
+    primaryVisible: saved?.primaryVisible,
+    secondaryVisible: saved?.secondaryVisible,
+    terminalVisible: saved?.terminalVisible
+  };
+  if (dimensions && Object.values(visibility).every((value) => typeof value === "boolean")) {
+    return { ...dimensions, ...visibility };
+  }
+
+  const legacyDimensions = normalizePanelDimensions(
+    readStoredJson(LEGACY_PANEL_LAYOUT_STORAGE_KEY)
+  );
+  if (!legacyDimensions) return null;
+  const migrated = {
+    ...legacyDimensions,
+    primaryVisible: true,
+    secondaryVisible: true,
+    terminalVisible: true
+  };
+  savePanelLayout(migrated);
+  return migrated;
+}
+
 export function clearPanelLayout() {
   localStorage.removeItem(PANEL_LAYOUT_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_PANEL_LAYOUT_STORAGE_KEY);
 }
