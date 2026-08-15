@@ -1,4 +1,4 @@
-import { STORAGE_KEY, MIN_ZOOM, MAX_ZOOM } from "./config.js";
+import { STORAGE_KEY, PANEL_LAYOUT_STORAGE_KEY, MIN_ZOOM, MAX_ZOOM } from "./config.js";
 import { state, clamp } from "./state.js";
 export function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 export function loadState() {
@@ -16,3 +16,37 @@ export function loadState() {
   } catch { return false; }
 }
 export function clearStoredState() { localStorage.removeItem(STORAGE_KEY); }
+
+export function savePanelLayout({ primaryWidth, secondaryWidth, terminalHeight }) {
+  const layout = {
+    primaryWidth: Math.round(primaryWidth),
+    secondaryWidth: Math.round(secondaryWidth),
+    terminalHeight: Math.round(terminalHeight)
+  };
+  if (!Object.values(layout).every((value) => Number.isFinite(value) && value > 0)) {
+    return false;
+  }
+  localStorage.setItem(PANEL_LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+  return true;
+}
+
+export function loadPanelLayout() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PANEL_LAYOUT_STORAGE_KEY));
+    if (!saved) return null;
+    const layout = {
+      primaryWidth: Number(saved.primaryWidth),
+      secondaryWidth: Number(saved.secondaryWidth),
+      terminalHeight: Number(saved.terminalHeight)
+    };
+    return Object.values(layout).every((value) => Number.isFinite(value) && value > 0)
+      ? layout
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPanelLayout() {
+  localStorage.removeItem(PANEL_LAYOUT_STORAGE_KEY);
+}

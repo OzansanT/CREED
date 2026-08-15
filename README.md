@@ -22,6 +22,7 @@ Then open `http://localhost:8000`. Opening `index.html` directly with a `file://
 - Use **Toggle secondary sidebar** to repeatedly collapse and reopen the chat panel.
 - Use **Toggle panel** to repeatedly collapse and reopen the bottom Terminal panel.
 - Drag the primary sidebar's right edge, the secondary sidebar's left edge, or the Terminal panel's top edge to resize the layout. Arrow keys resize a focused separator; hold Shift for larger steps.
+- Resized panel dimensions persist across browser reloads and are safely clamped for the current viewport.
 - Use **Canvas Reset** to reset the canvas view, saved location, and components without changing the current sidebar menu.
 - Use **Infinite Reset** to restore the complete infinite workspace, panel visibility, and default panel sizes.
 - Use **Canvas Controls** for coordinates, grid LOD, shortcuts, and saved-view actions.
@@ -149,7 +150,8 @@ index.html
     ├── secondary-sidebar-input.js
     ├── terminal-panel-input.js
     ├── panel-resize-input.js
-    │   └── state.js
+    │   ├── state.js
+    │   └── storage.js
     ├── reset-input.js
     │   ├── storage.js
     │   └── viewport.js

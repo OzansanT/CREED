@@ -1,5 +1,13 @@
 import { clamp } from "./state.js";
+import {
+  clearPanelLayout,
+  loadPanelLayout,
+  savePanelLayout
+} from "./storage.js";
 
+const DEFAULT_PRIMARY_WIDTH = 293;
+const DEFAULT_SECONDARY_WIDTH = 290;
+const DEFAULT_TERMINAL_HEIGHT = 320;
 const MIN_PRIMARY_WIDTH = 180;
 const MIN_SECONDARY_WIDTH = 220;
 const MIN_TERMINAL_HEIGHT = 120;
@@ -11,6 +19,11 @@ const LARGE_KEYBOARD_STEP = 40;
 function getActivityWidth(app) {
   const value = Number.parseFloat(getComputedStyle(app).getPropertyValue("--activity-w"));
   return Number.isFinite(value) ? value : 40;
+}
+
+function getRenderedSize(element, dimension, fallback) {
+  const value = element.getBoundingClientRect()[dimension];
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function setSeparatorValue(handle, value, min, max) {
@@ -31,6 +44,13 @@ export function bindPanelResize({
   terminalHandle,
   onLayoutChange
 }) {
+  let layoutSizes = {
+    primaryWidth: getRenderedSize(primaryPanel, "width", DEFAULT_PRIMARY_WIDTH),
+    secondaryWidth: getRenderedSize(secondaryPanel, "width", DEFAULT_SECONDARY_WIDTH),
+    terminalHeight: getRenderedSize(terminalPanel, "height", DEFAULT_TERMINAL_HEIGHT),
+    ...loadPanelLayout()
+  };
+
   function getHorizontalMaximum(otherPanel) {
     const otherWidth = otherPanel.hidden ? 0 : otherPanel.getBoundingClientRect().width;
     return Math.max(
@@ -45,6 +65,7 @@ export function bindPanelResize({
       axis: "x",
       direction: 1,
       variable: "--sidebar-w",
+      storageKey: "primaryWidth",
       minimum: MIN_PRIMARY_WIDTH,
       current: () => primaryPanel.getBoundingClientRect().width,
       maximum: () => getHorizontalMaximum(secondaryPanel)
@@ -54,6 +75,7 @@ export function bindPanelResize({
       axis: "x",
       direction: -1,
       variable: "--chat-w",
+      storageKey: "secondaryWidth",
       minimum: MIN_SECONDARY_WIDTH,
       current: () => secondaryPanel.getBoundingClientRect().width,
       maximum: () => Math.max(
@@ -68,6 +90,7 @@ export function bindPanelResize({
       axis: "y",
       direction: -1,
       variable: "--terminal-h",
+      storageKey: "terminalHeight",
       minimum: MIN_TERMINAL_HEIGHT,
       current: () => terminalPanel.getBoundingClientRect().height,
       maximum: () => Math.max(
@@ -79,8 +102,9 @@ export function bindPanelResize({
 
   function applySize(configuration, requestedSize, notify = true) {
     const maximum = configuration.maximum();
-    const size = clamp(requestedSize, configuration.minimum, maximum);
-    root.style.setProperty(configuration.variable, Math.round(size) + "px");
+    const size = Math.round(clamp(requestedSize, configuration.minimum, maximum));
+    layoutSizes[configuration.storageKey] = size;
+    root.style.setProperty(configuration.variable, size + "px");
     setSeparatorValue(
       configuration.handle,
       size,
@@ -89,6 +113,10 @@ export function bindPanelResize({
     );
     if (notify) onLayoutChange?.();
     return size;
+  }
+
+  function persistSizes() {
+    savePanelLayout(layoutSizes);
   }
 
   function synchronize(configuration) {
@@ -124,6 +152,7 @@ export function bindPanelResize({
       activePointerId = null;
       handle.classList.remove("is-resizing");
       document.body.classList.remove("panel-resizing");
+      persistSizes();
       onLayoutChange?.();
     }
 
@@ -158,18 +187,36 @@ export function bindPanelResize({
         configuration,
         configuration.current() + coordinateDelta * direction * step
       );
+      persistSizes();
     });
   }
 
   configurations.forEach(bindHandle);
-  window.addEventListener("resize", () => {
-    configurations.forEach(synchronize);
+  configurations.forEach((configuration) => {
+    applySize(configuration, layoutSizes[configuration.storageKey], false);
   });
+  persistSizes();
   configurations.forEach(synchronize);
 
+  window.addEventListener("resize", () => {
+    configurations.forEach((configuration) => {
+      if (configuration.current() > 0) {
+        applySize(configuration, layoutSizes[configuration.storageKey], false);
+      }
+    });
+    persistSizes();
+    configurations.forEach(synchronize);
+  });
+
   function reset(notify = true) {
+    clearPanelLayout();
     configurations.forEach(({ variable }) => root.style.removeProperty(variable));
-    requestAnimationFrame(() => configurations.forEach(synchronize));
+    layoutSizes = {
+      primaryWidth: getRenderedSize(primaryPanel, "width", DEFAULT_PRIMARY_WIDTH),
+      secondaryWidth: getRenderedSize(secondaryPanel, "width", DEFAULT_SECONDARY_WIDTH),
+      terminalHeight: getRenderedSize(terminalPanel, "height", DEFAULT_TERMINAL_HEIGHT)
+    };
+    configurations.forEach(synchronize);
     if (notify) onLayoutChange?.();
   }
 
