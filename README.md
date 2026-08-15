@@ -22,9 +22,9 @@ Then open `http://localhost:8000`. Opening `index.html` directly with a `file://
 - Use **Toggle secondary sidebar** to repeatedly collapse and reopen the chat panel.
 - Use **Toggle panel** to repeatedly collapse and reopen the bottom Terminal panel.
 - Drag the primary sidebar's right edge, the secondary sidebar's left edge, or the Terminal panel's top edge to resize the layout. Arrow keys resize a focused separator; hold Shift for larger steps.
-- Resized panel dimensions persist across browser reloads and are safely clamped for the current viewport.
+- Each panel's resized dimensions and collapsed/open state persist together across browser reloads. Saved dimensions are safely clamped for the current viewport, and existing dimension-only preferences migrate automatically.
 - Use **Canvas Reset** to reset the canvas view, saved location, and components without changing the current sidebar menu.
-- Use **Infinite Reset** to restore the complete infinite workspace, panel visibility, and default panel sizes.
+- Use **Infinite Reset** to restore the complete infinite workspace, reopen every panel, restore default panel sizes, and clear the saved layout preferences.
 - Use **Canvas Controls** for coordinates, grid LOD, shortcuts, and saved-view actions.
 - Use **Infinite Canvas** to return to the canvas editor; it intentionally opens no secondary sidebar panel.
 - Select any Explorer file to load and display its real repository source.
