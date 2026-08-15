@@ -4,7 +4,13 @@
     --chat-w: 250px;
   }
   .command-center { width: min(520px, 42vw); }
-  .editor-tab:first-child { display: none; }
+  #workspaceCanvasTab {
+    min-width: 38px;
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  #workspaceCanvasTab .editor-tab__label { display: none; }
 }
 
 @media (max-width: 1180px) {
@@ -25,14 +31,12 @@
   .activity-bar,
   .activity-button { width: 36px; }
   .brand span:last-child,
-  .chrome-action { font-size: 0; }
+  .chrome-action__label { display: none; }
   .chrome-action {
     width: 27px;
     padding: 0;
+    justify-content: center;
   }
-  .chrome-action::before { content: "⌂"; font-size: 13px; }
-  #canvasResetBtn::before { content: "⟲"; }
-  #infiniteResetBtn::before { content: "↺"; }
   .command-center { width: 42vw; }
   .terminal-tab:nth-child(-n+3) { display: none; }
   .hint,

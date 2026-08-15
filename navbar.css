@@ -32,23 +32,34 @@
   white-space: nowrap;
 }
 .brand-mark {
-  width: 21px;
-  height: 21px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
-  border-radius: 4px;
+  border-radius: 5px;
   background: #1473b8;
   color: #fff;
-  font-size: 15px;
+}
+.brand-mark .ui-icon {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.9;
 }
 .chrome-button {
-  width: 25px;
-  height: 25px;
+  width: 27px;
+  height: 27px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border: 0;
+  border-radius: 4px;
   background: transparent;
-  color: #74747a;
+  color: #68686e;
   box-shadow: none;
+}
+.chrome-button .ui-icon {
+  width: 17px;
+  height: 17px;
 }
 .chrome-button:hover:not(:disabled) {
   transform: none;
@@ -76,19 +87,29 @@
 }
 .command-center__search {
   margin-right: 7px;
-  font-size: 14px;
+}
+.command-center__search .ui-icon,
+.command-center__bell .ui-icon {
+  width: 15px;
+  height: 15px;
 }
 .command-center__bell {
   margin-left: auto;
   color: #515157;
-  font-size: 14px;
 }
 .chrome-action {
-  height: 26px;
+  height: 27px;
   padding: 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   border-radius: 4px;
   background: #fff;
   font-size: 11px;
+}
+.chrome-action .ui-icon {
+  width: 14px;
+  height: 14px;
 }
 .chrome-action.danger {
   color: var(--danger);
@@ -101,15 +122,20 @@
   margin-right: 4px;
 }
 .layout-control {
-  width: 24px;
-  height: 24px;
+  width: 27px;
+  height: 27px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border: 0;
-  border-radius: 3px;
+  border-radius: 4px;
   background: transparent;
   color: #5f5f65;
-  font-size: 14px;
   box-shadow: none;
+}
+.layout-control .ui-icon {
+  width: 17px;
+  height: 17px;
 }
 .layout-control:hover:not(:disabled) {
   transform: none;

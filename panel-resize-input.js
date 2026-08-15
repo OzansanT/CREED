@@ -188,6 +188,7 @@ export function bindPanelResize({
 
     handle.addEventListener("pointerup", finish);
     handle.addEventListener("pointercancel", finish);
+    handle.addEventListener("lostpointercapture", finish);
 
     handle.addEventListener("keydown", (event) => {
       const coordinateDelta = axis === "x"

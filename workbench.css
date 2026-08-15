@@ -26,54 +26,114 @@
 }
 .editor-tabs {
   height: 34px;
+  min-width: 0;
   flex: 0 0 34px;
   display: flex;
   align-items: stretch;
+  overflow: hidden;
   border-bottom: 1px solid var(--chrome-border);
   background: #f7f7fa;
 }
+.editor-file-tabs {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #c9c9ce transparent;
+}
 .editor-tab {
   min-width: 142px;
+  max-width: 230px;
   height: 34px;
+  flex: 0 0 auto;
   padding: 0 12px;
   display: flex;
   align-items: center;
   gap: 7px;
+  overflow: hidden;
   border: 0;
   border-right: 1px solid var(--chrome-border);
   border-radius: 0;
   background: #ececef;
   color: #55555a;
   font-size: 12px;
+  font-style: normal;
   text-align: left;
   box-shadow: none;
 }
-.editor-tab:hover:not(:disabled) {
+.editor-tab:hover {
   transform: none;
   border-color: var(--chrome-border);
   background: #e7e7ea;
   box-shadow: none;
+}
+.editor-tab:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline: 1px solid var(--vscode-blue);
+  outline-offset: -1px;
 }
 .editor-tab.active {
   background: #fcfcfe;
   color: #252529;
   font-weight: 600;
 }
-.editor-tab[hidden] {
-  display: none;
+.editor-file-tab {
+  min-width: 132px;
+  padding: 0 4px 0 10px;
+  cursor: default;
+}
+.editor-tab__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-tab__close {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #66666b;
+  opacity: 0;
+  box-shadow: none;
+}
+.editor-file-tab:hover .editor-tab__close,
+.editor-file-tab.active .editor-tab__close,
+.editor-tab__close:focus-visible {
+  opacity: 1;
+}
+.editor-tab__close:hover:not(:disabled) {
+  transform: none;
+  border-color: transparent;
+  background: #ddddE2;
+  color: #202024;
+  box-shadow: none;
+}
+.editor-tab__close .ui-icon {
+  width: 14px;
+  height: 14px;
 }
 .file-kind {
   color: #2f7f93;
   font-weight: 750;
 }
 .editor-actions {
-  margin-left: auto;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 0 10px;
+  gap: 2px;
+  padding: 0 5px;
   color: #68686d;
-  font-size: 15px;
+  background: #f7f7fa;
 }
 .editor-breadcrumbs {
   height: 25px;
@@ -106,8 +166,20 @@
   overflow: hidden;
 }
 .code-editor-view {
-  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  overflow: hidden;
   background: #fcfcfe;
+}
+.code-editor-view[hidden] {
+  display: none;
+}
+.source-scroll {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c9c9ce transparent;
 }
 .source-code {
   min-width: max-content;
@@ -173,8 +245,18 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 1px;
   color: #626267;
+}
+.terminal-shell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 3px;
+}
+.terminal-shell .ui-icon {
+  width: 14px;
+  height: 14px;
 }
 .terminal-body {
   flex: 1;
@@ -185,33 +267,45 @@
 .prompt-user { color: #25822e; }
 .prompt-path { color: #075c9a; font-weight: 700; }
 .prompt-branch { color: #b02531; }
-.code-editor-view {
-  scrollbar-width: thin;
-  scrollbar-color: #c9c9ce transparent;
-}
-.source-code {
-  padding-right: 112px;
-}
 .source-minimap {
-  position: sticky;
+  position: relative;
   z-index: 4;
-  top: 0;
-  right: 0;
-  float: right;
-  width: 102px;
-  height: 100%;
+  min-width: 0;
   min-height: 120px;
-  margin-left: -102px;
   overflow: hidden;
-  border-left: 1px solid #eeeef1;
-  background: rgba(249,249,252,.94);
+  border-left: 1px solid #e5e5e9;
+  background: #f7f7fa;
   cursor: pointer;
+  touch-action: none;
+}
+.source-minimap:focus-visible {
+  outline: 1px solid var(--vscode-blue);
+  outline-offset: -1px;
+}
+.source-minimap__lines {
+  position: absolute;
+  inset: 4px 0;
+  display: grid;
+  overflow: hidden;
+}
+.source-minimap__viewport {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 1px;
+  left: 1px;
+  min-height: 18px;
+  border: 1px solid rgba(0, 122, 204, .28);
+  background: rgba(0, 122, 204, .09);
+  pointer-events: none;
+  will-change: transform;
 }
 .minimap-line {
-  height: 2px;
   min-width: 4px;
+  min-height: 0;
   max-width: 94px;
-  margin: 1px 4px;
+  height: 100%;
+  margin: 0 4px;
   border-radius: 1px;
   background: #b9bcc3;
   opacity: .78;

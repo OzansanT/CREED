@@ -16,8 +16,10 @@ import { bindPanelResize } from "./panel-resize-input.js";
 import { bindResetControls } from "./reset-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
-import { bindWorkbenchFiles } from "./workbench-input.js?v=20260814-3";
+import { hydrateIcons } from "./icons.js?v=20260815-3";
+import { bindWorkbenchFiles } from "./workbench-input.js?v=20260815-3";
 
+hydrateIcons();
 const elements = getElements();
 const update = () => updateUI(elements, state);
 const persist = () => saveState();
@@ -38,15 +40,15 @@ elements.homeBtn.addEventListener("click", home);
 bindPan({ canvas: elements.canvas, state, update, persist });
 bindWheel({ canvas: elements.canvas, state, update, persist });
 const workbench = bindWorkbenchFiles({
+  rootToggle: elements.workspaceRootToggle,
   fileTree: elements.workspaceFileTree,
+  fileTabs: elements.workspaceFileTabs,
   canvasTab: elements.workspaceCanvasTab,
-  codeTab: elements.workspaceCodeTab,
-  codeTabKind: elements.workspaceCodeTabKind,
-  codeTabName: elements.workspaceCodeTabName,
   breadcrumbKind: elements.workspaceBreadcrumbKind,
   breadcrumbName: elements.workspaceBreadcrumbName,
   canvasView: elements.canvasEditorView,
   codeView: elements.codeEditorView,
+  sourceScroller: elements.sourceScroller,
   codeContent: elements.sourceCode,
   codeMinimap: elements.sourceMinimap,
   chatContextKind: elements.chatContextKind,

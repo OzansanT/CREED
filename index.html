@@ -6,7 +6,7 @@
   <title>CREED — Infinite Canvas Workbench</title>
 
   <!-- Single CSS entry point. It imports root-canvas.css + all CSS colonies. -->
-  <link rel="stylesheet" href="./main-canvas.css?v=20260815-2" />
+  <link rel="stylesheet" href="./main-canvas.css?v=20260815-3" />
 </head>
 <body>
   <div id="app" class="app">
@@ -23,28 +23,28 @@
     <header class="navbar" aria-label="Codespaces command bar">
       <div class="navbar-left">
         <div class="brand" aria-label="CREED">
-          <span class="brand-mark" aria-hidden="true">◇</span>
+          <span class="brand-mark" data-icon="creed" aria-hidden="true"></span>
           <span>CREED</span>
         </div>
-        <button class="chrome-button" type="button" aria-label="Back" title="Back">←</button>
-        <button class="chrome-button" type="button" aria-label="Forward" title="Forward">→</button>
+        <button class="chrome-button" data-icon="arrow-left" type="button" aria-label="Back" title="Back"></button>
+        <button class="chrome-button" data-icon="arrow-right" type="button" aria-label="Forward" title="Forward"></button>
       </div>
 
       <div class="command-center" role="search">
-        <span class="command-center__search" aria-hidden="true">⌕</span>
+        <span class="command-center__search" data-icon="search" aria-hidden="true"></span>
         <span>CREED [Codespaces: friendly fishstick]</span>
-        <span class="command-center__bell" aria-hidden="true">♧</span>
+        <span class="command-center__bell" data-icon="bell" aria-hidden="true"></span>
       </div>
 
       <div class="navbar-right">
         <div class="layout-controls" aria-label="Layout controls">
-          <button id="primarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle primary sidebar" aria-label="Toggle primary sidebar" aria-controls="sidebar" aria-expanded="true">◧</button>
-          <button id="panelLayoutBtn" class="layout-control" type="button" title="Toggle panel" aria-label="Toggle panel" aria-controls="terminalPanel" aria-expanded="true">▤</button>
-          <button id="secondarySidebarLayoutBtn" class="layout-control" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="chatPanel" aria-expanded="true">◨</button>
+          <button id="primarySidebarLayoutBtn" class="layout-control" data-icon="panel-left" type="button" title="Toggle primary sidebar" aria-label="Toggle primary sidebar" aria-controls="sidebar" aria-expanded="true"></button>
+          <button id="panelLayoutBtn" class="layout-control" data-icon="panel-bottom" type="button" title="Toggle panel" aria-label="Toggle panel" aria-controls="terminalPanel" aria-expanded="true"></button>
+          <button id="secondarySidebarLayoutBtn" class="layout-control" data-icon="panel-right" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="chatPanel" aria-expanded="true"></button>
         </div>
-        <button id="homeBtn" class="chrome-action" title="Return to origin">Home</button>
-        <button id="canvasResetBtn" class="chrome-action" type="button" title="Reset canvas view, saved location and components">Canvas Reset</button>
-        <button id="infiniteResetBtn" class="chrome-action danger" type="button" title="Reset the entire infinite workspace and panel layout">Infinite Reset</button>
+        <button id="homeBtn" class="chrome-action" title="Return to origin"><span data-icon="home" aria-hidden="true"></span><span class="chrome-action__label">Home</span></button>
+        <button id="canvasResetBtn" class="chrome-action" type="button" title="Reset canvas view, saved location and components"><span data-icon="reset" aria-hidden="true"></span><span class="chrome-action__label">Canvas Reset</span></button>
+        <button id="infiniteResetBtn" class="chrome-action danger" type="button" title="Reset the entire infinite workspace and panel layout"><span data-icon="infinity" aria-hidden="true"></span><span class="chrome-action__label">Infinite Reset</span></button>
       </div>
     </header>
 
@@ -86,19 +86,21 @@
       <div id="primarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--primary" role="separator" aria-label="Resize primary sidebar" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="900" aria-valuenow="293" tabindex="0"></div>
       <div class="explorer-header">
         <span>Gezgin</span>
-        <span aria-hidden="true">•••</span>
+        <span data-icon="more-horizontal" aria-hidden="true"></span>
       </div>
 
       <div id="sidebarContent" class="sidebar-content">
         <div class="project-row">
-          <span aria-hidden="true">⌄</span>
-          <strong>CREED</strong>
-          <span class="project-row__remote">[Codespaces: friendly fishstick]</span>
+          <button id="workspaceRootToggle" class="project-disclosure" type="button" aria-expanded="true" aria-controls="workspaceFileTree" title="Collapse CREED files">
+            <span class="project-chevron" data-icon="chevron-right" aria-hidden="true"></span>
+            <strong>CREED</strong>
+            <span class="project-row__remote">[Codespaces: friendly fishstick]</span>
+          </button>
           <div class="project-actions" aria-label="Explorer actions">
-            <button type="button" title="New file" aria-label="New file">＋</button>
-            <button type="button" title="New folder" aria-label="New folder">⊞</button>
-            <button type="button" title="Refresh Explorer" aria-label="Refresh Explorer">↻</button>
-            <button type="button" title="More Explorer actions" aria-label="More Explorer actions">•••</button>
+            <button data-icon="file-plus" type="button" title="New file" aria-label="New file"></button>
+            <button data-icon="folder-plus" type="button" title="New folder" aria-label="New folder"></button>
+            <button data-icon="refresh" type="button" title="Refresh Explorer" aria-label="Refresh Explorer"></button>
+            <button data-icon="more-horizontal" type="button" title="More Explorer actions" aria-label="More Explorer actions"></button>
           </div>
         </div>
 
@@ -181,14 +183,14 @@
       <section class="editor-pane" aria-label="Infinite canvas and source editor">
         <div class="editor-tabs" role="tablist" aria-label="Editor tabs">
           <button id="workspaceCanvasTab" class="editor-tab active" type="button" role="tab" aria-selected="true" aria-controls="canvasEditorView">
-            <span class="file-kind">◇</span>
-            <span>Infinite Canvas</span>
+            <span class="file-kind" data-icon="infinity" aria-hidden="true"></span>
+            <span class="editor-tab__label">Infinite Canvas</span>
           </button>
-          <button id="workspaceCodeTab" class="editor-tab" type="button" role="tab" aria-selected="false" aria-controls="codeEditorView" hidden>
-            <span id="workspaceCodeTabKind" class="file-kind">#</span>
-            <em id="workspaceCodeTabName">canvas-shell.css</em>
-          </button>
-          <div class="editor-actions" aria-hidden="true">◫ ···</div>
+          <div id="workspaceFileTabs" class="editor-file-tabs"></div>
+          <div class="editor-actions">
+            <button class="icon-button" data-icon="split" type="button" aria-label="Split editor" title="Split editor"></button>
+            <button class="icon-button" data-icon="more-horizontal" type="button" aria-label="More editor actions" title="More editor actions"></button>
+          </div>
         </div>
 
         <div class="editor-breadcrumbs">
@@ -234,9 +236,11 @@
             </div>
           </div>
 
-          <div id="codeEditorView" class="editor-view code-editor-view" role="tabpanel" aria-labelledby="workspaceCodeTab" hidden>
-            <div id="sourceCode" class="source-code" aria-live="polite"></div>
-            <div id="sourceMinimap" class="source-minimap" aria-label="Source minimap" title="Click to navigate"></div>
+          <div id="codeEditorView" class="editor-view code-editor-view" role="tabpanel" aria-labelledby="workspaceCanvasTab" hidden>
+            <div id="sourceScroller" class="source-scroll">
+              <div id="sourceCode" class="source-code" aria-live="polite"></div>
+            </div>
+            <div id="sourceMinimap" class="source-minimap" role="scrollbar" aria-label="Source minimap" aria-controls="sourceScroller" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0" title="Click or drag to navigate"></div>
           </div>
         </div>
       </section>
@@ -249,7 +253,15 @@
           <span class="terminal-tab">Hata Ayıklama Konsolu</span>
           <span class="terminal-tab active">Terminal</span>
           <span class="terminal-tab">Bağlantı Noktaları</span>
-          <div class="terminal-tools"><span>◈ bash</span><span>＋</span><span>⌫</span><span>···</span><span>□</span><span>×</span></div>
+          <div class="terminal-tools">
+            <span class="terminal-shell"><span data-icon="terminal" aria-hidden="true"></span>bash</span>
+            <button class="icon-button" data-icon="plus" type="button" aria-label="New terminal" title="New terminal"></button>
+            <button class="icon-button" data-icon="split" type="button" aria-label="Split terminal" title="Split terminal"></button>
+            <button class="icon-button" data-icon="trash" type="button" aria-label="Kill terminal" title="Kill terminal"></button>
+            <button class="icon-button" data-icon="more-horizontal" type="button" aria-label="More terminal actions" title="More terminal actions"></button>
+            <button class="icon-button" data-icon="maximize" type="button" aria-label="Maximize panel" title="Maximize panel"></button>
+            <button class="icon-button" data-icon="close" type="button" aria-label="Close panel" title="Close panel"></button>
+          </div>
         </div>
         <div class="terminal-body">
           <span class="prompt-user">@OzansanT</span> ➜ <span class="prompt-path">/workspaces/CREED</span> <span class="prompt-branch">(main)</span> $
@@ -261,7 +273,13 @@
       <div id="secondarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--secondary" role="separator" aria-label="Resize secondary sidebar" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="900" aria-valuenow="290" tabindex="0"></div>
       <div class="chat-panel__header">
         <span class="chat-panel__title">Sohbet</span>
-        <span class="chat-panel__actions" aria-hidden="true">＋ ⚙ ··· □ ×</span>
+        <div class="chat-panel__actions">
+          <button class="icon-button" data-icon="plus" type="button" aria-label="New chat" title="New chat"></button>
+          <button class="icon-button" data-icon="settings" type="button" aria-label="Chat settings" title="Chat settings"></button>
+          <button class="icon-button" data-icon="more-horizontal" type="button" aria-label="More chat actions" title="More chat actions"></button>
+          <button class="icon-button" data-icon="maximize" type="button" aria-label="Maximize chat" title="Maximize chat"></button>
+          <button class="icon-button" data-icon="close" type="button" aria-label="Close chat" title="Close chat"></button>
+        </div>
       </div>
       <div class="chat-panel__empty">
         <svg viewBox="0 0 48 48" aria-hidden="true">
@@ -272,9 +290,9 @@
         <span>Yapay zeka yanıtları hatalı olabilir</span>
       </div>
       <div class="chat-composer">
-        <div class="chat-context"><span>＋</span><span id="chatContextKind" class="file-kind">◇</span><em id="chatContextName">Infinite Canvas</em></div>
+        <div class="chat-context"><span data-icon="plus" aria-hidden="true"></span><span id="chatContextKind" class="file-kind">◇</span><em id="chatContextName">Infinite Canvas</em></div>
         <div class="chat-placeholder">Ne oluşturulacağını açıkla</div>
-        <div class="chat-tools"><span>＋</span><span>∅ Agent</span><span>Models</span><span>≡</span><span class="chat-tools__send">↑</span></div>
+        <div class="chat-tools"><span data-icon="plus" aria-hidden="true"></span><span>Agent</span><span>Models</span><span data-icon="sliders" aria-hidden="true"></span><span class="chat-tools__send" data-icon="send" aria-hidden="true"></span></div>
       </div>
       <div class="chat-panel__footer"><span>▣ Yerel</span><span>♢ Varsayılan Onaylar</span></div>
     </aside>
@@ -282,10 +300,10 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <footer class="status-bar" aria-label="Status bar">
-      <span class="status-bar__remote">⌁ Codespaces: friendly fishstick</span>
-      <span class="status-bar__item">♢ Kısıtlı Mod</span>
-      <span class="status-bar__item">ⓧ 0</span>
-      <span class="status-bar__item">△ 0</span>
+      <span class="status-bar__remote"><span data-icon="remote" aria-hidden="true"></span>Codespaces: friendly fishstick</span>
+      <span class="status-bar__item"><span data-icon="shield-check" aria-hidden="true"></span>Kısıtlı Mod</span>
+      <span class="status-bar__item"><span data-icon="error" aria-hidden="true"></span>0</span>
+      <span class="status-bar__item"><span data-icon="warning" aria-hidden="true"></span>0</span>
       <span class="status-bar__spacer"></span>
       <span class="status-bar__item">Satır 1, Sütun 1</span>
       <span class="status-bar__item">Boşluklar: 4</span>
@@ -296,6 +314,6 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js?v=20260815-2"></script>
+  <script type="module" src="./main.js?v=20260815-3"></script>
 </body>
 </html>

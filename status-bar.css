@@ -18,6 +18,7 @@
   padding: 0 10px;
   display: flex;
   align-items: center;
+  gap: 5px;
   background: #0069b4;
 }
 .status-bar__item {
@@ -29,4 +30,10 @@
 }
 .status-bar__spacer {
   flex: 1;
+}
+
+.status-bar .ui-icon {
+  width: 13px;
+  height: 13px;
+  stroke-width: 1.9;
 }

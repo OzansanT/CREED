@@ -1,4 +1,5 @@
-import { WORKSPACE_FILES } from "./source-files.js?v=20260814-3";
+import { WORKSPACE_FILES } from "./source-files.js?v=20260815-3";
+import { createEditorTabs } from "./editor-tabs.js?v=20260815-3";
 
 function getFileExtension(fileName) {
   return fileName.split(".").pop()?.toLowerCase() || "";
@@ -30,6 +31,7 @@ function createFileButton(fileName) {
   button.className = "file-row";
   button.type = "button";
   button.dataset.file = fileName;
+  button.setAttribute("role", "option");
   button.setAttribute("aria-selected", "false");
 
   icon.className = "file-icon " + (extension || "file");
@@ -113,45 +115,49 @@ function appendHighlightedCode(line, target, extension) {
 
 function renderCode(source, target, minimap, fileName) {
   const codeFragment = document.createDocumentFragment();
-  const minimapFragment = document.createDocumentFragment();
+  const minimapLines = document.createElement("div");
+  const minimapViewport = document.createElement("div");
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const extension = getFileExtension(fileName);
 
+  minimapLines.className = "source-minimap__lines";
+  minimapLines.style.gridTemplateRows = "repeat(" + lines.length + ", minmax(0, 1fr))";
+  minimapViewport.className = "source-minimap__viewport";
+
   lines.forEach((line, index) => {
     const row = document.createElement("div");
-    row.className = "source-line";
-
     const number = document.createElement("span");
+    const code = document.createElement("span");
+    const minimapLine = document.createElement("div");
+
+    row.className = "source-line";
     number.className = "source-line__number";
     number.textContent = String(index + 1);
-
-    const code = document.createElement("span");
     code.className = "source-line__code";
     appendHighlightedCode(line, code, extension);
 
-    const minimapLine = document.createElement("div");
     minimapLine.className = "minimap-line " + extension;
     minimapLine.style.width = Math.min(94, Math.max(4, line.trim().length * 0.72)) + "px";
 
     row.append(number, code);
     codeFragment.append(row);
-    minimapFragment.append(minimapLine);
+    minimapLines.append(minimapLine);
   });
 
   target.replaceChildren(codeFragment);
-  minimap.replaceChildren(minimapFragment);
+  minimap.replaceChildren(minimapLines, minimapViewport);
 }
 
 export function bindWorkbenchFiles({
+  rootToggle,
   fileTree,
+  fileTabs,
   canvasTab,
-  codeTab,
-  codeTabKind,
-  codeTabName,
   breadcrumbKind,
   breadcrumbName,
   canvasView,
   codeView,
+  sourceScroller,
   codeContent,
   codeMinimap,
   chatContextKind,
@@ -161,8 +167,16 @@ export function bindWorkbenchFiles({
   onError
 }) {
   const fileButtons = renderFileTree(fileTree);
-  let openedFile = "";
-  let requestController = null;
+  const sourceCache = new Map();
+  const requestControllers = new Map();
+  let activeFile = "";
+  let activeMinimapPointer = null;
+
+  function setExplorerExpanded(expanded) {
+    rootToggle.setAttribute("aria-expanded", String(expanded));
+    rootToggle.title = expanded ? "Collapse CREED files" : "Expand CREED files";
+    fileTree.hidden = !expanded;
+  }
 
   function setSelectedFile(fileName) {
     fileButtons.forEach((button) => {
@@ -180,49 +194,60 @@ export function bindWorkbenchFiles({
     statusLanguage.textContent = language;
   }
 
-  function showCanvas() {
-    requestController?.abort();
+  function updateMinimapViewport() {
+    const viewport = codeMinimap.querySelector(".source-minimap__viewport");
+    const maximum = Math.max(0, sourceScroller.scrollHeight - sourceScroller.clientHeight);
+    const viewportRatio = sourceScroller.scrollHeight > 0
+      ? Math.min(1, sourceScroller.clientHeight / sourceScroller.scrollHeight)
+      : 1;
+    const viewportHeight = Math.max(18, codeMinimap.clientHeight * viewportRatio);
+    const availableTravel = Math.max(0, codeMinimap.clientHeight - viewportHeight);
+    const scrollRatio = maximum > 0 ? sourceScroller.scrollTop / maximum : 0;
+
+    if (viewport) {
+      viewport.style.height = viewportHeight + "px";
+      viewport.style.transform = "translateY(" + (availableTravel * scrollRatio) + "px)";
+    }
+    codeMinimap.setAttribute("aria-valuenow", String(Math.round(scrollRatio * 100)));
+  }
+
+  function showCanvasPanel() {
+    activeFile = "";
     canvasView.hidden = false;
     codeView.hidden = true;
-    canvasTab.classList.add("active");
-    canvasTab.setAttribute("aria-selected", "true");
-    codeTab.classList.remove("active");
-    codeTab.setAttribute("aria-selected", "false");
-    codeTab.hidden = true;
-    setFileContext("◇", "Infinite Canvas", "{ } Canvas");
     setSelectedFile("");
+    setFileContext("◇", "Infinite Canvas", "{ } Canvas");
     onCanvasShow?.();
   }
 
-  function showCode() {
-    if (!openedFile) return;
-    canvasView.hidden = true;
-    codeView.hidden = false;
-    canvasTab.classList.remove("active");
-    canvasTab.setAttribute("aria-selected", "false");
-    codeTab.hidden = false;
-    codeTab.classList.add("active");
-    codeTab.setAttribute("aria-selected", "true");
+  function showLoading(fileName) {
+    if (activeFile !== fileName) return;
+    codeContent.setAttribute("aria-busy", "true");
+    codeContent.textContent = "Loading…";
+    codeMinimap.replaceChildren();
   }
 
-  async function openFile(button) {
-    const fileName = button.dataset.file;
-    if (!fileName) return;
+  function renderActiveFile(fileName) {
+    if (activeFile !== fileName || !sourceCache.has(fileName)) return;
+    codeContent.removeAttribute("aria-busy");
+    renderCode(sourceCache.get(fileName), codeContent, codeMinimap, fileName);
+    sourceScroller.scrollTo({ top: 0, left: 0 });
+    requestAnimationFrame(updateMinimapViewport);
+  }
 
-    requestController?.abort();
-    requestController = new AbortController();
-    openedFile = fileName;
-    setSelectedFile(fileName);
+  async function loadFile(fileName) {
+    if (sourceCache.has(fileName)) {
+      renderActiveFile(fileName);
+      return;
+    }
+    if (requestControllers.has(fileName)) {
+      showLoading(fileName);
+      return;
+    }
 
-    const fileKind = getFileKind(fileName);
-    codeTab.hidden = false;
-    codeTabKind.textContent = fileKind;
-    codeTabName.textContent = fileName;
-    setFileContext(fileKind, fileName, getLanguageLabel(fileName));
-    codeContent.setAttribute("aria-busy", "true");
-    codeMinimap.replaceChildren();
-    codeContent.textContent = "Loading…";
-    showCode();
+    const requestController = new AbortController();
+    requestControllers.set(fileName, requestController);
+    showLoading(fileName);
 
     try {
       const filePath = fileName.split("/").map(encodeURIComponent).join("/");
@@ -231,26 +256,117 @@ export function bindWorkbenchFiles({
         signal: requestController.signal
       });
       if (!response.ok) throw new Error("Unable to load " + fileName + " (" + response.status + ")");
-      renderCode(await response.text(), codeContent, codeMinimap, fileName);
+      const source = await response.text();
+      if (requestControllers.get(fileName) !== requestController) return;
+      sourceCache.set(fileName, source);
+      renderActiveFile(fileName);
     } catch (error) {
       if (error.name === "AbortError") return;
-      codeContent.textContent = "Unable to display " + fileName + ".";
+      if (activeFile === fileName) {
+        codeContent.removeAttribute("aria-busy");
+        codeContent.textContent = "Unable to display " + fileName + ".";
+        codeMinimap.replaceChildren();
+      }
       onError?.(error.message);
     } finally {
-      codeContent.removeAttribute("aria-busy");
+      if (requestControllers.get(fileName) === requestController) {
+        requestControllers.delete(fileName);
+      }
+      if (activeFile === fileName) codeContent.removeAttribute("aria-busy");
     }
   }
 
-  fileButtons.forEach((button) => {
-    button.addEventListener("click", () => openFile(button));
-  });
-  canvasTab.addEventListener("click", showCanvas);
-  codeTab.addEventListener("click", showCode);
-  codeMinimap.addEventListener("pointerdown", (event) => {
-    const bounds = codeMinimap.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height));
-    codeView.scrollTop = ratio * Math.max(0, codeView.scrollHeight - codeView.clientHeight);
+  function showFilePanel(fileName) {
+    activeFile = fileName;
+    canvasView.hidden = true;
+    codeView.hidden = false;
+    setSelectedFile(fileName);
+
+    const fileKind = getFileKind(fileName);
+    setFileContext(fileKind, fileName, getLanguageLabel(fileName));
+
+    if (sourceCache.has(fileName)) renderActiveFile(fileName);
+    else loadFile(fileName);
+  }
+
+  const tabs = createEditorTabs({
+    container: fileTabs,
+    canvasTab,
+    codeView,
+    onActivate: (fileName) => {
+      if (fileName) showFilePanel(fileName);
+      else showCanvasPanel();
+    },
+    onClose: (fileName) => {
+      requestControllers.get(fileName)?.abort();
+      requestControllers.delete(fileName);
+      sourceCache.delete(fileName);
+    }
   });
 
-  return { showCanvas, showCode };
+  fileButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const fileName = button.dataset.file;
+      if (fileName) tabs.open(fileName, getFileKind(fileName));
+    });
+  });
+
+  rootToggle.addEventListener("click", () => {
+    setExplorerExpanded(rootToggle.getAttribute("aria-expanded") !== "true");
+  });
+
+  function scrollFromMinimapPointer(event) {
+    const bounds = codeMinimap.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height));
+    const maximum = Math.max(0, sourceScroller.scrollHeight - sourceScroller.clientHeight);
+    sourceScroller.scrollTop = ratio * maximum;
+  }
+
+  codeMinimap.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    activeMinimapPointer = event.pointerId;
+    codeMinimap.setPointerCapture?.(event.pointerId);
+    scrollFromMinimapPointer(event);
+  });
+  codeMinimap.addEventListener("pointermove", (event) => {
+    if (event.pointerId !== activeMinimapPointer) return;
+    scrollFromMinimapPointer(event);
+  });
+
+  function finishMinimapPointer(event) {
+    if (event.pointerId !== activeMinimapPointer) return;
+    activeMinimapPointer = null;
+  }
+
+  codeMinimap.addEventListener("pointerup", finishMinimapPointer);
+  codeMinimap.addEventListener("pointercancel", finishMinimapPointer);
+  codeMinimap.addEventListener("lostpointercapture", finishMinimapPointer);
+  codeMinimap.addEventListener("keydown", (event) => {
+    const maximum = Math.max(0, sourceScroller.scrollHeight - sourceScroller.clientHeight);
+    const step = Math.max(40, sourceScroller.clientHeight * 0.1);
+    const next = {
+      ArrowUp: sourceScroller.scrollTop - step,
+      ArrowDown: sourceScroller.scrollTop + step,
+      PageUp: sourceScroller.scrollTop - sourceScroller.clientHeight,
+      PageDown: sourceScroller.scrollTop + sourceScroller.clientHeight,
+      Home: 0,
+      End: maximum
+    }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    sourceScroller.scrollTop = next;
+  });
+  sourceScroller.addEventListener("scroll", updateMinimapViewport, { passive: true });
+
+  setExplorerExpanded(true);
+  showCanvasPanel();
+
+  return Object.freeze({
+    showCanvas: tabs.showCanvas,
+    showCode: () => {
+      const fileName = tabs.getActiveFile();
+      if (fileName) tabs.activate(fileName);
+    }
+  });
 }

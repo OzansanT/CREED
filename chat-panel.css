@@ -33,10 +33,12 @@
   font-weight: 650;
 }
 .chat-panel__actions {
+  min-width: 0;
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
   color: #67676c;
-  font-size: 16px;
-  letter-spacing: 5px;
 }
 .chat-panel__empty {
   flex: 1;
@@ -90,10 +92,18 @@
   color: #6d6d72;
   font-size: 11px;
 }
+.chat-tools .ui-icon,
+.chat-context .ui-icon {
+  width: 14px;
+  height: 14px;
+}
 .chat-tools__send {
   margin-left: auto;
   color: #aaaab0;
-  font-size: 18px;
+}
+.chat-tools__send .ui-icon {
+  width: 17px;
+  height: 17px;
 }
 .chat-panel__footer {
   height: 24px;

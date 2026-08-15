@@ -40,25 +40,68 @@
   scrollbar-color: #ccccd1 transparent;
 }
 .project-row {
-  height: 24px;
+  height: 26px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 0 9px;
+  gap: 3px;
+  padding: 0 7px 0 4px;
   overflow: hidden;
   color: #303034;
   font-size: 11px;
   white-space: nowrap;
+}
+.project-disclosure {
+  min-width: 0;
+  height: 24px;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 3px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  box-shadow: none;
+}
+.project-disclosure:hover:not(:disabled) {
+  transform: none;
+  border-color: transparent;
+  background: #ededf0;
+  box-shadow: none;
+}
+.project-disclosure:focus-visible {
+  outline: 1px solid var(--vscode-blue);
+  outline-offset: -1px;
+}
+.project-chevron {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  transition: transform 120ms ease;
+}
+.project-chevron .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+.project-disclosure[aria-expanded="true"] .project-chevron {
+  transform: rotate(90deg);
 }
 .project-row__remote {
   min-width: 0;
   flex: 1;
   overflow: hidden;
   color: #5e5e64;
+  font-weight: 400;
   text-overflow: ellipsis;
 }
 .file-tree {
   padding-bottom: 8px;
+}
+.file-tree[hidden] {
+  display: none;
 }
 .file-row {
   width: 100%;
@@ -205,7 +248,6 @@
   padding: 5px 12px;
 }
 .project-actions {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 1px;
@@ -221,8 +263,11 @@
   border-radius: 2px;
   background: transparent;
   color: #65656a;
-  font-size: 11px;
   box-shadow: none;
+}
+.project-actions .ui-icon {
+  width: 14px;
+  height: 14px;
 }
 .project-actions button:hover:not(:disabled) {
   transform: none;
