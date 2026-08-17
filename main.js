@@ -11,13 +11,13 @@ import { bindKeyboard } from "./keyboard.js";
 import { bindSidebarMenu } from "./sidebar-input.js";
 import { bindPrimarySidebar } from "./primary-sidebar-input.js";
 import { bindSecondarySidebar } from "./secondary-sidebar-input.js";
-import { bindTerminalPanel } from "./terminal-panel-input.js";
+import { bindTerminalPanel } from "./terminal-panel-main.js?v=20260817-2";
 import { bindPanelResize } from "./panel-resize-input.js";
 import { bindResetControls } from "./reset-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
 import { hydrateIcons } from "./icons.js?v=20260815-3";
-import { bindWorkbenchFiles } from "./workbench-input.js?v=20260817-1";
+import { bindEditorPanel } from "./editor-panel-main.js?v=20260817-2";
 
 hydrateIcons();
 const elements = getElements();
@@ -39,7 +39,7 @@ elements.clearAnchorBtn.addEventListener("click", removeAnchor);
 elements.homeBtn.addEventListener("click", home);
 bindPan({ canvas: elements.canvas, state, update, persist });
 bindWheel({ canvas: elements.canvas, state, update, persist });
-const workbench = bindWorkbenchFiles({
+const editorPanel = bindEditorPanel({
   rootToggle: elements.workspaceRootToggle,
   fileTree: elements.workspaceFileTree,
   fileTabs: elements.workspaceFileTabs,
@@ -57,7 +57,7 @@ const workbench = bindWorkbenchFiles({
   onCanvasShow: update,
   onError: (message) => showToast(elements.toast, message)
 });
-bindSidebarMenu({ canvasButton: elements.canvasMenuBtn, infiniteCanvasButton: elements.infiniteCanvasMenuBtn, componentsButton: elements.componentsMenuBtn, addJsonCardButton: elements.addJsonCardBtn, canvas: elements.canvas, jsonCard: elements.jsonComponentCard, showCanvas: workbench.showCanvas, state, update, persist });
+bindSidebarMenu({ canvasButton: elements.canvasMenuBtn, infiniteCanvasButton: elements.infiniteCanvasMenuBtn, componentsButton: elements.componentsMenuBtn, addJsonCardButton: elements.addJsonCardBtn, canvas: elements.canvas, jsonCard: elements.jsonComponentCard, showCanvas: editorPanel.showCanvas, state, update, persist });
 bindCardDrag({ card: elements.originCard, state, positionKey: "originCard", update, persist });
 bindCardDrag({ card: elements.jsonComponentCard, state, positionKey: "jsonCard", update, persist });
 bindJsonFileButton({ button: elements.openJsonFileBtn });

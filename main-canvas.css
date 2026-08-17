@@ -17,11 +17,8 @@
 @import url("./sidebar1-main.css");
 @import url("./lod-indicator.css");
 @import url("./workbench.css");
-@import url("./canvas-shell.css");
-@import url("./dotted-background.css");
-@import url("./world-content.css");
-@import url("./anchor.css");
-@import url("./zoom-controls.css");
+@import url("./editor-panel-main.css");
+@import url("./terminal-panel-main.css");
 @import url("./feedback.css");
 @import url("./panel-resize.css");
 @import url("./status-bar.css");

@@ -54,9 +54,6 @@
 .panel-resize-handle--terminal {
   top: -7px;
 }
-.terminal-panel {
-  position: relative;
-}
 body.panel-resizing,
 body.panel-resizing * {
   user-select: none !important;

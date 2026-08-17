@@ -1,4 +1,4 @@
-import { WORKSPACE_FILES } from "./source-files.js?v=20260817-1";
+import { WORKSPACE_FILES } from "./source-files.js?v=20260817-2";
 import { createEditorTabs } from "./editor-tabs.js?v=20260815-3";
 
 function getFileExtension(fileName) {

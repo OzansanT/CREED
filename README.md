@@ -20,14 +20,14 @@ Then open `http://localhost:8000`. Opening `index.html` directly with a `file://
 - Press `A` to save the current view and `Shift + A` to return to it.
 - Use either the **Toggle primary sidebar** layout control or the **Explorer** activity button to repeatedly collapse and reopen the primary sidebar.
 - Use **Toggle secondary sidebar** to repeatedly collapse and reopen `sidebar1`.
-- Use **Toggle panel** to repeatedly collapse and reopen the bottom Terminal panel.
+- Use **Toggle panel** to repeatedly collapse and reopen the bottom Terminal panel, whose CSS and JavaScript are composed through `terminal-panel-main.css` and `terminal-panel-main.js`.
 - Drag the primary sidebar's right edge, the secondary sidebar's left edge, or the Terminal panel's top edge to resize the layout. Arrow keys resize a focused separator; hold Shift for larger steps.
 - Each panel's resized dimensions and collapsed/open state persist together across browser reloads. Saved dimensions are safely clamped for the current viewport, and existing dimension-only preferences migrate automatically.
 - Use **Canvas Reset** to reset the canvas view, saved location, and components without changing the current sidebar menu.
 - Use **Infinite Reset** to restore the complete infinite workspace, reopen every panel, restore default panel sizes, and clear the saved layout preferences.
 - Use **Canvas Controls** for coordinates, grid LOD, shortcuts, and saved-view actions.
 - Use **Infinite Canvas** to return to the canvas editor; it intentionally opens no secondary sidebar panel.
-- Select any Explorer file to load and display its real repository source.
+- Select any Explorer file to load and display its real repository source through the `editor-panel` component and its `editor-panel-main.css` / `editor-panel-main.js` entry points.
 - Use **Components** to add the JSON card.
 
 ## Explorer inventory
@@ -60,6 +60,9 @@ CREED/
 ├── config.js
 ├── coordinates.js
 ├── dotted-background.css
+├── editor-panel-main.css
+├── editor-panel-main.js
+├── editor-panel.css
 ├── editor-tabs.js
 ├── elements.js
 ├── feedback.css
@@ -94,6 +97,9 @@ CREED/
 ├── status-bar.css
 ├── storage.js
 ├── terminal-panel-input.js
+├── terminal-panel-main.css
+├── terminal-panel-main.js
+├── terminal-panel.css
 ├── toast.js
 ├── ui.js
 ├── viewport.js
@@ -123,11 +129,15 @@ index.html
 │   │   └── sidebar1.css
 │   ├── lod-indicator.css
 │   ├── workbench.css
-│   ├── canvas-shell.css
-│   ├── dotted-background.css
-│   ├── world-content.css
-│   ├── anchor.css
-│   ├── zoom-controls.css
+│   ├── editor-panel-main.css
+│   │   ├── editor-panel.css
+│   │   ├── canvas-shell.css
+│   │   ├── dotted-background.css
+│   │   ├── world-content.css
+│   │   ├── anchor.css
+│   │   └── zoom-controls.css
+│   ├── terminal-panel-main.css
+│   │   └── terminal-panel.css
 │   ├── feedback.css
 │   ├── panel-resize.css
 │   ├── status-bar.css
@@ -159,7 +169,8 @@ index.html
     │   └── coordinates.js
     ├── primary-sidebar-input.js
     ├── secondary-sidebar-input.js
-    ├── terminal-panel-input.js
+    ├── terminal-panel-main.js
+    │   └── terminal-panel-input.js
     ├── panel-resize-input.js
     │   ├── state.js
     │   └── storage.js
@@ -169,10 +180,11 @@ index.html
     ├── card-input.js
     ├── json-file.js
     ├── icons.js
-    └── workbench-input.js
-        ├── source-files.js
-        └── editor-tabs.js
-            └── icons.js
+    └── editor-panel-main.js
+        └── workbench-input.js
+            ├── source-files.js
+            └── editor-tabs.js
+                └── icons.js
 ```
 
 ## Structure rules

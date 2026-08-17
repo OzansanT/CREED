@@ -1,0 +1,12 @@
+/*
+  EDITOR PANEL CSS ENTRY POINT
+
+  Keep the editor shell, source viewer and infinite-canvas styles connected here.
+*/
+
+@import url("./editor-panel.css");
+@import url("./canvas-shell.css");
+@import url("./dotted-background.css");
+@import url("./world-content.css");
+@import url("./anchor.css");
+@import url("./zoom-controls.css");

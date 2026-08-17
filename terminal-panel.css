@@ -1,0 +1,62 @@
+.terminal-panel {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--chrome-border);
+}
+.terminal-panel {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--chrome-border);
+  background: #fafafe;
+}
+.terminal-panel[hidden] {
+  display: none;
+}
+.terminal-tabs {
+  height: 38px;
+  flex: 0 0 38px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 10px;
+  color: #49494e;
+  font-size: 12px;
+}
+.terminal-tab {
+  height: 28px;
+  padding: 0 8px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+}
+.terminal-tab.active {
+  background: #dddddf;
+  color: #242428;
+}
+.terminal-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  color: #626267;
+}
+.terminal-shell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 3px;
+}
+.terminal-shell .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+.terminal-body {
+  flex: 1;
+  padding: 8px 13px;
+  overflow: auto;
+  font: 12px/1.6 Consolas, "Courier New", monospace;
+}
+.prompt-user { color: #25822e; }
+.prompt-path { color: #075c9a; font-weight: 700; }
+.prompt-branch { color: #b02531; }
