@@ -1,0 +1,14 @@
+/*
+  INFINITE CANVAS CSS ENTRY POINT
+
+  Keep every infinite-canvas visual capability connected here.
+  Feature styling stays in its focused CSS colony.
+*/
+
+@import url("./canvas-shell.css");
+@import url("./dotted-background.css");
+@import url("./world-content.css");
+@import url("./anchor.css");
+@import url("./zoom-controls.css");
+@import url("./lod-indicator.css");
+@import url("./sidebar-stats.css");

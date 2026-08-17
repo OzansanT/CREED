@@ -23,6 +23,8 @@ export const WORKSPACE_FILES = Object.freeze([
   "icons.css",
   "icons.js",
   "index.html",
+  "infinitecanvas-main.css",
+  "infinitecanvas-main.js",
   "json-file.js",
   "keyboard.js",
   "lod-indicator.css",

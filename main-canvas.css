@@ -2,7 +2,8 @@
   MAIN CSS ENTRY POINT
 
   Keep index.html connected to only this file.
-  Each capability lives in its own "CSS colony".
+  App-level components stay separate; infinite-canvas CSS is composed
+  through infinitecanvas-main.css.
 */
 
 @import url("./root-canvas.css");
@@ -15,9 +16,9 @@
 @import url("./activity-bar.css");
 @import url("./sidebar-main.css");
 @import url("./sidebar1-main.css");
-@import url("./lod-indicator.css");
 @import url("./workbench.css");
 @import url("./editor-panel-main.css");
+@import url("./infinitecanvas-main.css");
 @import url("./terminal-panel-main.css");
 @import url("./feedback.css");
 @import url("./panel-resize.css");

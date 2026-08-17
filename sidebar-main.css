@@ -1,8 +1,8 @@
 /*
   PRIMARY SIDEBAR CSS ENTRY POINT
 
-  Keep the primary sidebar's component colonies connected here.
+  Keep primary-sidebar styling connected here.
+  Infinite-canvas stats styling is owned by infinitecanvas-main.css.
 */
 
 @import url("./sidebar.css");
-@import url("./sidebar-stats.css");
