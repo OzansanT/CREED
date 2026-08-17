@@ -19,7 +19,7 @@ Then open `http://localhost:8000`. Opening `index.html` directly with a `file://
 - Press `0` to return to the world origin.
 - Press `A` to save the current view and `Shift + A` to return to it.
 - Use either the **Toggle primary sidebar** layout control or the **Explorer** activity button to repeatedly collapse and reopen the primary sidebar.
-- Use **Toggle secondary sidebar** to repeatedly collapse and reopen the chat panel.
+- Use **Toggle secondary sidebar** to repeatedly collapse and reopen `sidebar1`.
 - Use **Toggle panel** to repeatedly collapse and reopen the bottom Terminal panel.
 - Drag the primary sidebar's right edge, the secondary sidebar's left edge, or the Terminal panel's top edge to resize the layout. Arrow keys resize a focused separator; hold Shift for larger steps.
 - Each panel's resized dimensions and collapsed/open state persist together across browser reloads. Saved dimensions are safely clamped for the current viewport, and existing dimension-only preferences migrate automatically.
@@ -57,13 +57,15 @@ CREED/
 ├── buttons.css
 ├── canvas-shell.css
 ├── card-input.js
-├── chat-panel.css
 ├── config.js
 ├── coordinates.js
 ├── dotted-background.css
+├── editor-tabs.js
 ├── elements.js
 ├── feedback.css
 ├── grid-lod.js
+├── icons.css
+├── icons.js
 ├── index.html
 ├── json-file.js
 ├── keyboard.js
@@ -82,8 +84,11 @@ CREED/
 ├── root-canvas.css
 ├── secondary-sidebar-input.js
 ├── sidebar-input.js
+├── sidebar-main.css
 ├── sidebar-stats.css
 ├── sidebar.css
+├── sidebar1-main.css
+├── sidebar1.css
 ├── source-files.js
 ├── state.js
 ├── status-bar.css
@@ -107,11 +112,15 @@ index.html
 │   ├── root-canvas.css
 │   ├── app-layout.css
 │   ├── buttons.css
+│   ├── icons.css
 │   ├── restricted-banner.css
 │   ├── navbar.css
 │   ├── activity-bar.css
-│   ├── sidebar.css
-│   ├── sidebar-stats.css
+│   ├── sidebar-main.css
+│   │   ├── sidebar.css
+│   │   └── sidebar-stats.css
+│   ├── sidebar1-main.css
+│   │   └── sidebar1.css
 │   ├── lod-indicator.css
 │   ├── workbench.css
 │   ├── canvas-shell.css
@@ -120,7 +129,6 @@ index.html
 │   ├── anchor.css
 │   ├── zoom-controls.css
 │   ├── feedback.css
-│   ├── chat-panel.css
 │   ├── panel-resize.css
 │   ├── status-bar.css
 │   └── responsive.css
@@ -140,6 +148,9 @@ index.html
     │   ├── state.js
     │   └── coordinates.js
     ├── anchors.js
+    │   ├── config.js
+    │   ├── state.js
+    │   └── coordinates.js
     ├── pan-input.js
     ├── wheel-input.js
     │   └── viewport.js
@@ -157,8 +168,11 @@ index.html
     │   └── viewport.js
     ├── card-input.js
     ├── json-file.js
+    ├── icons.js
     └── workbench-input.js
-        └── source-files.js
+        ├── source-files.js
+        └── editor-tabs.js
+            └── icons.js
 ```
 
 ## Structure rules

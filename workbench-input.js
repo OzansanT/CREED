@@ -1,4 +1,4 @@
-import { WORKSPACE_FILES } from "./source-files.js?v=20260815-3";
+import { WORKSPACE_FILES } from "./source-files.js?v=20260817-1";
 import { createEditorTabs } from "./editor-tabs.js?v=20260815-3";
 
 function getFileExtension(fileName) {
@@ -160,8 +160,8 @@ export function bindWorkbenchFiles({
   sourceScroller,
   codeContent,
   codeMinimap,
-  chatContextKind,
-  chatContextName,
+  sidebar1ContextKind,
+  sidebar1ContextName,
   statusLanguage,
   onCanvasShow,
   onError
@@ -189,8 +189,8 @@ export function bindWorkbenchFiles({
   function setFileContext(kind, name, language) {
     breadcrumbKind.textContent = kind;
     breadcrumbName.textContent = name;
-    chatContextKind.textContent = kind;
-    chatContextName.textContent = name;
+    sidebar1ContextKind.textContent = kind;
+    sidebar1ContextName.textContent = name;
     statusLanguage.textContent = language;
   }
 

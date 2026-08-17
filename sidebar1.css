@@ -1,22 +1,22 @@
 .app.secondary-sidebar-collapsed {
-  --chat-w: 0px;
+  --sidebar1-w: 0px;
 }
-.chat-panel[hidden] {
+.sidebar1[hidden] {
   display: none;
 }
-.chat-panel {
+.sidebar1 {
   position: absolute;
   z-index: 30;
   top: var(--workbench-top);
   right: 0;
   bottom: var(--status-h);
-  width: var(--chat-w);
+  width: var(--sidebar1-w);
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--chrome-border);
   background: #fafafe;
 }
-.chat-panel__header {
+.sidebar1__header {
   height: 38px;
   flex: 0 0 38px;
   display: flex;
@@ -24,7 +24,7 @@
   padding: 0 9px;
   border-bottom: 1px solid transparent;
 }
-.chat-panel__title {
+.sidebar1__title {
   padding: 5px 8px;
   border-radius: 4px;
   background: #e2e2e5;
@@ -32,7 +32,7 @@
   font-size: 12px;
   font-weight: 650;
 }
-.chat-panel__actions {
+.sidebar1__actions {
   min-width: 0;
   margin-left: auto;
   display: flex;
@@ -40,7 +40,7 @@
   gap: 1px;
   color: #67676c;
 }
-.chat-panel__empty {
+.sidebar1__empty {
   flex: 1;
   display: grid;
   place-content: center;
@@ -49,7 +49,7 @@
   color: #5f5f64;
   text-align: center;
 }
-.chat-panel__empty svg {
+.sidebar1__empty svg {
   width: 43px;
   height: 43px;
   margin-bottom: 24px;
@@ -57,55 +57,55 @@
   stroke: currentColor;
   stroke-width: 1.4;
 }
-.chat-panel__empty strong {
+.sidebar1__empty strong {
   margin-bottom: 10px;
   color: #38383c;
   font-size: 13px;
 }
-.chat-panel__empty span {
+.sidebar1__empty span {
   font-size: 11px;
 }
-.chat-composer {
+.sidebar1-composer {
   margin: 10px;
   padding: 9px;
   border: 1px solid #dedee3;
   border-radius: 8px;
   background: #fff;
 }
-.chat-context {
+.sidebar1-context {
   display: flex;
   align-items: center;
   gap: 5px;
   color: #646469;
   font-size: 11px;
 }
-.chat-placeholder {
+.sidebar1-placeholder {
   min-height: 48px;
   padding-top: 14px;
   color: #9a9aa0;
   font-size: 12px;
 }
-.chat-tools {
+.sidebar1-tools {
   display: flex;
   align-items: center;
   gap: 10px;
   color: #6d6d72;
   font-size: 11px;
 }
-.chat-tools .ui-icon,
-.chat-context .ui-icon {
+.sidebar1-tools .ui-icon,
+.sidebar1-context .ui-icon {
   width: 14px;
   height: 14px;
 }
-.chat-tools__send {
+.sidebar1-tools__send {
   margin-left: auto;
   color: #aaaab0;
 }
-.chat-tools__send .ui-icon {
+.sidebar1-tools__send .ui-icon {
   width: 17px;
   height: 17px;
 }
-.chat-panel__footer {
+.sidebar1__footer {
   height: 24px;
   display: flex;
   align-items: center;

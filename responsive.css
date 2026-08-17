@@ -1,7 +1,7 @@
 @media (max-width: 1500px) {
   :root {
     --sidebar-w: 270px;
-    --chat-w: 250px;
+    --sidebar1-w: 250px;
   }
   .command-center { width: min(520px, 42vw); }
   #workspaceCanvasTab {
@@ -14,8 +14,8 @@
 }
 
 @media (max-width: 1180px) {
-  :root { --chat-w: 0px; }
-  .chat-panel { display: none; }
+  :root { --sidebar1-w: 0px; }
+  .sidebar1 { display: none; }
   .workbench { right: 0; }
   .toast {
     left: calc(var(--activity-w) + var(--sidebar-w) + (100vw - var(--activity-w) - var(--sidebar-w)) / 2);

@@ -84,7 +84,7 @@ export function bindPanelResize({
       handle: secondaryHandle,
       axis: "x",
       direction: -1,
-      variable: "--chat-w",
+      variable: "--sidebar1-w",
       storageKey: "secondaryWidth",
       minimum: MIN_SECONDARY_WIDTH,
       current: () => secondaryPanel.getBoundingClientRect().width,

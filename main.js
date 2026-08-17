@@ -17,7 +17,7 @@ import { bindResetControls } from "./reset-input.js";
 import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
 import { hydrateIcons } from "./icons.js?v=20260815-3";
-import { bindWorkbenchFiles } from "./workbench-input.js?v=20260815-3";
+import { bindWorkbenchFiles } from "./workbench-input.js?v=20260817-1";
 
 hydrateIcons();
 const elements = getElements();
@@ -51,8 +51,8 @@ const workbench = bindWorkbenchFiles({
   sourceScroller: elements.sourceScroller,
   codeContent: elements.sourceCode,
   codeMinimap: elements.sourceMinimap,
-  chatContextKind: elements.chatContextKind,
-  chatContextName: elements.chatContextName,
+  sidebar1ContextKind: elements.sidebar1ContextKind,
+  sidebar1ContextName: elements.sidebar1ContextName,
   statusLanguage: elements.statusLanguage,
   onCanvasShow: update,
   onError: (message) => showToast(elements.toast, message)
@@ -88,7 +88,7 @@ const primarySidebar = bindPrimarySidebar({
 });
 const secondarySidebar = bindSecondarySidebar({
   app: elements.app,
-  panel: elements.chatPanel,
+  panel: elements.sidebar1,
   layoutButton: elements.secondarySidebarLayoutBtn,
   onLayoutChange: handlePanelVisibilityChange
 });
@@ -102,7 +102,7 @@ panelResize = bindPanelResize({
   app: elements.app,
   workbench: elements.workbench,
   primaryPanel: elements.sidebar,
-  secondaryPanel: elements.chatPanel,
+  secondaryPanel: elements.sidebar1,
   terminalPanel: elements.terminalPanel,
   primaryController: primarySidebar,
   secondaryController: secondarySidebar,

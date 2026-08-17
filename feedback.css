@@ -2,7 +2,7 @@
   position: absolute;
   z-index: 120;
   top: calc(var(--workbench-top) + 72px);
-  left: calc(var(--activity-w) + var(--sidebar-w) + (100vw - var(--activity-w) - var(--sidebar-w) - var(--chat-w)) / 2);
+  left: calc(var(--activity-w) + var(--sidebar-w) + (100vw - var(--activity-w) - var(--sidebar-w) - var(--sidebar1-w)) / 2);
   transform: translate(-50%, -10px);
   opacity: 0;
   padding: 8px 11px;

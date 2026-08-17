@@ -10,7 +10,7 @@ export function getElements() {
     primarySidebarLayoutBtn: document.getElementById("primarySidebarLayoutBtn"),
     explorerActivityBtn: document.getElementById("explorerActivityBtn"),
     secondarySidebarLayoutBtn: document.getElementById("secondarySidebarLayoutBtn"),
-    chatPanel: document.getElementById("chatPanel"),
+    sidebar1: document.getElementById("sidebar1"),
     panelLayoutBtn: document.getElementById("panelLayoutBtn"),
     workbench: document.getElementById("workbench"),
     terminalPanel: document.getElementById("terminalPanel"),
@@ -36,8 +36,8 @@ export function getElements() {
     sourceScroller: document.getElementById("sourceScroller"),
     sourceCode: document.getElementById("sourceCode"),
     sourceMinimap: document.getElementById("sourceMinimap"),
-    chatContextKind: document.getElementById("chatContextKind"),
-    chatContextName: document.getElementById("chatContextName"),
+    sidebar1ContextKind: document.getElementById("sidebar1ContextKind"),
+    sidebar1ContextName: document.getElementById("sidebar1ContextName"),
     statusLanguage: document.getElementById("statusLanguage"),
 
     grids: {

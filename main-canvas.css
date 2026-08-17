@@ -13,8 +13,8 @@
 @import url("./restricted-banner.css");
 @import url("./navbar.css");
 @import url("./activity-bar.css");
-@import url("./sidebar.css");
-@import url("./sidebar-stats.css");
+@import url("./sidebar-main.css");
+@import url("./sidebar1-main.css");
 @import url("./lod-indicator.css");
 @import url("./workbench.css");
 @import url("./canvas-shell.css");
@@ -23,7 +23,6 @@
 @import url("./anchor.css");
 @import url("./zoom-controls.css");
 @import url("./feedback.css");
-@import url("./chat-panel.css");
 @import url("./panel-resize.css");
 @import url("./status-bar.css");
 @import url("./responsive.css");

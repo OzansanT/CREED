@@ -6,7 +6,7 @@
   <title>CREED — Infinite Canvas Workbench</title>
 
   <!-- Single CSS entry point. It imports root-canvas.css + all CSS colonies. -->
-  <link rel="stylesheet" href="./main-canvas.css?v=20260815-3" />
+  <link rel="stylesheet" href="./main-canvas.css?v=20260817-1" />
 </head>
 <body>
   <div id="app" class="app">
@@ -40,7 +40,7 @@
         <div class="layout-controls" aria-label="Layout controls">
           <button id="primarySidebarLayoutBtn" class="layout-control" data-icon="panel-left" type="button" title="Toggle primary sidebar" aria-label="Toggle primary sidebar" aria-controls="sidebar" aria-expanded="true"></button>
           <button id="panelLayoutBtn" class="layout-control" data-icon="panel-bottom" type="button" title="Toggle panel" aria-label="Toggle panel" aria-controls="terminalPanel" aria-expanded="true"></button>
-          <button id="secondarySidebarLayoutBtn" class="layout-control" data-icon="panel-right" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="chatPanel" aria-expanded="true"></button>
+          <button id="secondarySidebarLayoutBtn" class="layout-control" data-icon="panel-right" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="sidebar1" aria-expanded="true"></button>
         </div>
         <button id="homeBtn" class="chrome-action" title="Return to origin"><span data-icon="home" aria-hidden="true"></span><span class="chrome-action__label">Home</span></button>
         <button id="canvasResetBtn" class="chrome-action" type="button" title="Reset canvas view, saved location and components"><span data-icon="reset" aria-hidden="true"></span><span class="chrome-action__label">Canvas Reset</span></button>
@@ -269,11 +269,11 @@
       </section>
     </div>
 
-    <aside id="chatPanel" class="chat-panel" aria-label="Sohbet">
+    <aside id="sidebar1" class="sidebar1" aria-label="Sohbet">
       <div id="secondarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--secondary" role="separator" aria-label="Resize secondary sidebar" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="900" aria-valuenow="290" tabindex="0"></div>
-      <div class="chat-panel__header">
-        <span class="chat-panel__title">Sohbet</span>
-        <div class="chat-panel__actions">
+      <div class="sidebar1__header">
+        <span class="sidebar1__title">Sohbet</span>
+        <div class="sidebar1__actions">
           <button class="icon-button" data-icon="plus" type="button" aria-label="New chat" title="New chat"></button>
           <button class="icon-button" data-icon="settings" type="button" aria-label="Chat settings" title="Chat settings"></button>
           <button class="icon-button" data-icon="more-horizontal" type="button" aria-label="More chat actions" title="More chat actions"></button>
@@ -281,7 +281,7 @@
           <button class="icon-button" data-icon="close" type="button" aria-label="Close chat" title="Close chat"></button>
         </div>
       </div>
-      <div class="chat-panel__empty">
+      <div class="sidebar1__empty">
         <svg viewBox="0 0 48 48" aria-hidden="true">
           <path d="M9 10h25a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H21l-8 6v-6H9a5 5 0 0 1-5-5V15a5 5 0 0 1 5-5Z"/>
           <path d="m36 6 1.5 3.5L41 11l-3.5 1.5L36 16l-1.5-3.5L31 11l3.5-1.5Z"/>
@@ -289,12 +289,12 @@
         <strong>Aracıyla Oluşturun</strong>
         <span>Yapay zeka yanıtları hatalı olabilir</span>
       </div>
-      <div class="chat-composer">
-        <div class="chat-context"><span data-icon="plus" aria-hidden="true"></span><span id="chatContextKind" class="file-kind">◇</span><em id="chatContextName">Infinite Canvas</em></div>
-        <div class="chat-placeholder">Ne oluşturulacağını açıkla</div>
-        <div class="chat-tools"><span data-icon="plus" aria-hidden="true"></span><span>Agent</span><span>Models</span><span data-icon="sliders" aria-hidden="true"></span><span class="chat-tools__send" data-icon="send" aria-hidden="true"></span></div>
+      <div class="sidebar1-composer">
+        <div class="sidebar1-context"><span data-icon="plus" aria-hidden="true"></span><span id="sidebar1ContextKind" class="file-kind">◇</span><em id="sidebar1ContextName">Infinite Canvas</em></div>
+        <div class="sidebar1-placeholder">Ne oluşturulacağını açıkla</div>
+        <div class="sidebar1-tools"><span data-icon="plus" aria-hidden="true"></span><span>Agent</span><span>Models</span><span data-icon="sliders" aria-hidden="true"></span><span class="sidebar1-tools__send" data-icon="send" aria-hidden="true"></span></div>
       </div>
-      <div class="chat-panel__footer"><span>▣ Yerel</span><span>♢ Varsayılan Onaylar</span></div>
+      <div class="sidebar1__footer"><span>▣ Yerel</span><span>♢ Varsayılan Onaylar</span></div>
     </aside>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -314,6 +314,6 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js?v=20260815-3"></script>
+  <script type="module" src="./main.js?v=20260817-1"></script>
 </body>
 </html>

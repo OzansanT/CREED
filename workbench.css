@@ -2,7 +2,7 @@
   position: absolute;
   z-index: 20;
   top: var(--workbench-top);
-  right: var(--chat-w);
+  right: var(--sidebar1-w);
   bottom: var(--status-h);
   left: calc(var(--activity-w) + var(--sidebar-w));
   min-width: 0;
