@@ -1,12 +1,12 @@
 import { getElements } from "./elements.js";
 import { showToast } from "./toast.js";
 import { bindPrimarySidebar } from "./primary-sidebar-input.js";
-import { bindSecondarySidebar } from "./secondary-sidebar-main.js?v=20260818-1";
-import { bindBottomPanel } from "./bottom-panel-main.js?v=20260818-1";
+import { bindSecondarySidebar } from "./secondary-sidebar-main.js";
+import { bindBottomPanel } from "./bottom-panel-main.js";
 import { bindPanelResize } from "./panel-resize-input.js";
-import { hydrateIcons } from "./icons.js?v=20260818-1";
-import { bindEditorPanel } from "./editor-panel-main.js?v=20260818-1";
-import { createInfiniteCanvasRuntime } from "./infinitecanvas-main.js?v=20260818-1";
+import { hydrateIcons } from "./icons.js";
+import { bindEditorPanel } from "./editor-panel-main.js";
+import { createInfiniteCanvasRuntime } from "./infinitecanvas-main.js";
 
 hydrateIcons();
 
@@ -28,7 +28,7 @@ const editorPanel = bindEditorPanel({
   chatContextKind: elements.chatContextKind,
   chatContextName: elements.chatContextName,
   statusLanguage: elements.statusLanguage,
-  onCanvasShow: infiniteCanvas.update,
+  onCanvasShow: infiniteCanvas.scheduleViewportCenterPreservation,
   onError: (message) => showToast(elements.toast, message)
 });
 
