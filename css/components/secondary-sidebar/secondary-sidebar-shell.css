@@ -1,0 +1,4 @@
+@layer components {
+  .secondary-sidebar { position: absolute; z-index: 30; top: var(--workbench-top); right: 0; bottom: var(--status-h); width: var(--secondary-sidebar-w); display: flex; flex-direction: column; overflow: hidden; border-left: 1px solid var(--color-chrome-border); background: var(--color-panel-background); }
+  .secondary-sidebar.is-maximized { z-index: 70; left: var(--activity-w); width: auto; }
+}

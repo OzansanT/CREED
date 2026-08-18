@@ -1,0 +1,36 @@
+@layer components {
+  .workspace-header {
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 7px 0 4px;
+    overflow: hidden;
+    color: #303034;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .workspace-header__disclosure {
+    min-width: 0;
+    height: 24px;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 3px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    box-shadow: none;
+  }
+
+  .workspace-header__disclosure:hover:not(:disabled) { transform: none; border-color: transparent; background: #ededf0; box-shadow: none; }
+  .workspace-header__chevron { width: 16px; height: 16px; flex: 0 0 16px; transition: transform 120ms ease; }
+  .workspace-header__chevron .ui-icon { width: 14px; height: 14px; }
+  .workspace-header__disclosure[aria-expanded="true"] .workspace-header__chevron { transform: rotate(90deg); }
+  .workspace-header__remote { min-width: 0; flex: 1; overflow: hidden; color: #5e5e64; font-weight: 400; text-overflow: ellipsis; }
+}

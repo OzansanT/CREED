@@ -1,0 +1,91 @@
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const read = (path) => readFileSync(resolve(repositoryRoot, path), "utf8");
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function collectFiles(directory, extensionPattern) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.name === ".git" || entry.name === "node_modules") return [];
+    const fullPath = resolve(directory, entry.name);
+    if (entry.isDirectory()) return collectFiles(fullPath, extensionPattern);
+    return extensionPattern.test(entry.name) ? [fullPath] : [];
+  });
+}
+
+const html = read("index.html");
+const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+const idSet = new Set(ids);
+const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+assert(duplicates.length === 0, "Duplicate HTML IDs: " + [...new Set(duplicates)].join(", "));
+
+const requiredIds = [
+  "app", "restrictedModeBanner", "titleBar", "titleBarBrand", "navigationControls",
+  "commandCenter", "layoutControls", "activityBar", "primarySidebar", "explorerView",
+  "workspaceTree", "workbench", "editorPanel", "editorTabs", "editorViewport",
+  "canvasView", "canvasViewport", "canvasWorld", "canvasOverlay", "sourceEditorView",
+  "sourceEditor", "bottomPanel", "secondarySidebar", "chatView", "notificationLayer",
+  "statusBar", "togglePrimarySidebarBtn", "toggleBottomPanelBtn",
+  "toggleSecondarySidebarBtn", "returnToOriginBtn", "resetCanvasBtn", "resetWorkspaceBtn",
+  "activityMenuBtn", "activityExplorerBtn", "activitySearchBtn", "activitySourceControlBtn",
+  "activityRunBtn", "activityExtensionsBtn", "activityGitHubBtn", "activityAccountBtn",
+  "activitySettingsBtn", "workspaceDisclosureBtn", "newFileBtn", "newFolderBtn",
+  "refreshExplorerBtn", "canvasControlsTabBtn", "infiniteCanvasTabBtn", "componentsTabBtn",
+  "canvasTab", "fileTabs", "editorBreadcrumbKind", "editorBreadcrumbName", "splitEditorBtn",
+  "editorActionsBtn", "problemsTabBtn", "outputTabBtn", "debugConsoleTabBtn",
+  "terminalTabBtn", "portsTabBtn", "newTerminalBtn", "splitTerminalBtn", "killTerminalBtn",
+  "maximizeBottomPanelBtn", "closeBottomPanelBtn", "newChatBtn", "chatSettingsBtn",
+  "maximizeSecondarySidebarBtn", "closeSecondarySidebarBtn", "chatContext",
+  "chatPromptInput", "sendChatMessageBtn"
+];
+
+const missingRequiredIds = requiredIds.filter((id) => !idSet.has(id));
+assert(missingRequiredIds.length === 0, "Missing recommended IDs: " + missingRequiredIds.join(", "));
+
+const ariaTargets = [...html.matchAll(/aria-controls="([^"]+)"/g)]
+  .flatMap((match) => match[1].split(/\s+/));
+const missingAriaTargets = ariaTargets.filter((id) => !idSet.has(id));
+assert(missingAriaTargets.length === 0, "Missing aria-controls targets: " + missingAriaTargets.join(", "));
+
+const elementsSource = read("elements.js");
+const elementIds = [...elementsSource.matchAll(/getElementById\("([^"]+)"\)/g)].map((match) => match[1]);
+const missingElementIds = elementIds.filter((id) => !idSet.has(id));
+assert(missingElementIds.length === 0, "elements.js references missing IDs: " + missingElementIds.join(", "));
+
+const scriptFiles = collectFiles(repositoryRoot, /\.(?:js|mjs)$/);
+for (const file of scriptFiles) {
+  const result = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
+  assert(result.status === 0, "JavaScript syntax failed for " + relative(repositoryRoot, file) + "\n" + result.stderr);
+
+  const source = readFileSync(file, "utf8");
+  const imports = [...source.matchAll(/(?:import|export)\s+(?:[^"']+?\s+from\s+)?["']([^"']+)["']/g)]
+    .map((match) => match[1])
+    .filter((specifier) => specifier.startsWith("."));
+  for (const specifier of imports) {
+    const importedFile = resolve(dirname(file), specifier.split("?")[0]);
+    assert(existsSync(importedFile), "Missing JavaScript dependency: " + relative(repositoryRoot, importedFile));
+  }
+}
+
+const generatedCss = read("css/generated/creed.css");
+assert(generatedCss.length > 1000, "Generated CSS bundle is unexpectedly small.");
+assert(!/@import\s/.test(generatedCss), "Generated CSS bundle still contains @import rules.");
+
+const inventorySource = read("source-files.js");
+const inventory = [...inventorySource.matchAll(/^\s+"([^"]+)",$/gm)].map((match) => match[1]);
+const actualFiles = collectFiles(repositoryRoot, /./)
+  .map((file) => relative(repositoryRoot, file).replaceAll("\\", "/"))
+  .sort((left, right) => left.localeCompare(right));
+assert(JSON.stringify(inventory) === JSON.stringify(actualFiles), "source-files.js is not synchronized with the repository.");
+
+const forbiddenHtmlTokens = ["sidebar1", "terminalPanel", "workspaceCanvasTab", "canvasEditorView", "codeEditorView"];
+const foundForbiddenTokens = forbiddenHtmlTokens.filter((token) => html.includes(token));
+assert(foundForbiddenTokens.length === 0, "Legacy HTML tokens remain: " + foundForbiddenTokens.join(", "));
+
+console.log("Architecture check passed: " + ids.length + " unique IDs, " + elementIds.length + " wired elements.");

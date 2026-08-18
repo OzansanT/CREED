@@ -1,0 +1,6 @@
+@layer layout {
+  .panel { min-width: 0; min-height: 0; }
+  .panel__header { flex: 0 0 auto; }
+  .panel__content { min-width: 0; min-height: 0; }
+  .panel__footer { flex: 0 0 auto; }
+}

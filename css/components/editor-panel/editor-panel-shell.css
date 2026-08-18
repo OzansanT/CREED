@@ -1,0 +1,10 @@
+@layer components {
+  .editor-panel {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--color-chrome-border);
+  }
+}

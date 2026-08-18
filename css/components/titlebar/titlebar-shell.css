@@ -1,0 +1,26 @@
+@layer components {
+  .app-titlebar {
+    position: absolute;
+    z-index: 80;
+    top: var(--restricted-h);
+    right: 0;
+    left: 0;
+    height: var(--command-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--color-chrome-border);
+    background: #f8f8fb;
+  }
+
+  .app-titlebar__navigation,
+  .app-titlebar__actions {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}

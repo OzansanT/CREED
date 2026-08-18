@@ -1,0 +1,6 @@
+@layer tokens {
+  :root,
+  [data-theme="light"] {
+    color-scheme: light;
+  }
+}

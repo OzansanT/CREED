@@ -1,0 +1,5 @@
+@layer components {
+  .navigation-controls { display: flex; align-items: center; }
+  .navigation-controls__button { width: 27px; height: 27px; color: #68686e; }
+  .navigation-controls__button .ui-icon { width: 17px; height: 17px; }
+}

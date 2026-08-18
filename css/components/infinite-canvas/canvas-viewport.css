@@ -1,0 +1,5 @@
+@layer components {
+  .infinite-canvas { position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; user-select: none; background: var(--color-editor-background); }
+  .infinite-canvas.is-dragging { cursor: grabbing; }
+  .infinite-canvas__overlay { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+}

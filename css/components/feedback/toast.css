@@ -1,0 +1,18 @@
+@layer components {
+  .toast-region {
+    position: absolute;
+    top: calc(var(--workbench-top) + 72px);
+    left: calc(var(--activity-w) + var(--primary-sidebar-w) + (100vw - var(--activity-w) - var(--primary-sidebar-w) - var(--secondary-sidebar-w)) / 2);
+    transform: translate(-50%, -10px);
+    opacity: 0;
+    padding: 8px 11px;
+    border-radius: 4px;
+    background: #2d2d30;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    box-shadow: 0 6px 18px rgba(15, 15, 20, .18);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+  .toast-region.show { opacity: 1; transform: translate(-50%, 0); }
+}

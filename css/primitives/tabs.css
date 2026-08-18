@@ -1,0 +1,4 @@
+@layer primitives {
+  [role="tablist"] { min-width: 0; }
+  [role="tab"] { user-select: none; }
+}

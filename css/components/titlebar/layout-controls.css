@@ -1,0 +1,18 @@
+@layer components {
+  .layout-controls { display: flex; align-items: center; gap: 1px; margin-right: 4px; }
+  .layout-toggle {
+    width: 27px;
+    height: 27px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #5f5f65;
+    box-shadow: none;
+  }
+  .layout-toggle .ui-icon { width: 17px; height: 17px; }
+  .layout-toggle:hover:not(:disabled) { transform: none; border-color: transparent; background: #ececef; box-shadow: none; }
+  .layout-toggle[aria-expanded="true"] { color: #252529; }
+}

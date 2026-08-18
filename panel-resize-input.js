@@ -7,10 +7,10 @@ import {
 
 const DEFAULT_PRIMARY_WIDTH = 293;
 const DEFAULT_SECONDARY_WIDTH = 290;
-const DEFAULT_TERMINAL_HEIGHT = 320;
+const DEFAULT_BOTTOM_PANEL_HEIGHT = 320;
 const MIN_PRIMARY_WIDTH = 180;
 const MIN_SECONDARY_WIDTH = 220;
-const MIN_TERMINAL_HEIGHT = 120;
+const MIN_BOTTOM_PANEL_HEIGHT = 120;
 const MIN_EDITOR_WIDTH = 320;
 const MIN_EDITOR_HEIGHT = 160;
 const KEYBOARD_STEP = 10;
@@ -38,28 +38,28 @@ export function bindPanelResize({
   workbench,
   primaryPanel,
   secondaryPanel,
-  terminalPanel,
+  bottomPanel,
   primaryController,
   secondaryController,
-  terminalController,
+  bottomController,
   primaryHandle,
   secondaryHandle,
-  terminalHandle,
+  bottomHandle,
   onLayoutChange
 }) {
   let layoutState = {
     primaryWidth: getRenderedSize(primaryPanel, "width", DEFAULT_PRIMARY_WIDTH),
     secondaryWidth: getRenderedSize(secondaryPanel, "width", DEFAULT_SECONDARY_WIDTH),
-    terminalHeight: getRenderedSize(terminalPanel, "height", DEFAULT_TERMINAL_HEIGHT),
+    bottomPanelHeight: getRenderedSize(bottomPanel, "height", DEFAULT_BOTTOM_PANEL_HEIGHT),
     primaryVisible: primaryController.isVisible(),
     secondaryVisible: secondaryController.isVisible(),
-    terminalVisible: terminalController.isVisible(),
+    bottomPanelVisible: bottomController.isVisible(),
     ...loadPanelLayout()
   };
 
   primaryController.setVisible(layoutState.primaryVisible, false);
   secondaryController.setVisible(layoutState.secondaryVisible, false);
-  terminalController.setVisible(layoutState.terminalVisible, false);
+  bottomController.setVisible(layoutState.bottomPanelVisible, false);
 
   function getHorizontalMaximum(otherPanel) {
     const otherWidth = otherPanel.hidden ? 0 : otherPanel.getBoundingClientRect().width;
@@ -74,7 +74,7 @@ export function bindPanelResize({
       handle: primaryHandle,
       axis: "x",
       direction: 1,
-      variable: "--sidebar-w",
+      variable: "--primary-sidebar-w",
       storageKey: "primaryWidth",
       minimum: MIN_PRIMARY_WIDTH,
       current: () => primaryPanel.getBoundingClientRect().width,
@@ -84,7 +84,7 @@ export function bindPanelResize({
       handle: secondaryHandle,
       axis: "x",
       direction: -1,
-      variable: "--sidebar1-w",
+      variable: "--secondary-sidebar-w",
       storageKey: "secondaryWidth",
       minimum: MIN_SECONDARY_WIDTH,
       current: () => secondaryPanel.getBoundingClientRect().width,
@@ -96,15 +96,15 @@ export function bindPanelResize({
       )
     },
     {
-      handle: terminalHandle,
+      handle: bottomHandle,
       axis: "y",
       direction: -1,
-      variable: "--terminal-h",
-      storageKey: "terminalHeight",
-      minimum: MIN_TERMINAL_HEIGHT,
-      current: () => terminalPanel.getBoundingClientRect().height,
+      variable: "--bottom-panel-h",
+      storageKey: "bottomPanelHeight",
+      minimum: MIN_BOTTOM_PANEL_HEIGHT,
+      current: () => bottomPanel.getBoundingClientRect().height,
       maximum: () => Math.max(
-        MIN_TERMINAL_HEIGHT,
+        MIN_BOTTOM_PANEL_HEIGHT,
         workbench.clientHeight - MIN_EDITOR_HEIGHT
       )
     }
@@ -128,7 +128,7 @@ export function bindPanelResize({
   function persistLayout() {
     layoutState.primaryVisible = primaryController.isVisible();
     layoutState.secondaryVisible = secondaryController.isVisible();
-    layoutState.terminalVisible = terminalController.isVisible();
+    layoutState.bottomPanelVisible = bottomController.isVisible();
     savePanelLayout(layoutState);
   }
 
@@ -228,10 +228,10 @@ export function bindPanelResize({
     layoutState = {
       primaryWidth: getRenderedSize(primaryPanel, "width", DEFAULT_PRIMARY_WIDTH),
       secondaryWidth: getRenderedSize(secondaryPanel, "width", DEFAULT_SECONDARY_WIDTH),
-      terminalHeight: getRenderedSize(terminalPanel, "height", DEFAULT_TERMINAL_HEIGHT),
+      bottomPanelHeight: getRenderedSize(bottomPanel, "height", DEFAULT_BOTTOM_PANEL_HEIGHT),
       primaryVisible: primaryController.isVisible(),
       secondaryVisible: secondaryController.isVisible(),
-      terminalVisible: terminalController.isVisible()
+      bottomPanelVisible: bottomController.isVisible()
     };
     configurations.forEach(synchronize);
     if (notify) onLayoutChange?.();

@@ -1,0 +1,6 @@
+@layer components {
+  .status-bar { position: absolute; z-index: 110; right: 0; bottom: 0; left: 0; height: var(--status-h); display: flex; align-items: center; overflow: hidden; background: var(--color-status); color: #fff; font-size: 11px; white-space: nowrap; }
+  .status-bar__left,
+  .status-bar__right { height: 100%; display: flex; align-items: center; }
+  .status-bar__spacer { flex: 1; }
+}

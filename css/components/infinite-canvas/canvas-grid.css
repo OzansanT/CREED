@@ -1,0 +1,13 @@
+@layer components {
+  .infinite-canvas__grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    will-change: opacity, background-position, background-size;
+    transition: opacity 110ms linear;
+    background-image: radial-gradient(circle, rgba(71, 85, 105, .42) 1.15px, transparent 1.35px);
+    background-repeat: repeat;
+  }
+  .infinite-canvas__grid.is-active { opacity: 1; }
+}

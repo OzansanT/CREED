@@ -1,0 +1,6 @@
+@layer components {
+  .terminal-view { font: 12px/1.6 Consolas, "Courier New", monospace; }
+  .terminal-view__session { display: flex; align-items: center; gap: 5px; margin-right: 3px; }
+  .terminal-view__session .ui-icon { width: 14px; height: 14px; }
+  .terminal-view__body { min-height: 100%; padding: 8px 13px; overflow: auto; }
+}

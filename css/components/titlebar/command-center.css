@@ -1,0 +1,25 @@
+@layer components {
+  .command-center {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: min(600px, 48vw);
+    height: 26px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    padding: 0 9px;
+    overflow: hidden;
+    border: 1px solid #d9d9df;
+    border-radius: 6px;
+    background: #fff;
+    color: #77777d;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .command-center__search { margin-right: 7px; }
+  .command-center__bell { margin-left: auto; color: #515157; }
+  .command-center__search .ui-icon,
+  .command-center__bell .ui-icon { width: 15px; height: 15px; }
+}

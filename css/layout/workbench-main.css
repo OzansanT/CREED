@@ -1,0 +1,18 @@
+@layer layout {
+  .workbench {
+    position: absolute;
+    z-index: 20;
+    top: var(--workbench-top);
+    right: var(--secondary-sidebar-w);
+    bottom: var(--status-h);
+    left: calc(var(--activity-w) + var(--primary-sidebar-w));
+    min-width: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) var(--bottom-panel-h);
+    overflow: hidden;
+    background: var(--color-editor-background);
+  }
+
+  .workbench.is-bottom-panel-collapsed { grid-template-rows: minmax(0, 1fr); }
+  .workbench.is-bottom-panel-maximized { grid-template-rows: 0 minmax(0, 1fr); }
+}

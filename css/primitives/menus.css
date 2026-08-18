@@ -1,0 +1,4 @@
+@layer primitives {
+  .button-stack { display: grid; gap: 6px; }
+  .button-stack button { min-height: 29px; padding: 6px 8px; font-size: 11px; }
+}

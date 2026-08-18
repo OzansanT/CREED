@@ -28,7 +28,7 @@ function normalizePanelDimensions(saved) {
   const layout = {
     primaryWidth: Math.round(Number(saved.primaryWidth)),
     secondaryWidth: Math.round(Number(saved.secondaryWidth)),
-    terminalHeight: Math.round(Number(saved.terminalHeight))
+    bottomPanelHeight: Math.round(Number(saved.bottomPanelHeight ?? saved.terminalHeight))
   };
   return Object.values(layout).every((value) => Number.isFinite(value) && value > 0)
     ? layout
@@ -48,7 +48,7 @@ export function savePanelLayout(layoutState) {
   const visibility = {
     primaryVisible: layoutState?.primaryVisible,
     secondaryVisible: layoutState?.secondaryVisible,
-    terminalVisible: layoutState?.terminalVisible
+    bottomPanelVisible: layoutState?.bottomPanelVisible
   };
   if (!dimensions || !Object.values(visibility).every((value) => typeof value === "boolean")) {
     return false;
@@ -71,7 +71,7 @@ export function loadPanelLayout() {
   const visibility = {
     primaryVisible: saved?.primaryVisible,
     secondaryVisible: saved?.secondaryVisible,
-    terminalVisible: saved?.terminalVisible
+    bottomPanelVisible: saved?.bottomPanelVisible ?? saved?.terminalVisible
   };
   if (dimensions && Object.values(visibility).every((value) => typeof value === "boolean")) {
     return { ...dimensions, ...visibility };
@@ -85,7 +85,7 @@ export function loadPanelLayout() {
     ...legacyDimensions,
     primaryVisible: true,
     secondaryVisible: true,
-    terminalVisible: true
+    bottomPanelVisible: true
   };
   savePanelLayout(migrated);
   return migrated;

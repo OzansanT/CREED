@@ -1,0 +1,13 @@
+@layer components {
+  .syntax-comment { color: #16813c; }
+  .syntax-string { color: #a31515; }
+  .syntax-keyword { color: #0000ff; }
+  .syntax-number { color: #098658; }
+  .syntax-property { color: #0451a5; }
+  .syntax-selector { color: #800000; }
+  .syntax-color { color: #811f8c; }
+  .syntax-tag { color: #800000; }
+  .syntax-entity { color: #098658; }
+  .syntax-heading { color: #0451a5; font-weight: 700; }
+  .syntax-code { color: #a31515; }
+}

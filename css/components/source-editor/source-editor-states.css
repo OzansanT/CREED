@@ -1,0 +1,3 @@
+@layer states {
+  .source-editor__content[aria-busy="true"] { min-width: 100%; padding: 16px; color: #85858b; }
+}

@@ -1,0 +1,6 @@
+@layer components {
+  .source-editor__line { display: grid; grid-template-columns: 48px minmax(0, 1fr); min-height: 19px; }
+  .source-editor__line:hover { background: #f3f3f6; }
+  .source-editor__line-number { padding-right: 12px; color: #8a8a90; text-align: right; user-select: none; }
+  .source-editor__line-code { padding-right: 32px; white-space: pre; }
+}

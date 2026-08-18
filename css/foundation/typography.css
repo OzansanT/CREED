@@ -1,0 +1,11 @@
+@layer base {
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--color-text);
+    background: var(--color-app-background);
+  }
+
+  code, pre, .terminal-view, .source-editor {
+    font-family: Consolas, "Courier New", monospace;
+  }
+}

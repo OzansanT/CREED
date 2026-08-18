@@ -10,10 +10,11 @@ export function bindPrimarySidebar({
   function setVisible(nextVisible, notify = true) {
     visible = Boolean(nextVisible);
     sidebar.hidden = !visible;
-    app.classList.toggle("primary-sidebar-collapsed", !visible);
+    sidebar.classList.toggle("is-collapsed", !visible);
+    app.classList.toggle("is-primary-sidebar-collapsed", !visible);
     layoutButton.setAttribute("aria-expanded", String(visible));
     explorerButton.setAttribute("aria-expanded", String(visible));
-    explorerButton.classList.toggle("active", visible);
+    explorerButton.classList.toggle("is-active", visible);
     if (notify) onLayoutChange?.(visible);
   }
 

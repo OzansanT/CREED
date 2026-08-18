@@ -12,9 +12,9 @@ export function updateUI(elements, state) {
   const sidebarView = ["canvas", "infiniteCanvas", "components"].includes(state.sidebarView)
     ? state.sidebarView
     : "canvas";
-  elements.canvasMenuBtn.classList.toggle("active", sidebarView === "canvas");
-  elements.infiniteCanvasMenuBtn.classList.toggle("active", sidebarView === "infiniteCanvas");
-  elements.componentsMenuBtn.classList.toggle("active", sidebarView === "components");
+  elements.canvasMenuBtn.classList.toggle("is-active", sidebarView === "canvas");
+  elements.infiniteCanvasMenuBtn.classList.toggle("is-active", sidebarView === "infiniteCanvas");
+  elements.componentsMenuBtn.classList.toggle("is-active", sidebarView === "components");
   elements.canvasMenuBtn.setAttribute("aria-selected", String(sidebarView === "canvas"));
   elements.infiniteCanvasMenuBtn.setAttribute("aria-selected", String(sidebarView === "infiniteCanvas"));
   elements.componentsMenuBtn.setAttribute("aria-selected", String(sidebarView === "components"));
@@ -47,8 +47,8 @@ export function updateUI(elements, state) {
   if (hasAnchor) {
     elements.anchorMarker.style.left = `${state.anchor.worldX}px`;
     elements.anchorMarker.style.top = `${state.anchor.worldY}px`;
-    elements.anchorMarker.classList.add("visible");
+    elements.anchorMarker.classList.add("is-visible");
   } else {
-    elements.anchorMarker.classList.remove("visible");
+    elements.anchorMarker.classList.remove("is-visible");
   }
 }

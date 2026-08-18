@@ -1,0 +1,40 @@
+@layer tokens {
+  :root {
+    --restricted-h: 20px;
+    --command-h: 38px;
+    --workbench-top: calc(var(--restricted-h) + var(--command-h));
+    --status-h: 20px;
+    --activity-w: 40px;
+    --primary-sidebar-w: 293px;
+    --secondary-sidebar-w: 290px;
+    --bottom-panel-h: 37%;
+
+    --color-app-background: #fbfbfd;
+    --color-panel-background: #fafafe;
+    --color-editor-background: #fcfcfe;
+    --color-border: #dedee3;
+    --color-chrome-border: #e1e1e6;
+    --color-text: #2f2f33;
+    --color-muted: #6f6f75;
+    --color-accent: #0e639c;
+    --color-status: #007acc;
+    --color-danger: #b42318;
+
+    --bg: var(--color-app-background);
+    --panel: var(--color-panel-background);
+    --panel-border: var(--color-border);
+    --chrome-border: var(--color-chrome-border);
+    --text: var(--color-text);
+    --muted: var(--color-muted);
+    --accent: var(--color-accent);
+    --vscode-blue: var(--color-status);
+    --danger: var(--color-danger);
+
+    --shadow-panel: 0 4px 16px rgba(20, 20, 30, .07);
+    --shadow: var(--shadow-panel);
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+    --radius-xl: 8px;
+  }
+}

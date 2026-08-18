@@ -1,8 +1,0 @@
-/*
-  EDITOR PANEL CSS ENTRY POINT
-
-  Keep editor shell and source-viewer styling connected here.
-  Infinite-canvas styling is owned by infinitecanvas-main.css.
-*/
-
-@import url("./editor-panel.css");

@@ -1,0 +1,6 @@
+@layer states {
+  [hidden], .is-hidden { display: none !important; }
+  .is-disabled { opacity: .44; pointer-events: none; }
+  .has-focus { outline: 1px solid var(--color-status); outline-offset: -1px; }
+  .has-error { color: var(--color-danger); }
+}

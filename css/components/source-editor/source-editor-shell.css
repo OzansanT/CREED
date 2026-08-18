@@ -1,0 +1,4 @@
+@layer components {
+  .source-editor { width: 100%; height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 104px; overflow: hidden; background: #fcfcfe; }
+  .source-editor__content { min-width: max-content; padding: 4px 0 40px; color: #333337; font: 12px/19px Consolas, "Courier New", monospace; tab-size: 4; }
+}

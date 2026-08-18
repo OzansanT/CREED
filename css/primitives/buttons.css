@@ -1,0 +1,33 @@
+@layer primitives {
+  button {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 7px 10px;
+    background: #fff;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  }
+
+  button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: #bfc0c7;
+    box-shadow: 0 3px 10px rgba(20, 20, 30, .07);
+  }
+
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: .44; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .button--primary {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: #fff;
+  }
+
+  .button--primary:hover:not(:disabled) {
+    border-color: #1177bb;
+    background: #1177bb;
+  }
+
+  .button--danger { border-color: #e5c8c5; color: var(--color-danger); }
+}

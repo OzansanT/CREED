@@ -1,0 +1,24 @@
+@layer primitives {
+  .icon-button {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #626268;
+    box-shadow: none;
+  }
+
+  .icon-button:hover:not(:disabled) {
+    transform: none;
+    border-color: transparent;
+    background: #e8e8ec;
+    color: #242428;
+    box-shadow: none;
+  }
+
+  .icon-button .ui-icon { width: 15px; height: 15px; }
+}

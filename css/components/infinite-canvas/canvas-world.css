@@ -1,0 +1,3 @@
+@layer components {
+  .infinite-canvas__world { position: absolute; left: 0; top: 0; width: 1px; height: 1px; transform-origin: 0 0; will-change: transform; pointer-events: none; }
+}

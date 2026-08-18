@@ -1,0 +1,39 @@
+@layer reset, tokens, base, primitives, layout, components, states, utilities, responsive;
+
+@import url("./foundation/reset.css");
+@import url("./foundation/design-tokens.css");
+@import url("./foundation/themes.css");
+@import url("./foundation/typography.css");
+@import url("./foundation/accessibility.css");
+@import url("./foundation/states.css");
+@import url("./foundation/utilities.css");
+
+@import url("./primitives/buttons.css");
+@import url("./primitives/icon-buttons.css");
+@import url("./primitives/inputs.css");
+@import url("./primitives/menus.css");
+@import url("./primitives/tabs.css");
+@import url("./primitives/toolbars.css");
+@import url("./primitives/scrollbars.css");
+@import url("./primitives/icons.css");
+
+@import url("./layout/app-shell-main.css");
+@import url("./layout/workbench-main.css");
+@import url("./layout/panel-layout.css");
+@import url("./layout/panel-resize-main.css");
+
+@import url("./components/restricted-mode/restricted-mode-main.css");
+@import url("./components/titlebar/titlebar-main.css");
+@import url("./components/activity-bar/activity-bar-main.css");
+@import url("./components/primary-sidebar/primary-sidebar-main.css");
+@import url("./components/explorer/explorer-main.css");
+@import url("./components/editor-panel/editor-panel-main.css");
+@import url("./components/infinite-canvas/infinitecanvas-main.css");
+@import url("./components/source-editor/source-editor-main.css");
+@import url("./components/bottom-panel/bottom-panel-main.css");
+@import url("./components/secondary-sidebar/secondary-sidebar-main.css");
+@import url("./components/chat/chat-view-main.css");
+@import url("./components/feedback/feedback-main.css");
+@import url("./components/status-bar/status-bar-main.css");
+
+@import url("./layout/responsive.css");

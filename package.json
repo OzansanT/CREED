@@ -1,0 +1,10 @@
+{
+  "name": "creed-workbench",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:css && npm run build:inventory",
+    "build:css": "node scripts/build-css.mjs",
+    "build:inventory": "node scripts/build-source-files.mjs",
+    "check": "node scripts/check-architecture.mjs"
+  }
+}

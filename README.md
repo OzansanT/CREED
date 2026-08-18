@@ -1,192 +1,248 @@
 # CREED
 
-CREED is a browser-based infinite-canvas workspace presented in a Visual Studio Code/Codespaces-inspired shell. It combines pan-and-zoom world navigation, adaptive grid detail, saved canvas locations, draggable components, and a built-in source viewer.
+CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Codespaces-inspired shell. It combines an Explorer, multi-tab source viewer, infinite canvas, resizable bottom panel, secondary sidebar with chat view, and persistent layout state.
 
-## Run locally
+## Architecture rules
 
-Serve the repository through HTTP so ES modules and relative source-file requests work:
+- IDs are stable JavaScript and ARIA hooks.
+- Classes own presentation and use component-oriented names.
+- Repeated elements use classes plus `data-*` attributes instead of sequential IDs.
+- Each visual component has one `*-main.css` entry and focused CSS colony files.
+- `index.html` loads only `css/generated/creed.css`.
+- Edit CSS source colonies, then run `node scripts/build-css.mjs`.
+- Run `node scripts/build-source-files.mjs` after adding, renaming, or deleting repository files.
 
-```bash
-python -m http.server 8000
+## Main visual regions
+
+```text
+#app.app-shell
+├── #restrictedModeBanner.restricted-mode-banner
+├── #titleBar.app-titlebar
+├── #activityBar.activity-bar
+├── #primarySidebar.primary-sidebar
+├── #workbench.workbench
+│   ├── #editorPanel.editor-panel
+│   │   ├── #canvasView.editor-view--canvas
+│   │   └── #sourceEditorView.editor-view--source
+│   └── #bottomPanel.bottom-panel
+├── #secondarySidebar.secondary-sidebar
+│   └── #chatView.chat-view
+├── #notificationLayer.notification-layer
+└── #statusBar.status-bar
 ```
 
-Then open `http://localhost:8000`. Opening `index.html` directly with a `file://` URL is not supported because browsers restrict module and `fetch()` access.
+## Development commands
 
-## Main behavior
+```bash
+node scripts/build-css.mjs
+node scripts/build-source-files.mjs
+node --check main.js
+```
 
-- Drag the canvas to pan.
-- Use `Ctrl/Cmd + wheel` or the zoom controls to zoom around a fixed pivot.
-- Press `0` to return to the world origin.
-- Press `A` to save the current view and `Shift + A` to return to it.
-- Use either the **Toggle primary sidebar** layout control or the **Explorer** activity button to repeatedly collapse and reopen the primary sidebar.
-- Use **Toggle secondary sidebar** to repeatedly collapse and reopen `sidebar1`.
-- Use **Toggle panel** to repeatedly collapse and reopen the bottom Terminal panel, whose CSS and JavaScript are composed through `terminal-panel-main.css` and `terminal-panel-main.js`.
-- Drag the primary sidebar's right edge, the secondary sidebar's left edge, or the Terminal panel's top edge to resize the layout. Arrow keys resize a focused separator; hold Shift for larger steps.
-- Each panel's resized dimensions and collapsed/open state persist together across browser reloads. Saved dimensions are safely clamped for the current viewport, and existing dimension-only preferences migrate automatically.
-- Use **Canvas Reset** to reset the canvas view, saved location, and components without changing the current sidebar menu.
-- Use **Infinite Reset** to restore the complete infinite workspace, reopen every panel, restore default panel sizes, and clear the saved layout preferences.
-- Use **Canvas Controls** for coordinates, grid LOD, shortcuts, and saved-view actions.
-- Use **Infinite Canvas** to return to the canvas editor; it intentionally opens no secondary sidebar panel.
-- Select any Explorer file to load and display its real repository source through the `editor-panel` component and its `editor-panel-main.css` / `editor-panel-main.js` entry points.
-- Use **Components** to add the JSON card.
+`npm run build` and `npm run check` provide the same commands when npm is available.
 
-## Explorer inventory
-
-`source-files.js` contains the single Explorer manifest: `WORKSPACE_FILES`. `workbench-input.js` generates every Explorer row from that array and loads the selected file with a real relative `fetch()`.
-
-When adding, renaming, or deleting a repository file:
-
-1. Update `WORKSPACE_FILES` in sorted order.
-2. Add or remove the file's real CSS link or JavaScript import where required.
-3. Never paste source-code snapshots into the manifest.
-4. Verify every Explorer row opens the corresponding file.
-
-## Coordinate model
-
-`state.x` and `state.y` are renderer translations in screen space. User-facing, saved, and compared locations use world coordinates through `screenToWorld(...)` or `getViewportWorldCenter(...)`. Zoom values are clamped to `MIN_ZOOM` and `MAX_ZOOM`, and zoom operations preserve the world point under the pivot.
-
-## Repository tree
+## Current directory tree
 
 ```text
 CREED/
+├── css/
+│   ├── components/
+│   │   ├── activity-bar/
+│   │   │   ├── activity-bar-groups.css
+│   │   │   ├── activity-bar-main.css
+│   │   │   ├── activity-bar-shell.css
+│   │   │   └── activity-buttons.css
+│   │   ├── bottom-panel/
+│   │   │   ├── bottom-panel-main.css
+│   │   │   ├── bottom-panel-shell.css
+│   │   │   ├── bottom-panel-tabs.css
+│   │   │   ├── bottom-panel-toolbar.css
+│   │   │   ├── bottom-panel-views.css
+│   │   │   ├── terminal-prompt.css
+│   │   │   └── terminal-view.css
+│   │   ├── chat/
+│   │   │   ├── chat-composer.css
+│   │   │   ├── chat-context.css
+│   │   │   ├── chat-empty-state.css
+│   │   │   ├── chat-messages.css
+│   │   │   ├── chat-tools.css
+│   │   │   └── chat-view-main.css
+│   │   ├── editor-panel/
+│   │   │   ├── editor-actions.css
+│   │   │   ├── editor-breadcrumbs.css
+│   │   │   ├── editor-panel-main.css
+│   │   │   ├── editor-panel-shell.css
+│   │   │   ├── editor-tabs.css
+│   │   │   └── editor-viewport.css
+│   │   ├── explorer/
+│   │   │   ├── explorer-actions.css
+│   │   │   ├── explorer-header.css
+│   │   │   ├── explorer-main.css
+│   │   │   ├── explorer-sections.css
+│   │   │   ├── file-row.css
+│   │   │   ├── workspace-header.css
+│   │   │   └── workspace-tree.css
+│   │   ├── feedback/
+│   │   │   ├── feedback-main.css
+│   │   │   ├── notification-layer.css
+│   │   │   └── toast.css
+│   │   ├── infinite-canvas/
+│   │   │   ├── canvas-anchors.css
+│   │   │   ├── canvas-cards.css
+│   │   │   ├── canvas-grid.css
+│   │   │   ├── canvas-hints.css
+│   │   │   ├── canvas-lod.css
+│   │   │   ├── canvas-viewport.css
+│   │   │   ├── canvas-world.css
+│   │   │   ├── canvas-zoom.css
+│   │   │   └── infinitecanvas-main.css
+│   │   ├── primary-sidebar/
+│   │   │   ├── primary-sidebar-content.css
+│   │   │   ├── primary-sidebar-footer.css
+│   │   │   ├── primary-sidebar-header.css
+│   │   │   ├── primary-sidebar-main.css
+│   │   │   └── primary-sidebar-shell.css
+│   │   ├── restricted-mode/
+│   │   │   ├── restricted-mode-actions.css
+│   │   │   ├── restricted-mode-main.css
+│   │   │   └── restricted-mode-shell.css
+│   │   ├── secondary-sidebar/
+│   │   │   ├── secondary-sidebar-content.css
+│   │   │   ├── secondary-sidebar-footer.css
+│   │   │   ├── secondary-sidebar-header.css
+│   │   │   ├── secondary-sidebar-main.css
+│   │   │   └── secondary-sidebar-shell.css
+│   │   ├── source-editor/
+│   │   │   ├── source-editor-main.css
+│   │   │   ├── source-editor-shell.css
+│   │   │   ├── source-editor-states.css
+│   │   │   ├── source-lines.css
+│   │   │   ├── source-minimap.css
+│   │   │   ├── source-scroller.css
+│   │   │   └── source-syntax.css
+│   │   ├── status-bar/
+│   │   │   ├── status-bar-items.css
+│   │   │   ├── status-bar-layout.css
+│   │   │   └── status-bar-main.css
+│   │   └── titlebar/
+│   │       ├── command-center.css
+│   │       ├── layout-controls.css
+│   │       ├── navigation-controls.css
+│   │       ├── titlebar-actions.css
+│   │       ├── titlebar-brand.css
+│   │       ├── titlebar-main.css
+│   │       └── titlebar-shell.css
+│   ├── foundation/
+│   │   ├── accessibility.css
+│   │   ├── design-tokens.css
+│   │   ├── reset.css
+│   │   ├── states.css
+│   │   ├── themes.css
+│   │   ├── typography.css
+│   │   └── utilities.css
+│   ├── generated/
+│   │   └── creed.css
+│   ├── layout/
+│   │   ├── app-shell-main.css
+│   │   ├── panel-layout.css
+│   │   ├── panel-resize-main.css
+│   │   ├── responsive.css
+│   │   └── workbench-main.css
+│   ├── primitives/
+│   │   ├── buttons.css
+│   │   ├── icon-buttons.css
+│   │   ├── icons.css
+│   │   ├── inputs.css
+│   │   ├── menus.css
+│   │   ├── scrollbars.css
+│   │   ├── tabs.css
+│   │   └── toolbars.css
+│   └── creed-main.css
+├── scripts/
+│   ├── build-css.mjs
+│   ├── check-architecture.mjs
+│   └── build-source-files.mjs
 ├── AGENTS.md
-├── activity-bar.css
-├── anchor.css
+├── README.md
 ├── anchors.js
-├── app-layout.css
-├── buttons.css
-├── canvas-shell.css
+├── bottom-panel-input.js
+├── bottom-panel-main.js
 ├── card-input.js
 ├── config.js
 ├── coordinates.js
-├── dotted-background.css
-├── editor-panel-main.css
 ├── editor-panel-main.js
-├── editor-panel.css
 ├── editor-tabs.js
 ├── elements.js
-├── feedback.css
 ├── grid-lod.js
-├── icons.css
 ├── icons.js
 ├── index.html
+├── infinitecanvas-main.js
 ├── json-file.js
 ├── keyboard.js
-├── lod-indicator.css
-├── main-canvas.css
 ├── main.js
-├── navbar.css
+├── package.json
 ├── pan-input.js
 ├── panel-resize-input.js
-├── panel-resize.css
 ├── primary-sidebar-input.js
-├── README.md
 ├── reset-input.js
-├── responsive.css
-├── restricted-banner.css
-├── root-canvas.css
 ├── secondary-sidebar-input.js
+├── secondary-sidebar-main.js
 ├── sidebar-input.js
-├── sidebar-main.css
-├── sidebar-stats.css
-├── sidebar.css
-├── sidebar1-main.css
-├── sidebar1.css
 ├── source-files.js
 ├── state.js
-├── status-bar.css
 ├── storage.js
-├── terminal-panel-input.js
-├── terminal-panel-main.css
-├── terminal-panel-main.js
-├── terminal-panel.css
 ├── toast.js
 ├── ui.js
 ├── viewport.js
 ├── wheel-input.js
-├── workbench-input.js
-├── workbench.css
-├── world-content.css
-└── zoom-controls.css
+└── workbench-input.js
 ```
 
-## Entry relationships
+## Current file relationship tree
 
 ```text
 index.html
-├── main-canvas.css
-│   ├── root-canvas.css
-│   ├── app-layout.css
-│   ├── buttons.css
-│   ├── icons.css
-│   ├── restricted-banner.css
-│   ├── navbar.css
-│   ├── activity-bar.css
-│   ├── sidebar-main.css
-│   │   ├── sidebar.css
-│   │   └── sidebar-stats.css
-│   ├── sidebar1-main.css
-│   │   └── sidebar1.css
-│   ├── lod-indicator.css
-│   ├── workbench.css
-│   ├── editor-panel-main.css
-│   │   ├── editor-panel.css
-│   │   ├── canvas-shell.css
-│   │   ├── dotted-background.css
-│   │   ├── world-content.css
-│   │   ├── anchor.css
-│   │   └── zoom-controls.css
-│   ├── terminal-panel-main.css
-│   │   └── terminal-panel.css
-│   ├── feedback.css
-│   ├── panel-resize.css
-│   ├── status-bar.css
-│   └── responsive.css
-└── main.js
-    ├── state.js
-    ├── elements.js
-    ├── storage.js
-    │   ├── config.js
-    │   └── state.js
-    ├── ui.js
-    │   ├── grid-lod.js
-    │   │   └── config.js
-    │   └── coordinates.js
-    ├── toast.js
-    ├── viewport.js
-    │   ├── config.js
-    │   ├── state.js
-    │   └── coordinates.js
-    ├── anchors.js
-    │   ├── config.js
-    │   ├── state.js
-    │   └── coordinates.js
-    ├── pan-input.js
-    ├── wheel-input.js
-    │   └── viewport.js
-    ├── keyboard.js
-    ├── sidebar-input.js
-    │   └── coordinates.js
-    ├── primary-sidebar-input.js
-    ├── secondary-sidebar-input.js
-    ├── terminal-panel-main.js
-    │   └── terminal-panel-input.js
-    ├── panel-resize-input.js
-    │   ├── state.js
-    │   └── storage.js
-    ├── reset-input.js
-    │   ├── storage.js
-    │   └── viewport.js
-    ├── card-input.js
-    ├── json-file.js
-    ├── icons.js
-    └── editor-panel-main.js
-        └── workbench-input.js
-            ├── source-files.js
-            └── editor-tabs.js
-                └── icons.js
+├── CSS
+│   └── css/generated/creed.css
+└── JavaScript
+    └── main.js
+        ├── elements.js
+        ├── toast.js
+        ├── primary-sidebar-input.js
+        ├── secondary-sidebar-main.js
+        │   └── secondary-sidebar-input.js
+        ├── bottom-panel-main.js
+        │   └── bottom-panel-input.js
+        ├── panel-resize-input.js
+        │   ├── state.js
+        │   └── storage.js
+        ├── icons.js
+        ├── editor-panel-main.js
+        │   └── workbench-input.js
+        │       ├── source-files.js
+        │       └── editor-tabs.js
+        │           └── icons.js
+        └── infinitecanvas-main.js
+            ├── state.js
+            ├── storage.js
+            ├── ui.js
+            │   ├── grid-lod.js
+            │   └── coordinates.js
+            ├── toast.js
+            ├── viewport.js
+            ├── anchors.js
+            ├── pan-input.js
+            ├── wheel-input.js
+            ├── keyboard.js
+            ├── sidebar-input.js
+            ├── reset-input.js
+            ├── card-input.js
+            └── json-file.js
+
+css/creed-main.css
+├── css/foundation/*.css
+├── css/primitives/*.css
+├── css/layout/*.css
+└── css/components/*/*-main.css
+    └── focused component colony files
 ```
-
-## Structure rules
-
-Follow `AGENTS.md`: update an existing feature in its owning file, create a new file only for a genuinely new responsibility, keep `main.js` as orchestration glue, preserve CSS colonies, and leave no orphan links or imports.

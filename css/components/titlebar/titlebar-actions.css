@@ -1,0 +1,14 @@
+@layer components {
+  .titlebar-action {
+    height: 27px;
+    padding: 0 9px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 11px;
+  }
+  .titlebar-action .ui-icon { width: 14px; height: 14px; }
+  .titlebar-action--danger { color: var(--color-danger); border-color: #e7c5c2; }
+}

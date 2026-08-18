@@ -1,0 +1,5 @@
+@layer components {
+  .terminal-prompt__user { color: #25822e; }
+  .terminal-prompt__path { color: #075c9a; font-weight: 700; }
+  .terminal-prompt__branch { color: #b02531; }
+}

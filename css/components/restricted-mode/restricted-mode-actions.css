@@ -1,0 +1,4 @@
+@layer components {
+  .restricted-mode-banner__actions { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+  .restricted-mode-banner__actions a { color: #333337; text-decoration: underline; text-underline-offset: 2px; }
+}

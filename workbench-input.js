@@ -1,5 +1,5 @@
-import { WORKSPACE_FILES } from "./source-files.js?v=20260817-2";
-import { createEditorTabs } from "./editor-tabs.js?v=20260815-3";
+import { WORKSPACE_FILES } from "./source-files.js?v=20260818-1";
+import { createEditorTabs } from "./editor-tabs.js?v=20260818-1";
 
 function getFileExtension(fileName) {
   return fileName.split(".").pop()?.toLowerCase() || "";
@@ -26,17 +26,20 @@ function getLanguageLabel(fileName) {
 function createFileButton(fileName) {
   const button = document.createElement("button");
   const icon = document.createElement("span");
+  const label = document.createElement("span");
   const extension = getFileExtension(fileName);
 
   button.className = "file-row";
   button.type = "button";
-  button.dataset.file = fileName;
+  button.dataset.resource = fileName;
   button.setAttribute("role", "option");
   button.setAttribute("aria-selected", "false");
 
-  icon.className = "file-icon " + (extension || "file");
+  icon.className = "file-row__icon file-row__icon--" + (extension || "file");
   icon.textContent = getFileKind(fileName);
-  button.append(icon, document.createTextNode(fileName));
+  label.className = "file-row__name";
+  label.textContent = fileName;
+  button.append(icon, label);
   return button;
 }
 
@@ -44,7 +47,7 @@ function renderFileTree(fileTree) {
   const fragment = document.createDocumentFragment();
   WORKSPACE_FILES.forEach((fileName) => fragment.append(createFileButton(fileName)));
   fileTree.replaceChildren(fragment);
-  return [...fileTree.querySelectorAll(".file-row[data-file]")];
+  return [...fileTree.querySelectorAll(".file-row[data-resource]")];
 }
 
 const TOKEN_PATTERNS = Object.freeze({
@@ -120,9 +123,9 @@ function renderCode(source, target, minimap, fileName) {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const extension = getFileExtension(fileName);
 
-  minimapLines.className = "source-minimap__lines";
+  minimapLines.className = "source-editor__minimap-lines";
   minimapLines.style.gridTemplateRows = "repeat(" + lines.length + ", minmax(0, 1fr))";
-  minimapViewport.className = "source-minimap__viewport";
+  minimapViewport.className = "source-editor__minimap-viewport";
 
   lines.forEach((line, index) => {
     const row = document.createElement("div");
@@ -130,13 +133,15 @@ function renderCode(source, target, minimap, fileName) {
     const code = document.createElement("span");
     const minimapLine = document.createElement("div");
 
-    row.className = "source-line";
-    number.className = "source-line__number";
+    row.className = "source-editor__line";
+    row.dataset.lineNumber = String(index + 1);
+    number.className = "source-editor__line-number";
     number.textContent = String(index + 1);
-    code.className = "source-line__code";
+    code.className = "source-editor__line-code";
     appendHighlightedCode(line, code, extension);
 
-    minimapLine.className = "minimap-line " + extension;
+    minimapLine.className = "source-editor__minimap-line source-editor__minimap-line--" + extension;
+    minimapLine.dataset.lineNumber = String(index + 1);
     minimapLine.style.width = Math.min(94, Math.max(4, line.trim().length * 0.72)) + "px";
 
     row.append(number, code);
@@ -160,8 +165,8 @@ export function bindWorkbenchFiles({
   sourceScroller,
   codeContent,
   codeMinimap,
-  sidebar1ContextKind,
-  sidebar1ContextName,
+  chatContextKind,
+  chatContextName,
   statusLanguage,
   onCanvasShow,
   onError
@@ -180,8 +185,8 @@ export function bindWorkbenchFiles({
 
   function setSelectedFile(fileName) {
     fileButtons.forEach((button) => {
-      const selected = button.dataset.file === fileName;
-      button.classList.toggle("selected", selected);
+      const selected = button.dataset.resource === fileName;
+      button.classList.toggle("is-selected", selected);
       button.setAttribute("aria-selected", String(selected));
     });
   }
@@ -189,13 +194,13 @@ export function bindWorkbenchFiles({
   function setFileContext(kind, name, language) {
     breadcrumbKind.textContent = kind;
     breadcrumbName.textContent = name;
-    sidebar1ContextKind.textContent = kind;
-    sidebar1ContextName.textContent = name;
+    chatContextKind.textContent = kind;
+    chatContextName.textContent = name;
     statusLanguage.textContent = language;
   }
 
   function updateMinimapViewport() {
-    const viewport = codeMinimap.querySelector(".source-minimap__viewport");
+    const viewport = codeMinimap.querySelector(".source-editor__minimap-viewport");
     const maximum = Math.max(0, sourceScroller.scrollHeight - sourceScroller.clientHeight);
     const viewportRatio = sourceScroller.scrollHeight > 0
       ? Math.min(1, sourceScroller.clientHeight / sourceScroller.scrollHeight)
@@ -306,7 +311,7 @@ export function bindWorkbenchFiles({
 
   fileButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      const fileName = button.dataset.file;
+      const fileName = button.dataset.resource;
       if (fileName) tabs.open(fileName, getFileKind(fileName));
     });
   });

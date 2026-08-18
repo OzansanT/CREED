@@ -7,10 +7,10 @@ export function updateGridLOD(elements, state) {
     const screenGap = BASE_GRID * order * state.zoom;
     layer.style.backgroundSize = `${screenGap}px ${screenGap}px`;
     layer.style.backgroundPosition = `${state.x}px ${state.y}px`;
-    layer.classList.toggle("active", order === activeOrder);
+    layer.classList.toggle("is-active", order === activeOrder);
   }
   elements.lodBadge.textContent = `GRID ${activeOrder}×`;
   elements.orderStat.textContent = `${activeOrder}×`;
-  for (const row of elements.lodRows) row.classList.toggle("active", Number(row.dataset.order) === activeOrder);
+  for (const row of elements.lodRows) row.classList.toggle("is-active", Number(row.dataset.order) === activeOrder);
   return activeOrder;
 }

@@ -85,7 +85,7 @@ export function createInfiniteCanvasRuntime(elements) {
     showCanvas,
     primarySidebar,
     secondarySidebar,
-    terminalPanel,
+    bottomPanel,
     panelResize
   }) {
     if (bound) return;
@@ -164,7 +164,7 @@ export function createInfiniteCanvasRuntime(elements) {
       onInfiniteReset: () => {
         primarySidebar.setVisible(true, false);
         secondarySidebar.setVisible(true, false);
-        terminalPanel.setVisible(true, false);
+        bottomPanel.setVisible(true, false);
         panelResize.reset(false);
       }
     });

@@ -1,0 +1,8 @@
+@layer primitives {
+  .workspace-tree,
+  .primary-sidebar__content,
+  .source-editor__scroller {
+    scrollbar-width: thin;
+    scrollbar-color: #c9c9ce transparent;
+  }
+}

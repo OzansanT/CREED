@@ -1,0 +1,15 @@
+@layer components {
+  .primary-sidebar {
+    position: absolute;
+    z-index: 40;
+    top: var(--workbench-top);
+    bottom: var(--status-h);
+    left: var(--activity-w);
+    width: var(--primary-sidebar-w);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--color-chrome-border);
+    background: #f8f8fb;
+  }
+}

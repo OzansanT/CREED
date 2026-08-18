@@ -1,0 +1,12 @@
+@layer components {
+  .primary-sidebar__header {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    color: #343438;
+    font-size: 12px;
+    font-weight: 600;
+  }
+}

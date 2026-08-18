@@ -1,0 +1,5 @@
+@layer components {
+  .explorer-view h2 { margin: 0 0 7px; color: #4b4b50; font-size: 11px; font-weight: 650; letter-spacing: .035em; text-transform: uppercase; }
+  .explorer-view h3 { margin: 0 0 6px; font-size: 12px; }
+  .explorer-view p { margin: 0 0 10px; color: var(--color-muted); font-size: 11px; line-height: 1.4; }
+}

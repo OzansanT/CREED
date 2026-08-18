@@ -1,0 +1,6 @@
+@layer components {
+  .bottom-panel__tabs { min-width: 0; display: flex; align-items: center; gap: 2px; padding-left: 10px; overflow-x: auto; color: #49494e; font-size: 12px; }
+  .bottom-panel__tab { height: 28px; flex: 0 0 auto; padding: 0 8px; border: 0; border-radius: 4px; background: transparent; color: inherit; box-shadow: none; }
+  .bottom-panel__tab:hover:not(:disabled) { transform: none; border-color: transparent; background: #e8e8eb; box-shadow: none; }
+  .bottom-panel__tab.is-active { background: #dddddf; color: #242428; }
+}

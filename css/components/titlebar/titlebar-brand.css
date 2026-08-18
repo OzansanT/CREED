@@ -1,0 +1,24 @@
+@layer components {
+  .app-titlebar__brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+    color: #2f2f34;
+    font-size: 12px;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .app-titlebar__brand-mark {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 5px;
+    background: #1473b8;
+    color: #fff;
+  }
+
+  .app-titlebar__brand-mark .ui-icon { width: 15px; height: 15px; stroke-width: 1.9; }
+}

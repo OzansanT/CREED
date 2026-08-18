@@ -1,4 +1,4 @@
-import { createIcon } from "./icons.js?v=20260815-3";
+import { createIcon } from "./icons.js?v=20260818-1";
 
 export function createEditorTabs({
   container,
@@ -9,10 +9,19 @@ export function createEditorTabs({
 }) {
   const tabs = new Map();
   let activeFile = "";
-  let nextId = 1;
+
+  function createTabId(fileName) {
+    let hash = 2166136261;
+    for (const character of fileName) {
+      hash ^= character.codePointAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    const slug = fileName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return "fileTab-" + slug + "-" + (hash >>> 0).toString(36);
+  }
 
   function setCanvasSelected(selected) {
-    canvasTab.classList.toggle("active", selected);
+    canvasTab.classList.toggle("is-active", selected);
     canvasTab.setAttribute("aria-selected", String(selected));
     canvasTab.tabIndex = selected ? 0 : -1;
   }
@@ -21,7 +30,7 @@ export function createEditorTabs({
     setCanvasSelected(activeFile === "");
     tabs.forEach(({ tab }, fileName) => {
       const selected = fileName === activeFile;
-      tab.classList.toggle("active", selected);
+      tab.classList.toggle("is-active", selected);
       tab.setAttribute("aria-selected", String(selected));
       tab.tabIndex = selected ? 0 : -1;
     });
@@ -81,15 +90,15 @@ export function createEditorTabs({
     const label = document.createElement("span");
     const closeButton = document.createElement("button");
 
-    tab.id = "workspaceFileTab" + nextId++;
-    tab.className = "editor-tab editor-file-tab";
-    tab.dataset.file = fileName;
+    tab.id = createTabId(fileName);
+    tab.className = "editor-tab editor-tab--file";
+    tab.dataset.resource = fileName;
     tab.setAttribute("role", "tab");
     tab.setAttribute("aria-selected", "false");
     tab.setAttribute("aria-controls", codeView.id);
     tab.tabIndex = -1;
 
-    icon.className = "file-kind";
+    icon.className = "editor-tab__icon file-kind";
     icon.textContent = kind;
 
     label.className = "editor-tab__label";

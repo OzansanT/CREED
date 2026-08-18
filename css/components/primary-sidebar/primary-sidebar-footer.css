@@ -1,0 +1,13 @@
+@layer components {
+  .primary-sidebar__footer {
+    height: 52px;
+    display: grid;
+    align-content: center;
+    gap: 1px;
+    border-top: 1px solid var(--color-chrome-border);
+    color: #3f3f44;
+    background: #f8f8fb;
+    font-size: 11px;
+  }
+  .primary-sidebar__footer span { padding: 5px 12px; }
+}

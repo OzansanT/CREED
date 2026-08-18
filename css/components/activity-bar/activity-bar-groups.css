@@ -1,0 +1,5 @@
+@layer components {
+  .activity-bar__primary,
+  .activity-bar__secondary { width: 100%; display: grid; justify-items: center; }
+  .activity-bar__secondary { margin-top: auto; padding-bottom: 5px; }
+}

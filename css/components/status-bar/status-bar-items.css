@@ -1,0 +1,5 @@
+@layer components {
+  .status-bar__remote { height: 100%; padding: 0 10px; display: flex; align-items: center; gap: 5px; background: #0069b4; }
+  .status-bar__item { height: 100%; padding: 0 7px; display: flex; align-items: center; gap: 4px; }
+  .status-bar .ui-icon { width: 13px; height: 13px; stroke-width: 1.9; }
+}
