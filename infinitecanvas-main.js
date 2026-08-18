@@ -13,8 +13,17 @@ import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
 
 export function createInfiniteCanvasRuntime(elements) {
-  const update = () => updateUI(elements, state);
-  const persist = () => saveState();
+  let renderFrame = 0;
+
+  const update = () => {
+    if (renderFrame) return;
+    renderFrame = requestAnimationFrame(() => {
+      renderFrame = 0;
+      updateUI(elements, state);
+    });
+  };
+
+  const persist = () => saveState(elements.canvas);
   const notify = (message) => showToast(elements.toast, message);
 
   function home() {
@@ -38,7 +47,7 @@ export function createInfiniteCanvasRuntime(elements) {
   }
 
   function initializePosition() {
-    const restored = loadState();
+    const restored = loadState(elements.canvas);
     if (!restored) {
       const center = {
         x: elements.canvas.clientWidth / 2,
