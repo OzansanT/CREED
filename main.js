@@ -8,7 +8,44 @@ import { hydrateIcons } from "./icons.js";
 import { bindEditorPanel } from "./editor-panel-main.js";
 import { createInfiniteCanvasRuntime } from "./infinitecanvas-main.js";
 
+function disableUnavailableControls() {
+  const selectors = [
+    ".navigation-controls__button",
+    "#activityMenuBtn",
+    "#activitySearchBtn",
+    "#activitySourceControlBtn",
+    "#activityRunBtn",
+    "#activityExtensionsBtn",
+    "#activityGitHubBtn",
+    "#activityAccountBtn",
+    "#activitySettingsBtn",
+    "#newFileBtn",
+    "#newFolderBtn",
+    "#refreshExplorerBtn",
+    "button[aria-label='More Explorer actions']",
+    "#splitEditorBtn",
+    "#editorActionsBtn",
+    "#newTerminalBtn",
+    "#splitTerminalBtn",
+    "#killTerminalBtn",
+    "button[aria-label='More terminal actions']",
+    "#newChatBtn",
+    "#chatSettingsBtn",
+    "button[aria-label='More chat actions']",
+    "#chatPromptInput",
+    "#sendChatMessageBtn"
+  ];
+
+  document.querySelectorAll(selectors.join(",")).forEach((control) => {
+    if (!(control instanceof HTMLButtonElement || control instanceof HTMLTextAreaElement)) return;
+    control.disabled = true;
+    control.setAttribute("aria-disabled", "true");
+    if (control.title) control.title += " — not implemented yet";
+  });
+}
+
 hydrateIcons();
+disableUnavailableControls();
 
 const elements = getElements();
 const infiniteCanvas = createInfiniteCanvasRuntime(elements);
