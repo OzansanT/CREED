@@ -1,4 +1,4 @@
-import { bindWorkbenchFiles } from "./workbench-input.js?v=20260818-1";
+import { bindWorkbenchFiles } from "./workbench-input.js";
 
 export function bindEditorPanel(options) {
   return bindWorkbenchFiles(options);
