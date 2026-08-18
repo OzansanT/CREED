@@ -1,5 +1,5 @@
-import { WORKSPACE_FILES } from "./source-files.js?v=20260818-1";
-import { createEditorTabs } from "./editor-tabs.js?v=20260818-1";
+import { WORKSPACE_FILES } from "./source-files.js";
+import { createEditorTabs } from "./editor-tabs.js";
 
 function getFileExtension(fileName) {
   return fileName.split(".").pop()?.toLowerCase() || "";
@@ -328,7 +328,7 @@ export function bindWorkbenchFiles({
   }
 
   codeMinimap.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || activeMinimapPointer !== null) return;
     event.preventDefault();
     activeMinimapPointer = event.pointerId;
     codeMinimap.setPointerCapture?.(event.pointerId);
@@ -341,7 +341,11 @@ export function bindWorkbenchFiles({
 
   function finishMinimapPointer(event) {
     if (event.pointerId !== activeMinimapPointer) return;
+    const pointerId = activeMinimapPointer;
     activeMinimapPointer = null;
+    if (codeMinimap.hasPointerCapture?.(pointerId)) {
+      codeMinimap.releasePointerCapture(pointerId);
+    }
   }
 
   codeMinimap.addEventListener("pointerup", finishMinimapPointer);
