@@ -68,10 +68,37 @@ for (const file of scriptFiles) {
     .map((match) => match[1])
     .filter((specifier) => specifier.startsWith("."));
   for (const specifier of imports) {
+    assert(!specifier.includes("?v="), "Manual cache-versioned module import: " + specifier + " in " + relative(repositoryRoot, file));
     const importedFile = resolve(dirname(file), specifier.split("?")[0]);
     assert(existsSync(importedFile), "Missing JavaScript dependency: " + relative(repositoryRoot, importedFile));
   }
 }
+
+const pointerCaptureModules = [
+  "pan-input.js",
+  "card-input.js",
+  "panel-resize-input.js",
+  "workbench-input.js"
+];
+for (const modulePath of pointerCaptureModules) {
+  assert(
+    read(modulePath).includes("lostpointercapture"),
+    modulePath + " must recover from lost pointer capture."
+  );
+}
+
+const keyboardSource = read("keyboard.js");
+assert(keyboardSource.includes("contenteditable"), "keyboard.js must ignore contenteditable controls.");
+assert(
+  keyboardSource.includes("event.ctrlKey") && keyboardSource.includes("event.metaKey") && keyboardSource.includes("event.altKey"),
+  "keyboard.js must reject modified shortcut conflicts."
+);
+
+const storageSource = read("storage.js");
+assert(
+  storageSource.includes("getViewportWorldCenter") && storageSource.includes("camera"),
+  "storage.js must persist the viewport camera in world coordinates."
+);
 
 const generatedCss = read("css/generated/creed.css");
 assert(generatedCss.length > 1000, "Generated CSS bundle is unexpectedly small.");
