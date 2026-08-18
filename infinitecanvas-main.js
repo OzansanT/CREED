@@ -68,6 +68,7 @@ export function createInfiniteCanvasRuntime(elements) {
   let bound = false;
 
   function scheduleViewportCenterPreservation() {
+    if (!bound) return;
     cancelAnimationFrame(sidebarLayoutFrame);
     sidebarLayoutFrame = requestAnimationFrame(() => {
       lastSize = preserveCenterOnResize({
