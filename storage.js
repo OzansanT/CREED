@@ -6,22 +6,88 @@ import {
   MAX_ZOOM
 } from "./config.js";
 import { state, clamp } from "./state.js";
-export function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-export function loadState() {
+import { getViewportWorldCenter } from "./coordinates.js";
+
+function normalizeWorldPoint(value) {
+  if (!value || !Number.isFinite(value.worldX) || !Number.isFinite(value.worldY)) return null;
+  return { worldX: value.worldX, worldY: value.worldY };
+}
+
+function normalizeAnchor(value) {
+  const point = normalizeWorldPoint(value);
+  if (!point) return null;
+  return {
+    ...point,
+    zoom: Number.isFinite(value.zoom) ? clamp(value.zoom, MIN_ZOOM, MAX_ZOOM) : 1
+  };
+}
+
+export function saveState(canvas) {
+  try {
+    const camera = canvas
+      ? (() => {
+          const center = getViewportWorldCenter(canvas, state);
+          return { worldX: center.x, worldY: center.y };
+        })()
+      : null;
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      ...state,
+      camera
+    }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function loadState(canvas) {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!saved) return false;
-    state.x = Number.isFinite(saved.x) ? saved.x : 0;
-    state.y = Number.isFinite(saved.y) ? saved.y : 0;
+    if (!saved || typeof saved !== "object") return false;
+
     state.zoom = Number.isFinite(saved.zoom) ? clamp(saved.zoom, MIN_ZOOM, MAX_ZOOM) : 1;
-    if (saved.anchor && Number.isFinite(saved.anchor.worldX) && Number.isFinite(saved.anchor.worldY)) state.anchor = saved.anchor; else state.anchor = null;
-    state.sidebarView = ["canvas", "infiniteCanvas", "components"].includes(saved.sidebarView) ? saved.sidebarView : "canvas";
-    if (saved.originCard && Number.isFinite(saved.originCard.worldX) && Number.isFinite(saved.originCard.worldY)) state.originCard = saved.originCard; else state.originCard = { worldX: 0, worldY: 0 };
-    if (saved.jsonCard && Number.isFinite(saved.jsonCard.worldX) && Number.isFinite(saved.jsonCard.worldY)) state.jsonCard = { visible: saved.jsonCard.visible === true, worldX: saved.jsonCard.worldX, worldY: saved.jsonCard.worldY }; else state.jsonCard = { visible: false, worldX: 0, worldY: 0 };
+
+    const camera = normalizeWorldPoint(saved.camera);
+    if (camera && canvas && canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+      state.x = canvas.clientWidth / 2 - camera.worldX * state.zoom;
+      state.y = canvas.clientHeight / 2 - camera.worldY * state.zoom;
+    } else {
+      state.x = Number.isFinite(saved.x) ? saved.x : 0;
+      state.y = Number.isFinite(saved.y) ? saved.y : 0;
+    }
+
+    state.anchor = normalizeAnchor(saved.anchor);
+    state.sidebarView = ["canvas", "infiniteCanvas", "components"].includes(saved.sidebarView)
+      ? saved.sidebarView
+      : "canvas";
+
+    const originCard = normalizeWorldPoint(saved.originCard);
+    state.originCard = originCard || { worldX: 0, worldY: 0 };
+
+    const jsonCard = normalizeWorldPoint(saved.jsonCard);
+    state.jsonCard = jsonCard
+      ? {
+          visible: saved.jsonCard.visible === true,
+          worldX: jsonCard.worldX,
+          worldY: jsonCard.worldY
+        }
+      : { visible: false, worldX: 0, worldY: 0 };
+
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
-export function clearStoredState() { localStorage.removeItem(STORAGE_KEY); }
+
+export function clearStoredState() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function normalizePanelDimensions(saved) {
   if (!saved) return null;
@@ -92,6 +158,11 @@ export function loadPanelLayout() {
 }
 
 export function clearPanelLayout() {
-  localStorage.removeItem(PANEL_LAYOUT_STORAGE_KEY);
-  localStorage.removeItem(LEGACY_PANEL_LAYOUT_STORAGE_KEY);
+  try {
+    localStorage.removeItem(PANEL_LAYOUT_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_PANEL_LAYOUT_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
 }
