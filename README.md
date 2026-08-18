@@ -10,6 +10,7 @@ CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Cod
 - Each visual component has one `*-main.css` entry and focused CSS colony files.
 - `index.html` loads only `css/generated/creed.css`.
 - Edit CSS source colonies, then run `node scripts/build-css.mjs`.
+- Internal ES-module imports do not use manual cache-version query strings.
 - Run `node scripts/build-source-files.mjs` after adding, renaming, or deleting repository files.
 
 ## Main visual regions
@@ -34,12 +35,20 @@ CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Cod
 ## Development commands
 
 ```bash
-node scripts/build-css.mjs
-node scripts/build-source-files.mjs
-node --check main.js
+npm run build
+npm run check
 ```
 
-`npm run build` and `npm run check` provide the same commands when npm is available.
+Equivalent focused commands:
+
+```bash
+node scripts/build-css.mjs
+node scripts/build-css.mjs --check
+node scripts/build-source-files.mjs
+node scripts/check-architecture.mjs
+```
+
+`npm run check` verifies generated CSS freshness before running the architecture checks.
 
 ## Current directory tree
 
@@ -160,8 +169,8 @@ CREED/
 │   └── creed-main.css
 ├── scripts/
 │   ├── build-css.mjs
-│   ├── check-architecture.mjs
-│   └── build-source-files.mjs
+│   ├── build-source-files.mjs
+│   └── check-architecture.mjs
 ├── AGENTS.md
 ├── README.md
 ├── anchors.js
@@ -216,6 +225,9 @@ index.html
         ├── panel-resize-input.js
         │   ├── state.js
         │   └── storage.js
+        │       ├── config.js
+        │       ├── state.js
+        │       └── coordinates.js
         ├── icons.js
         ├── editor-panel-main.js
         │   └── workbench-input.js
@@ -225,24 +237,68 @@ index.html
         └── infinitecanvas-main.js
             ├── state.js
             ├── storage.js
+            │   ├── config.js
+            │   ├── state.js
+            │   └── coordinates.js
             ├── ui.js
             │   ├── grid-lod.js
+            │   │   └── config.js
             │   └── coordinates.js
             ├── toast.js
             ├── viewport.js
+            │   ├── config.js
+            │   ├── state.js
+            │   └── coordinates.js
             ├── anchors.js
+            │   ├── config.js
+            │   ├── state.js
+            │   └── coordinates.js
             ├── pan-input.js
             ├── wheel-input.js
+            │   └── viewport.js
             ├── keyboard.js
             ├── sidebar-input.js
+            │   └── coordinates.js
             ├── reset-input.js
+            │   ├── storage.js
+            │   └── viewport.js
             ├── card-input.js
             └── json-file.js
 
 css/creed-main.css
-├── css/foundation/*.css
-├── css/primitives/*.css
-├── css/layout/*.css
-└── css/components/*/*-main.css
-    └── focused component colony files
+├── css/foundation/reset.css
+├── css/foundation/design-tokens.css
+├── css/foundation/themes.css
+├── css/foundation/typography.css
+├── css/foundation/accessibility.css
+├── css/foundation/states.css
+├── css/foundation/utilities.css
+├── css/primitives/buttons.css
+├── css/primitives/icon-buttons.css
+├── css/primitives/inputs.css
+├── css/primitives/menus.css
+├── css/primitives/tabs.css
+├── css/primitives/toolbars.css
+├── css/primitives/scrollbars.css
+├── css/primitives/icons.css
+├── css/layout/app-shell-main.css
+├── css/layout/workbench-main.css
+├── css/layout/panel-layout.css
+├── css/layout/panel-resize-main.css
+├── css/components/restricted-mode/restricted-mode-main.css
+├── css/components/titlebar/titlebar-main.css
+├── css/components/activity-bar/activity-bar-main.css
+├── css/components/primary-sidebar/primary-sidebar-main.css
+├── css/components/explorer/explorer-main.css
+├── css/components/editor-panel/editor-panel-main.css
+├── css/components/infinite-canvas/infinitecanvas-main.css
+├── css/components/source-editor/source-editor-main.css
+├── css/components/bottom-panel/bottom-panel-main.css
+├── css/components/secondary-sidebar/secondary-sidebar-main.css
+├── css/components/chat/chat-view-main.css
+├── css/components/feedback/feedback-main.css
+├── css/components/status-bar/status-bar-main.css
+└── css/layout/responsive.css
 ```
+
+The CSS component `*-main.css` files continue the relationship graph through their literal sibling `@import` declarations. `css/generated/creed.css` is generated from this source graph and must not be edited directly.
