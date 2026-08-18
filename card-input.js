@@ -5,26 +5,29 @@ function playClickAnimation(card) {
 }
 
 function isInteractiveTarget(target) {
-  return target instanceof Element && Boolean(target.closest("button,a,input,textarea,select,label"));
+  return target instanceof Element && Boolean(
+    target.closest("button,a,input,textarea,select,label,[contenteditable]:not([contenteditable='false'])")
+  );
 }
 
 export function bindCardDrag({ card, state, positionKey = "originCard", update, persist }) {
-  let dragging = false;
+  let activePointerId = null;
   let moved = false;
   const dragStart = { x: 0, y: 0 };
   const cardStart = { worldX: 0, worldY: 0 };
 
   card.addEventListener("animationend", () => card.classList.remove("was-clicked"));
 
-  card.addEventListener("pointerdown", event => {
-    if (event.button !== 0) return;
+  card.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || activePointerId !== null) return;
     if (isInteractiveTarget(event.target)) {
       event.stopPropagation();
       return;
     }
+
     event.preventDefault();
     event.stopPropagation();
-    dragging = true;
+    activePointerId = event.pointerId;
     moved = false;
     dragStart.x = event.clientX;
     dragStart.y = event.clientY;
@@ -33,11 +36,12 @@ export function bindCardDrag({ card, state, positionKey = "originCard", update, 
     card.focus({ preventScroll: true });
     card.classList.add("is-dragging");
     playClickAnimation(card);
-    card.setPointerCapture(event.pointerId);
+    card.setPointerCapture?.(activePointerId);
   });
 
-  card.addEventListener("pointermove", event => {
-    if (!dragging) return;
+  card.addEventListener("pointermove", (event) => {
+    if (event.pointerId !== activePointerId) return;
+
     event.stopPropagation();
     const deltaX = event.clientX - dragStart.x;
     const deltaY = event.clientY - dragStart.y;
@@ -48,15 +52,22 @@ export function bindCardDrag({ card, state, positionKey = "originCard", update, 
   });
 
   function stopDragging(event) {
-    if (!dragging) return;
-    event?.stopPropagation();
-    dragging = false;
+    if (activePointerId === null || event.pointerId !== activePointerId) return;
+
+    event.stopPropagation();
+    const pointerId = activePointerId;
+    activePointerId = null;
     card.classList.remove("is-dragging");
-    if (event && card.hasPointerCapture(event.pointerId)) card.releasePointerCapture(event.pointerId);
+
+    if (card.hasPointerCapture?.(pointerId)) {
+      card.releasePointerCapture(pointerId);
+    }
+
     if (!moved) playClickAnimation(card);
     persist?.();
   }
 
   card.addEventListener("pointerup", stopDragging);
   card.addEventListener("pointercancel", stopDragging);
+  card.addEventListener("lostpointercapture", stopDragging);
 }
