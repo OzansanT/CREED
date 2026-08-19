@@ -1,6 +1,11 @@
 import { createIcon } from "../../ui/icons.js";
 
 const FIND_DEBOUNCE_MS = 120;
+const DEFAULT_FIND_OPTIONS = Object.freeze({
+  matchCase: false,
+  wholeWord: false,
+  useRegex: false
+});
 
 function isInteractiveTarget(target) {
   if (!(target instanceof Element)) return false;
@@ -155,6 +160,18 @@ function createNavigationWidgets(host) {
   });
 }
 
+function normalizeSessionLocation(value) {
+  if (!value || typeof value !== "object") return null;
+  return {
+    line: Math.max(1, Math.trunc(Number(value.line) || 1)),
+    column: Math.max(1, Math.trunc(Number(value.column) || 1))
+  };
+}
+
+function formatSourceLocation(location) {
+  return location ? ":" + location.line + ":" + location.column : ":";
+}
+
 export function parseSourceLocation(value) {
   const match = String(value ?? "").trim().match(/^:?\s*(\d+)(?:\s*[: ,]\s*(\d+))?$/);
   if (!match) return null;
@@ -166,11 +183,7 @@ export function parseSourceLocation(value) {
 
 export function bindSourceNavigation({ host, viewport, isSourceActive, getActiveFile, onStatus }) {
   const controls = createNavigationWidgets(host);
-  const options = {
-    matchCase: false,
-    wholeWord: false,
-    useRegex: false
-  };
+  const options = { ...DEFAULT_FIND_OPTIONS };
   let query = "";
   let matches = [];
   let activeIndex = -1;
@@ -178,6 +191,7 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
   let searchGeneration = 0;
   let searchTimer = 0;
   let returnFocus = null;
+  let lastGoTo = null;
 
   function isOwnControl(target) {
     return controls.findWidget.contains(target) || controls.goToWidget.contains(target);
@@ -194,6 +208,25 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     controls.findWidget.classList.toggle("has-error", Boolean(message));
     controls.findInput.setAttribute("aria-invalid", String(Boolean(message)));
     if (message) controls.findCount.textContent = message;
+  }
+
+  function synchronizeOptionControls() {
+    const entries = [
+      ["matchCase", controls.matchCaseButton],
+      ["wholeWord", controls.wholeWordButton],
+      ["useRegex", controls.regexButton]
+    ];
+    for (const [name, button] of entries) {
+      button.setAttribute("aria-pressed", String(options[name]));
+      button.classList.toggle("is-active", options[name]);
+    }
+  }
+
+  function applyOptions(nextOptions = DEFAULT_FIND_OPTIONS) {
+    options.matchCase = Boolean(nextOptions.matchCase);
+    options.wholeWord = Boolean(nextOptions.wholeWord);
+    options.useRegex = Boolean(nextOptions.useRegex);
+    synchronizeOptionControls();
   }
 
   function updateFindControls() {
@@ -361,11 +394,19 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     captureReturnFocus();
     if (controls.findWidget.hidden === false) closeFind({ clear: false, restore: false });
     controls.goToWidget.hidden = false;
-    controls.goToInput.value = ":";
-    controls.goToHint.textContent = "Type :line or :line:column";
+    controls.goToInput.value = formatSourceLocation(lastGoTo);
+    controls.goToHint.textContent = lastGoTo
+      ? "Line " + lastGoTo.line + ", Column " + lastGoTo.column
+      : "Type :line or :line:column";
     controls.goToInput.focus();
-    controls.goToInput.setSelectionRange(1, 1);
+    controls.goToInput.select();
     return true;
+  }
+
+  function goTo(line, column = 1) {
+    const resolved = viewport.goToLocation(line, column);
+    if (resolved) lastGoTo = { ...resolved };
+    return resolved;
   }
 
   function reset() {
@@ -376,7 +417,11 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     matches = [];
     activeIndex = -1;
     truncated = false;
+    lastGoTo = null;
+    applyOptions(DEFAULT_FIND_OPTIONS);
     controls.findInput.value = "";
+    controls.goToInput.value = ":";
+    controls.goToHint.textContent = "Type :line or :line:column";
     controls.findWidget.hidden = true;
     controls.goToWidget.hidden = true;
     setFindError("");
@@ -384,6 +429,63 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     controls.nextButton.disabled = true;
     viewport.clearSearch();
     onStatus?.("");
+  }
+
+  function getSessionState() {
+    return {
+      query,
+      activeIndex,
+      options: { ...options },
+      findOpen: controls.findWidget.hidden === false,
+      goToOpen: controls.goToWidget.hidden === false,
+      lastGoTo: lastGoTo ? { ...lastGoTo } : null
+    };
+  }
+
+  async function restoreSessionState(state = {}) {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = 0;
+    searchGeneration += 1;
+    query = "";
+    matches = [];
+    activeIndex = -1;
+    truncated = false;
+    setFindError("");
+    viewport.clearSearch();
+
+    applyOptions(state.options || DEFAULT_FIND_OPTIONS);
+    lastGoTo = normalizeSessionLocation(state.lastGoTo);
+    const restoredQuery = typeof state.query === "string" ? state.query : "";
+    const restoredActiveIndex = Number.isInteger(state.activeIndex) ? state.activeIndex : -1;
+    const goToOpen = Boolean(state.goToOpen);
+    const findOpen = goToOpen ? false : Boolean(state.findOpen);
+
+    controls.findInput.value = restoredQuery;
+    controls.findWidget.hidden = !findOpen;
+    controls.goToWidget.hidden = !goToOpen;
+    controls.goToInput.value = formatSourceLocation(lastGoTo);
+    controls.goToWidget.classList.remove("has-error");
+    controls.goToHint.textContent = lastGoTo
+      ? "Line " + lastGoTo.line + ", Column " + lastGoTo.column
+      : "Type :line or :line:column";
+
+    if (restoredQuery) {
+      const result = await find(restoredQuery, { navigate: false });
+      if (result.matches?.length) {
+        activeIndex = restoredActiveIndex >= 0
+          ? Math.min(result.matches.length - 1, restoredActiveIndex)
+          : 0;
+        viewport.setActiveSearchIndex(activeIndex);
+        updateFindControls();
+      }
+    } else {
+      updateFindControls();
+    }
+
+    if (goToOpen && lastGoTo) {
+      onStatus?.("Ln " + lastGoTo.line + ", Col " + lastGoTo.column);
+    }
+    return getSessionState();
   }
 
   controls.findInput.addEventListener("input", scheduleFind);
@@ -405,7 +507,10 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     if (event.key !== "Enter") return;
     event.preventDefault();
     const resolved = previewGoTo();
-    if (resolved) closeGoTo();
+    if (resolved) {
+      lastGoTo = { ...resolved };
+      closeGoTo();
+    }
   });
   controls.goToCloseButton.addEventListener("click", () => closeGoTo());
 
@@ -454,22 +559,24 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     }
   });
 
+  synchronizeOptionControls();
+  controls.previousButton.disabled = true;
+  controls.nextButton.disabled = true;
+
   return Object.freeze({
     find,
     next: () => goToMatch(activeIndex + 1),
     previous: () => goToMatch(activeIndex - 1),
-    goTo: (line, column = 1) => viewport.goToLocation(line, column),
+    goTo,
     openFind,
     openGoTo,
     reset,
+    getSessionState,
+    restoreSessionState,
     getState: () => ({
-      query,
+      ...getSessionState(),
       matches: [...matches],
-      activeIndex,
-      truncated,
-      options: { ...options },
-      findOpen: controls.findWidget.hidden === false,
-      goToOpen: controls.goToWidget.hidden === false
+      truncated
     })
   });
 }
