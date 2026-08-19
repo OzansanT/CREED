@@ -58,11 +58,7 @@ const elementIds = [...elementsSource.matchAll(/getElementById\("([^"]+)"\)/g)].
 const missingElementIds = elementIds.filter((id) => !idSet.has(id));
 assert(missingElementIds.length === 0, "js/core/elements.js references missing IDs: " + missingElementIds.join(", "));
 
-const expectedApplicationDirectories = [
-  "js/core",
-  "js/components",
-  "js/ui"
-];
+const expectedApplicationDirectories = ["js/core", "js/components", "js/ui"];
 for (const directory of expectedApplicationDirectories) {
   assert(existsSync(resolve(repositoryRoot, directory)), "Missing JavaScript architecture directory: " + directory);
 }
@@ -75,70 +71,42 @@ assert(
   JSON.stringify(rootJavaScriptFiles) === JSON.stringify(["main.js"]),
   "Application JavaScript must live under js/. Unexpected root JS files: " + rootJavaScriptFiles.join(", ")
 );
-assert(
-  read("main.js").includes('import "./js/main.js"'),
-  "Root main.js must remain only the compatibility bootstrap for js/main.js."
-);
+assert(read("main.js").includes('import "./js/main.js"'), "Root main.js must remain only the compatibility bootstrap for js/main.js.");
 
 const editorPanelModules = [
-  "editor-panel-main.js",
-  "editor-tabs.js",
-  "explorer-controller.js",
-  "file-metadata.js",
-  "minimap-controller.js",
-  "source-analysis-client.js",
-  "source-analysis-worker.js",
-  "source-analysis.js",
-  "source-files.js",
-  "source-loader.js",
-  "source-renderer.js",
-  "source-viewport.js",
-  "workbench-input.js"
+  "editor-panel-main.js", "editor-tabs.js", "explorer-controller.js", "file-metadata.js",
+  "minimap-controller.js", "source-analysis-client.js", "source-analysis-worker.js",
+  "source-analysis.js", "source-files.js", "source-loader.js", "source-navigation.js",
+  "source-renderer.js", "source-viewport.js", "workbench-input.js"
 ];
 for (const moduleName of editorPanelModules) {
-  assert(
-    existsSync(resolve(repositoryRoot, "js/components/editor-panel", moduleName)),
-    "Missing editor-panel module: " + moduleName
-  );
+  assert(existsSync(resolve(repositoryRoot, "js/components/editor-panel", moduleName)), "Missing editor-panel module: " + moduleName);
 }
 
 const workbenchSource = read("js/components/editor-panel/workbench-input.js");
 for (const forbiddenResponsibility of ["AbortController", "TOKEN_PATTERNS", "setPointerCapture", "lostpointercapture"]) {
-  assert(
-    !workbenchSource.includes(forbiddenResponsibility),
-    "workbench-input.js must remain orchestration-only; move " + forbiddenResponsibility + " to its focused module."
-  );
+  assert(!workbenchSource.includes(forbiddenResponsibility), "workbench-input.js must remain orchestration-only; move " + forbiddenResponsibility + " to its focused module.");
 }
-assert(
-  workbenchSource.includes("createSourceViewport"),
-  "workbench-input.js must coordinate the virtualized source viewport."
-);
+assert(workbenchSource.includes("createSourceViewport"), "workbench-input.js must coordinate the virtualized source viewport.");
+assert(workbenchSource.includes("bindSourceNavigation"), "workbench-input.js must wire source search/navigation through its focused controller.");
 
 const sourceViewportSource = read("js/components/editor-panel/source-viewport.js");
-assert(
-  sourceViewportSource.includes("createSourceAnalysisClient"),
-  "source-viewport.js must delegate full-source analysis to the analysis client."
-);
-assert(
-  !sourceViewportSource.includes('split("\\n")') && !sourceViewportSource.includes("chooseRepresentativeLine"),
-  "source-viewport.js must not reclaim full-source parsing or minimap analysis."
-);
+assert(sourceViewportSource.includes("createSourceAnalysisClient"), "source-viewport.js must delegate full-source analysis to the analysis client.");
+assert(!sourceViewportSource.includes('split("\\n")') && !sourceViewportSource.includes("chooseRepresentativeLine"), "source-viewport.js must not reclaim full-source parsing or minimap analysis.");
+assert(sourceViewportSource.includes("goToLocation") && sourceViewportSource.includes("setSearchResults"), "source-viewport.js must support direct virtual navigation and visible search highlighting.");
 
 const sourceAnalysisClientSource = read("js/components/editor-panel/source-analysis-client.js");
-assert(
-  sourceAnalysisClientSource.includes('new URL("./source-analysis-worker.js", import.meta.url)'),
-  "source-analysis-client.js must resolve the module worker relative to its own module URL."
-);
-assert(
-  sourceAnalysisClientSource.includes("analyzeSource"),
-  "source-analysis-client.js must retain the synchronous analysis fallback."
-);
+assert(sourceAnalysisClientSource.includes('new URL("./source-analysis-worker.js", import.meta.url)'), "source-analysis-client.js must resolve the module worker relative to its own module URL.");
+assert(sourceAnalysisClientSource.includes("analyzeSource") && sourceAnalysisClientSource.includes("searchSource"), "source-analysis-client.js must retain synchronous analysis and search fallbacks.");
+assert(sourceAnalysisClientSource.includes('type: "search-source"'), "source-analysis-client.js must route large-source search through the worker.");
 
 const sourceAnalysisWorkerSource = read("js/components/editor-panel/source-analysis-worker.js");
-assert(
-  sourceAnalysisWorkerSource.includes("analysis.lineStarts.buffer") && sourceAnalysisWorkerSource.includes("analysis.lineEnds.buffer"),
-  "source-analysis-worker.js must transfer typed line-index buffers instead of cloning them."
-);
+assert(sourceAnalysisWorkerSource.includes("analysis.lineStarts.buffer") && sourceAnalysisWorkerSource.includes("analysis.lineEnds.buffer"), "source-analysis-worker.js must transfer typed line-index buffers instead of cloning them.");
+assert(sourceAnalysisWorkerSource.includes('type === "search-source"'), "source-analysis-worker.js must support whole-file search requests.");
+
+const sourceNavigationSource = read("js/components/editor-panel/source-navigation.js");
+assert(sourceNavigationSource.includes('key === "f"') && sourceNavigationSource.includes('key === "g"') && sourceNavigationSource.includes('event.key === "F3"'), "source-navigation.js must expose find, go-to-line, and next/previous match shortcuts.");
+assert(sourceNavigationSource.includes("contenteditable"), "source-navigation.js must avoid shortcut conflicts with interactive/contenteditable controls.");
 
 const scriptFiles = collectFiles(repositoryRoot, /\.(?:js|mjs)$/);
 for (const file of scriptFiles) {
@@ -156,51 +124,32 @@ for (const file of scriptFiles) {
   }
 }
 
-const sourceViewportUrl = pathToFileURL(
-  resolve(repositoryRoot, "js/components/editor-panel/source-viewport.js")
-).href;
+const sourceViewportUrl = pathToFileURL(resolve(repositoryRoot, "js/components/editor-panel/source-viewport.js")).href;
 const { calculateSourceWindow } = await import(sourceViewportUrl);
-const largeSourceWindow = calculateSourceWindow({
-  lineCount: 100000,
-  scrollTop: 950000,
-  clientHeight: 760,
-  lineHeight: 19,
-  paddingTop: 4
-});
-assert(
-  largeSourceWindow.end - largeSourceWindow.start <= 80,
-  "Source virtualization renders too many DOM rows for a normal viewport."
-);
+const largeSourceWindow = calculateSourceWindow({ lineCount: 100000, scrollTop: 950000, clientHeight: 760, lineHeight: 19, paddingTop: 4 });
+assert(largeSourceWindow.end - largeSourceWindow.start <= 80, "Source virtualization renders too many DOM rows for a normal viewport.");
 
-const sourceAnalysisUrl = pathToFileURL(
-  resolve(repositoryRoot, "js/components/editor-panel/source-analysis.js")
-).href;
-const {
-  analyzeSource,
-  calculateMinimapRanges,
-  MAX_MINIMAP_SAMPLES
-} = await import(sourceAnalysisUrl);
+const sourceAnalysisUrl = pathToFileURL(resolve(repositoryRoot, "js/components/editor-panel/source-analysis.js")).href;
+const { analyzeSource, searchSource, calculateMinimapRanges, MAX_MINIMAP_SAMPLES, MAX_SEARCH_MATCHES } = await import(sourceAnalysisUrl);
 const largeMinimapRanges = calculateMinimapRanges(100000);
-assert(
-  largeMinimapRanges.length === MAX_MINIMAP_SAMPLES,
-  "Minimap analysis must cap overview DOM samples."
-);
-assert(
-  largeMinimapRanges[0]?.start === 0 && largeMinimapRanges.at(-1)?.end === 99999,
-  "Minimap analysis must cover the complete source range."
-);
+assert(largeMinimapRanges.length === MAX_MINIMAP_SAMPLES, "Minimap analysis must cap overview DOM samples.");
+assert(largeMinimapRanges[0]?.start === 0 && largeMinimapRanges.at(-1)?.end === 99999, "Minimap analysis must cover the complete source range.");
 const indexedSource = analyzeSource("alpha\r\nbeta\n" + "x\n".repeat(100000));
 assert(indexedSource.lineCount === 100003, "Source analysis line indexing returned the wrong line count.");
-assert(indexedSource.lineStarts instanceof Uint32Array, "Source analysis must use typed line-start offsets.");
-assert(indexedSource.lineEnds instanceof Uint32Array, "Source analysis must use typed line-end offsets.");
-assert(
-  indexedSource.minimapSamples.length === MAX_MINIMAP_SAMPLES,
-  "Large source analysis must keep the minimap sample count bounded."
-);
-assert(
-  "alpha\r\nbeta\n".slice(indexedSource.lineStarts[0], indexedSource.lineEnds[0]) === "alpha",
-  "Source analysis must exclude CR from CRLF line slices."
-);
+assert(indexedSource.lineStarts instanceof Uint32Array && indexedSource.lineEnds instanceof Uint32Array, "Source analysis must use typed line offsets.");
+assert(indexedSource.minimapSamples.length === MAX_MINIMAP_SAMPLES, "Large source analysis must keep the minimap sample count bounded.");
+assert("alpha\r\nbeta\n".slice(indexedSource.lineStarts[0], indexedSource.lineEnds[0]) === "alpha", "Source analysis must exclude CR from CRLF line slices.");
+
+const searchResult = searchSource("Alpha beta\r\nalpha ALPHA\nnone", "alpha");
+assert(searchResult.matches.length === 3, "Whole-source search returned the wrong match count.");
+assert(searchResult.matches[1]?.line === 1 && searchResult.matches[1]?.column === 0, "Whole-source search returned the wrong line/column index.");
+const cappedSearch = searchSource("x ".repeat(MAX_SEARCH_MATCHES + 20), "x", { maxMatches: MAX_SEARCH_MATCHES });
+assert(cappedSearch.matches.length === MAX_SEARCH_MATCHES && cappedSearch.truncated, "Whole-source search must bound very large result sets.");
+
+const sourceNavigationUrl = pathToFileURL(resolve(repositoryRoot, "js/components/editor-panel/source-navigation.js")).href;
+const { parseSourceLocation } = await import(sourceNavigationUrl);
+assert(JSON.stringify(parseSourceLocation("400:12")) === JSON.stringify({ line: 400, column: 12 }), "Go-to-line parser must accept line:column syntax.");
+assert(parseSourceLocation("bad") === null, "Go-to-line parser must reject invalid locations.");
 
 const pointerCaptureModules = [
   "js/components/infinite-canvas/pan-input.js",
@@ -209,24 +158,15 @@ const pointerCaptureModules = [
   "js/components/editor-panel/minimap-controller.js"
 ];
 for (const modulePath of pointerCaptureModules) {
-  assert(
-    read(modulePath).includes("lostpointercapture"),
-    modulePath + " must recover from lost pointer capture."
-  );
+  assert(read(modulePath).includes("lostpointercapture"), modulePath + " must recover from lost pointer capture.");
 }
 
 const keyboardSource = read("js/components/infinite-canvas/keyboard.js");
 assert(keyboardSource.includes("contenteditable"), "keyboard.js must ignore contenteditable controls.");
-assert(
-  keyboardSource.includes("event.ctrlKey") && keyboardSource.includes("event.metaKey") && keyboardSource.includes("event.altKey"),
-  "keyboard.js must reject modified shortcut conflicts."
-);
+assert(keyboardSource.includes("event.ctrlKey") && keyboardSource.includes("event.metaKey") && keyboardSource.includes("event.altKey"), "keyboard.js must reject modified shortcut conflicts.");
 
 const storageSource = read("js/core/storage.js");
-assert(
-  storageSource.includes("getViewportWorldCenter") && storageSource.includes("camera"),
-  "storage.js must persist the viewport camera in world coordinates."
-);
+assert(storageSource.includes("getViewportWorldCenter") && storageSource.includes("camera"), "storage.js must persist the viewport camera in world coordinates.");
 
 const generatedCss = read("css/generated/creed.css");
 assert(generatedCss.length > 1000, "Generated CSS bundle is unexpectedly small.");
