@@ -1,18 +1,18 @@
 # CREED
 
-CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Codespaces-inspired shell. It combines an Explorer, multi-tab source viewer, infinite canvas, resizable bottom panel, secondary sidebar, and persistent layout state.
+CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Codespaces-inspired shell. It combines an Explorer, multi-tab source viewer, infinite canvas, resizable bottom panel, secondary sidebar, persistent layout state, and a scalable virtualized source editor.
 
 ## Architecture rules
 
 - CSS source lives under `css/`; application JavaScript lives under `js/`.
 - Shared JavaScript infrastructure belongs in `js/core/`; shared UI helpers belong in `js/ui/`.
 - Component behavior belongs in `js/components/<component>/`.
-- `main.js` is only the compatibility bootstrap; `js/main.js` is the application orchestration entry.
-- The editor panel is split by responsibility: Explorer, tabs, file metadata, source loading, source rendering, worker-backed source analysis, virtualized source viewport, minimap input, and workbench orchestration.
-- Large source files use a bounded visible-line window with overscan; the minimap uses a capped representative overview instead of one DOM node per source line.
-- Source analysis at or above 64 KiB is delegated to a module Web Worker for line indexing, maximum-width discovery, and minimap sampling. Small files and worker failures use the same pure synchronous analyzer as a fallback.
-- Worker analysis returns transferable typed line-offset buffers rather than cloning a full array of source-line strings back to the UI thread.
-- IDs remain stable JavaScript and ARIA hooks. Classes own presentation.
+- Repository-root `main.js` is only the compatibility bootstrap; `js/main.js` is application orchestration.
+- Editor-panel responsibilities are split across Explorer, tabs, metadata, loading, worker analysis/search, rendering, virtual viewport, minimap, source navigation, and workbench orchestration.
+- Large source files use visible-line virtualization and a capped minimap instead of one DOM node per source line.
+- Source analysis at or above 64 KiB uses a module Web Worker; small files and worker failures use the same pure synchronous fallback.
+- Whole-file literal search is worker-backed for large files and bounded to 5,000 returned matches.
+- `Ctrl/Cmd+F` starts whole-file search, `F3` / `Shift+F3` moves between matches, `Ctrl/Cmd+G` navigates to `line[:column]`, and `Escape` clears the active search.
 - Internal ES-module imports do not use manual cache-version query strings.
 - After adding, renaming, or deleting files, regenerate `js/components/editor-panel/source-files.js` with `npm run build:inventory`.
 
@@ -32,181 +32,90 @@ node scripts/build-source-files.mjs
 node scripts/check-architecture.mjs
 ```
 
-`npm run check` verifies CSS bundle freshness, JavaScript syntax/import integrity, DOM wiring, Explorer inventory freshness, pointer-capture recovery, JS colony boundaries, editor-panel responsibility boundaries, large-source virtualization bounds, and worker-backed source-analysis contracts.
+`npm run check` verifies generated CSS freshness, JavaScript syntax/import integrity, DOM wiring, Explorer inventory freshness, pointer-capture recovery, JS colony boundaries, editor responsibility boundaries, virtualization bounds, worker contracts, whole-file search bounds, and source navigation parsing/wiring.
 
 ## Current directory tree
 
 ```text
 CREED/
 ├── AGENTS.md
+├── README.md
 ├── css/
-│   ├── components/
-│   │   ├── activity-bar/
-│   │   │   ├── activity-bar-groups.css
-│   │   │   ├── activity-bar-main.css
-│   │   │   ├── activity-bar-shell.css
-│   │   │   └── activity-buttons.css
-│   │   ├── bottom-panel/
-│   │   │   ├── bottom-panel-main.css
-│   │   │   ├── bottom-panel-shell.css
-│   │   │   ├── bottom-panel-tabs.css
-│   │   │   ├── bottom-panel-toolbar.css
-│   │   │   ├── bottom-panel-views.css
-│   │   │   ├── terminal-prompt.css
-│   │   │   └── terminal-view.css
-│   │   ├── chat/
-│   │   │   ├── chat-composer.css
-│   │   │   ├── chat-context.css
-│   │   │   ├── chat-empty-state.css
-│   │   │   ├── chat-messages.css
-│   │   │   ├── chat-tools.css
-│   │   │   └── chat-view-main.css
-│   │   ├── editor-panel/
-│   │   │   ├── editor-actions.css
-│   │   │   ├── editor-breadcrumbs.css
-│   │   │   ├── editor-panel-main.css
-│   │   │   ├── editor-panel-shell.css
-│   │   │   ├── editor-tabs.css
-│   │   │   └── editor-viewport.css
-│   │   ├── explorer/
-│   │   │   ├── explorer-actions.css
-│   │   │   ├── explorer-header.css
-│   │   │   ├── explorer-main.css
-│   │   │   ├── explorer-sections.css
-│   │   │   ├── file-row.css
-│   │   │   ├── workspace-header.css
-│   │   │   └── workspace-tree.css
-│   │   ├── feedback/
-│   │   │   ├── feedback-main.css
-│   │   │   ├── notification-layer.css
-│   │   │   └── toast.css
-│   │   ├── infinite-canvas/
-│   │   │   ├── canvas-anchors.css
-│   │   │   ├── canvas-cards.css
-│   │   │   ├── canvas-grid.css
-│   │   │   ├── canvas-hints.css
-│   │   │   ├── canvas-lod.css
-│   │   │   ├── canvas-viewport.css
-│   │   │   ├── canvas-world.css
-│   │   │   ├── canvas-zoom.css
-│   │   │   └── infinitecanvas-main.css
-│   │   ├── primary-sidebar/
-│   │   │   ├── primary-sidebar-content.css
-│   │   │   ├── primary-sidebar-footer.css
-│   │   │   ├── primary-sidebar-header.css
-│   │   │   ├── primary-sidebar-main.css
-│   │   │   └── primary-sidebar-shell.css
-│   │   ├── restricted-mode/
-│   │   │   ├── restricted-mode-actions.css
-│   │   │   ├── restricted-mode-main.css
-│   │   │   └── restricted-mode-shell.css
-│   │   ├── secondary-sidebar/
-│   │   │   ├── secondary-sidebar-content.css
-│   │   │   ├── secondary-sidebar-footer.css
-│   │   │   ├── secondary-sidebar-header.css
-│   │   │   ├── secondary-sidebar-main.css
-│   │   │   └── secondary-sidebar-shell.css
-│   │   ├── source-editor/
-│   │   │   ├── source-editor-main.css
-│   │   │   ├── source-editor-shell.css
-│   │   │   ├── source-editor-states.css
-│   │   │   ├── source-lines.css
-│   │   │   ├── source-minimap.css
-│   │   │   ├── source-scroller.css
-│   │   │   └── source-syntax.css
-│   │   ├── status-bar/
-│   │   │   ├── status-bar-items.css
-│   │   │   ├── status-bar-layout.css
-│   │   │   └── status-bar-main.css
-│   │   └── titlebar/
-│   │       ├── command-center.css
-│   │       ├── layout-controls.css
-│   │       ├── navigation-controls.css
-│   │       ├── titlebar-actions.css
-│   │       ├── titlebar-brand.css
-│   │       ├── titlebar-main.css
-│   │       └── titlebar-shell.css
 │   ├── creed-main.css
 │   ├── foundation/
-│   │   ├── accessibility.css
-│   │   ├── design-tokens.css
-│   │   ├── reset.css
-│   │   ├── states.css
-│   │   ├── themes.css
-│   │   ├── typography.css
-│   │   └── utilities.css
+│   ├── primitives/
+│   ├── layout/
 │   ├── generated/
 │   │   └── creed.css
-│   ├── layout/
-│   │   ├── app-shell-main.css
-│   │   ├── panel-layout.css
-│   │   ├── panel-resize-main.css
-│   │   ├── responsive.css
-│   │   └── workbench-main.css
-│   └── primitives/
-│       ├── buttons.css
-│       ├── icon-buttons.css
-│       ├── icons.css
-│       ├── inputs.css
-│       ├── menus.css
-│       ├── scrollbars.css
-│       ├── tabs.css
-│       └── toolbars.css
+│   └── components/
+│       ├── activity-bar/
+│       ├── bottom-panel/
+│       ├── chat/
+│       ├── editor-panel/
+│       ├── explorer/
+│       ├── feedback/
+│       ├── infinite-canvas/
+│       ├── primary-sidebar/
+│       ├── restricted-mode/
+│       ├── secondary-sidebar/
+│       ├── source-editor/
+│       ├── status-bar/
+│       └── titlebar/
 ├── index.html
 ├── js/
-│   ├── components/
-│   │   ├── bottom-panel/
-│   │   │   ├── bottom-panel-input.js
-│   │   │   └── bottom-panel-main.js
-│   │   ├── editor-panel/
-│   │   │   ├── editor-panel-main.js
-│   │   │   ├── editor-tabs.js
-│   │   │   ├── explorer-controller.js
-│   │   │   ├── file-metadata.js
-│   │   │   ├── minimap-controller.js
-│   │   │   ├── source-analysis-client.js
-│   │   │   ├── source-analysis-worker.js
-│   │   │   ├── source-analysis.js
-│   │   │   ├── source-files.js
-│   │   │   ├── source-loader.js
-│   │   │   ├── source-renderer.js
-│   │   │   ├── source-viewport.js
-│   │   │   └── workbench-input.js
-│   │   ├── infinite-canvas/
-│   │   │   ├── anchors.js
-│   │   │   ├── card-input.js
-│   │   │   ├── grid-lod.js
-│   │   │   ├── infinitecanvas-main.js
-│   │   │   ├── json-file.js
-│   │   │   ├── keyboard.js
-│   │   │   ├── pan-input.js
-│   │   │   ├── reset-input.js
-│   │   │   ├── sidebar-input.js
-│   │   │   ├── viewport.js
-│   │   │   └── wheel-input.js
-│   │   ├── panel-resize/
-│   │   │   └── panel-resize-input.js
-│   │   ├── primary-sidebar/
-│   │   │   ├── primary-sidebar-input.js
-│   │   │   └── primary-sidebar-main.js
-│   │   └── secondary-sidebar/
-│   │       ├── secondary-sidebar-input.js
-│   │       └── secondary-sidebar-main.js
+│   ├── main.js
 │   ├── core/
 │   │   ├── config.js
 │   │   ├── coordinates.js
 │   │   ├── elements.js
 │   │   ├── state.js
 │   │   └── storage.js
-│   ├── main.js
-│   └── ui/
-│       ├── icons.js
-│       ├── toast.js
-│       ├── ui.js
-│       └── unavailable-controls.js
+│   ├── ui/
+│   │   ├── icons.js
+│   │   ├── toast.js
+│   │   ├── ui.js
+│   │   └── unavailable-controls.js
+│   └── components/
+│       ├── bottom-panel/
+│       │   ├── bottom-panel-input.js
+│       │   └── bottom-panel-main.js
+│       ├── editor-panel/
+│       │   ├── editor-panel-main.js
+│       │   ├── editor-tabs.js
+│       │   ├── explorer-controller.js
+│       │   ├── file-metadata.js
+│       │   ├── minimap-controller.js
+│       │   ├── source-analysis-client.js
+│       │   ├── source-analysis-worker.js
+│       │   ├── source-analysis.js
+│       │   ├── source-files.js
+│       │   ├── source-loader.js
+│       │   ├── source-navigation.js
+│       │   ├── source-renderer.js
+│       │   ├── source-viewport.js
+│       │   └── workbench-input.js
+│       ├── infinite-canvas/
+│       │   ├── anchors.js
+│       │   ├── card-input.js
+│       │   ├── grid-lod.js
+│       │   ├── infinitecanvas-main.js
+│       │   ├── json-file.js
+│       │   ├── keyboard.js
+│       │   ├── pan-input.js
+│       │   ├── reset-input.js
+│       │   ├── sidebar-input.js
+│       │   ├── viewport.js
+│       │   └── wheel-input.js
+│       ├── panel-resize/
+│       │   └── panel-resize-input.js
+│       ├── primary-sidebar/
+│       │   ├── primary-sidebar-input.js
+│       │   └── primary-sidebar-main.js
+│       └── secondary-sidebar/
+│           ├── secondary-sidebar-input.js
+│           └── secondary-sidebar-main.js
 ├── main.js
 ├── package.json
-├── README.md
 └── scripts/
     ├── build-css.mjs
     ├── build-source-files.mjs
@@ -245,6 +154,7 @@ index.html
             │       ├── js/components/editor-panel/file-metadata.js
             │       ├── js/components/editor-panel/minimap-controller.js
             │       ├── js/components/editor-panel/source-loader.js
+            │       ├── js/components/editor-panel/source-navigation.js
             │       └── js/components/editor-panel/source-viewport.js
             │           ├── js/components/editor-panel/file-metadata.js
             │           ├── js/components/editor-panel/source-analysis-client.js
@@ -304,4 +214,4 @@ css/creed-main.css
 └── css/layout/responsive.css
 ```
 
-`css/generated/creed.css` is generated from the CSS source graph and should not be edited directly.
+`css/generated/creed.css` is generated from the concrete CSS import graph above and should not be edited directly.
