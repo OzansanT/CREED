@@ -1,4 +1,9 @@
-import { analyzeSource, MAX_MINIMAP_SAMPLES } from "./source-analysis.js";
+import {
+  analyzeSource,
+  searchSource,
+  MAX_MINIMAP_SAMPLES,
+  MAX_SEARCH_MATCHES
+} from "./source-analysis.js";
 
 export const SOURCE_WORKER_THRESHOLD = 64 * 1024;
 
@@ -17,7 +22,8 @@ export function createSourceAnalysisClient({
 } = {}) {
   const cache = new Map();
   const pendingByFile = new Map();
-  const requests = new Map();
+  const analysisRequests = new Map();
+  const searchRequests = new Map();
   const generations = new Map();
   let worker = null;
   let workerDisabled = false;
@@ -43,7 +49,7 @@ export function createSourceAnalysisClient({
     if (pending?.requestId === entry.requestId) pendingByFile.delete(entry.fileName);
   }
 
-  function resolveSynchronously(entry) {
+  function resolveAnalysisLocally(entry) {
     try {
       const analysis = analyzeSource(entry.source, maximumSamples);
       cacheIfCurrent(entry, analysis);
@@ -55,13 +61,25 @@ export function createSourceAnalysisClient({
     }
   }
 
+  function resolveSearchLocally(entry) {
+    try {
+      entry.resolve(searchSource(entry.source, entry.query, entry.options));
+    } catch (error) {
+      entry.reject(error);
+    }
+  }
+
   function disableWorkerAndFallback() {
     workerDisabled = true;
     worker?.terminate();
     worker = null;
-    const pending = [...requests.values()];
-    requests.clear();
-    pending.forEach(resolveSynchronously);
+
+    const pendingAnalysis = [...analysisRequests.values()];
+    const pendingSearch = [...searchRequests.values()];
+    analysisRequests.clear();
+    searchRequests.clear();
+    pendingAnalysis.forEach(resolveAnalysisLocally);
+    pendingSearch.forEach(resolveSearchLocally);
   }
 
   function ensureWorker() {
@@ -80,23 +98,32 @@ export function createSourceAnalysisClient({
     }
 
     worker.addEventListener("message", (event) => {
-      const { type, requestId, analysis } = event.data || {};
-      const entry = requests.get(requestId);
-      if (!entry) return;
-      requests.delete(requestId);
+      const { type, requestId, analysis, result } = event.data || {};
 
-      if (type === "source-analysis-error") {
-        resolveSynchronously(entry);
+      if (type === "source-analysis-result" || type === "source-analysis-error") {
+        const entry = analysisRequests.get(requestId);
+        if (!entry) return;
+        analysisRequests.delete(requestId);
+        if (type === "source-analysis-error" || !analysis) {
+          resolveAnalysisLocally(entry);
+          return;
+        }
+        cacheIfCurrent(entry, analysis);
+        clearPendingEntry(entry);
+        entry.resolve(analysis);
         return;
       }
-      if (type !== "source-analysis-result" || !analysis) {
-        resolveSynchronously(entry);
-        return;
-      }
 
-      cacheIfCurrent(entry, analysis);
-      clearPendingEntry(entry);
-      entry.resolve(analysis);
+      if (type === "source-search-result" || type === "source-search-error") {
+        const entry = searchRequests.get(requestId);
+        if (!entry) return;
+        searchRequests.delete(requestId);
+        if (type === "source-search-error" || !result) {
+          resolveSearchLocally(entry);
+          return;
+        }
+        entry.resolve(result);
+      }
     });
     worker.addEventListener("error", disableWorkerAndFallback);
     worker.addEventListener("messageerror", disableWorkerAndFallback);
@@ -132,38 +159,87 @@ export function createSourceAnalysisClient({
     pendingByFile.set(fileName, entry);
 
     if (source.length < workerThreshold) {
-      queueMicrotask(() => resolveSynchronously(entry));
+      queueMicrotask(() => resolveAnalysisLocally(entry));
       return promise;
     }
 
     const activeWorker = ensureWorker();
     if (!activeWorker) {
-      queueMicrotask(() => resolveSynchronously(entry));
+      queueMicrotask(() => resolveAnalysisLocally(entry));
       return promise;
     }
 
-    requests.set(requestId, entry);
+    analysisRequests.set(requestId, entry);
     try {
       activeWorker.postMessage({
         type: "analyze-source",
         requestId,
+        fileName,
         source,
         maximumSamples
       });
     } catch {
-      requests.delete(requestId);
+      analysisRequests.delete(requestId);
       disableWorkerAndFallback();
-      if (pendingByFile.get(fileName)?.requestId === requestId) {
-        resolveSynchronously(entry);
-      }
+      if (pendingByFile.get(fileName)?.requestId === requestId) resolveAnalysisLocally(entry);
     }
     return promise;
+  }
+
+  function search(fileName, query, {
+    matchCase = false,
+    maxMatches = MAX_SEARCH_MATCHES
+  } = {}) {
+    const record = cache.get(fileName);
+    if (!record) return Promise.reject(new Error("Source must be indexed before searching."));
+    if (!query) return Promise.resolve({ matches: [], truncated: false });
+
+    const options = { matchCase: Boolean(matchCase), maxMatches };
+    if (record.source.length < workerThreshold || workerDisabled) {
+      return Promise.resolve(searchSource(record.source, query, options));
+    }
+
+    const activeWorker = ensureWorker();
+    if (!activeWorker) return Promise.resolve(searchSource(record.source, query, options));
+
+    const requestId = nextRequestId;
+    nextRequestId += 1;
+    return new Promise((resolve, reject) => {
+      const entry = {
+        fileName,
+        source: record.source,
+        query,
+        options,
+        requestId,
+        resolve,
+        reject
+      };
+      searchRequests.set(requestId, entry);
+      try {
+        activeWorker.postMessage({
+          type: "search-source",
+          requestId,
+          fileName,
+          query,
+          options
+        });
+      } catch {
+        searchRequests.delete(requestId);
+        disableWorkerAndFallback();
+        resolveSearchLocally(entry);
+      }
+    });
   }
 
   function release(fileName) {
     bumpGeneration(fileName);
     cache.delete(fileName);
     pendingByFile.delete(fileName);
+    try {
+      worker?.postMessage({ type: "release-source", fileName });
+    } catch {
+      disableWorkerAndFallback();
+    }
   }
 
   function destroy() {
@@ -172,13 +248,15 @@ export function createSourceAnalysisClient({
     workerDisabled = true;
     cache.clear();
     pendingByFile.clear();
-    const pending = [...requests.values()];
-    requests.clear();
+    const pending = [...analysisRequests.values(), ...searchRequests.values()];
+    analysisRequests.clear();
+    searchRequests.clear();
     pending.forEach((entry) => entry.reject(new Error("Source analysis client destroyed.")));
   }
 
   return Object.freeze({
     analyze,
+    search,
     release,
     destroy,
     isWorkerEnabled: () => !workerDisabled
