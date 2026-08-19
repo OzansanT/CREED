@@ -86,6 +86,9 @@ const editorPanelModules = [
   "explorer-controller.js",
   "file-metadata.js",
   "minimap-controller.js",
+  "source-analysis-client.js",
+  "source-analysis-worker.js",
+  "source-analysis.js",
   "source-files.js",
   "source-loader.js",
   "source-renderer.js",
@@ -111,6 +114,32 @@ assert(
   "workbench-input.js must coordinate the virtualized source viewport."
 );
 
+const sourceViewportSource = read("js/components/editor-panel/source-viewport.js");
+assert(
+  sourceViewportSource.includes("createSourceAnalysisClient"),
+  "source-viewport.js must delegate full-source analysis to the analysis client."
+);
+assert(
+  !sourceViewportSource.includes('split("\\n")') && !sourceViewportSource.includes("chooseRepresentativeLine"),
+  "source-viewport.js must not reclaim full-source parsing or minimap analysis."
+);
+
+const sourceAnalysisClientSource = read("js/components/editor-panel/source-analysis-client.js");
+assert(
+  sourceAnalysisClientSource.includes('new URL("./source-analysis-worker.js", import.meta.url)'),
+  "source-analysis-client.js must resolve the module worker relative to its own module URL."
+);
+assert(
+  sourceAnalysisClientSource.includes("analyzeSource"),
+  "source-analysis-client.js must retain the synchronous analysis fallback."
+);
+
+const sourceAnalysisWorkerSource = read("js/components/editor-panel/source-analysis-worker.js");
+assert(
+  sourceAnalysisWorkerSource.includes("analysis.lineStarts.buffer") && sourceAnalysisWorkerSource.includes("analysis.lineEnds.buffer"),
+  "source-analysis-worker.js must transfer typed line-index buffers instead of cloning them."
+);
+
 const scriptFiles = collectFiles(repositoryRoot, /\.(?:js|mjs)$/);
 for (const file of scriptFiles) {
   const result = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
@@ -130,11 +159,7 @@ for (const file of scriptFiles) {
 const sourceViewportUrl = pathToFileURL(
   resolve(repositoryRoot, "js/components/editor-panel/source-viewport.js")
 ).href;
-const {
-  calculateSourceWindow,
-  calculateMinimapRanges,
-  MAX_MINIMAP_SAMPLES
-} = await import(sourceViewportUrl);
+const { calculateSourceWindow } = await import(sourceViewportUrl);
 const largeSourceWindow = calculateSourceWindow({
   lineCount: 100000,
   scrollTop: 950000,
@@ -146,14 +171,35 @@ assert(
   largeSourceWindow.end - largeSourceWindow.start <= 80,
   "Source virtualization renders too many DOM rows for a normal viewport."
 );
+
+const sourceAnalysisUrl = pathToFileURL(
+  resolve(repositoryRoot, "js/components/editor-panel/source-analysis.js")
+).href;
+const {
+  analyzeSource,
+  calculateMinimapRanges,
+  MAX_MINIMAP_SAMPLES
+} = await import(sourceAnalysisUrl);
 const largeMinimapRanges = calculateMinimapRanges(100000);
 assert(
   largeMinimapRanges.length === MAX_MINIMAP_SAMPLES,
-  "Minimap virtualization must cap overview DOM samples."
+  "Minimap analysis must cap overview DOM samples."
 );
 assert(
   largeMinimapRanges[0]?.start === 0 && largeMinimapRanges.at(-1)?.end === 99999,
-  "Minimap virtualization must cover the complete source range."
+  "Minimap analysis must cover the complete source range."
+);
+const indexedSource = analyzeSource("alpha\r\nbeta\n" + "x\n".repeat(100000));
+assert(indexedSource.lineCount === 100003, "Source analysis line indexing returned the wrong line count.");
+assert(indexedSource.lineStarts instanceof Uint32Array, "Source analysis must use typed line-start offsets.");
+assert(indexedSource.lineEnds instanceof Uint32Array, "Source analysis must use typed line-end offsets.");
+assert(
+  indexedSource.minimapSamples.length === MAX_MINIMAP_SAMPLES,
+  "Large source analysis must keep the minimap sample count bounded."
+);
+assert(
+  "alpha\r\nbeta\n".slice(indexedSource.lineStarts[0], indexedSource.lineEnds[0]) === "alpha",
+  "Source analysis must exclude CR from CRLF line slices."
 );
 
 const pointerCaptureModules = [
