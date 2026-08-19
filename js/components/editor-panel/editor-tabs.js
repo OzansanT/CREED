@@ -77,6 +77,21 @@ export function createEditorTabs({
     return true;
   }
 
+  function clear({ notify = true } = {}) {
+    const openFiles = [...tabs.keys()];
+    for (const fileName of openFiles) {
+      const record = tabs.get(fileName);
+      record?.tab.remove();
+      tabs.delete(fileName);
+      onClose?.(fileName);
+    }
+    activeFile = "";
+    synchronizeTabs();
+    codeView.setAttribute("aria-labelledby", canvasTab.id);
+    if (notify) onActivate?.("");
+    return openFiles;
+  }
+
   function focusRelative(fileName, direction) {
     const sequence = ["", ...tabs.keys()];
     const currentIndex = sequence.indexOf(fileName);
@@ -170,6 +185,7 @@ export function createEditorTabs({
   return Object.freeze({
     open,
     close,
+    clear,
     activate,
     showCanvas: () => activate(""),
     getActiveFile: () => activeFile,
