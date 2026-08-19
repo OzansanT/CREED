@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(repositoryRoot, path), "utf8");
@@ -89,6 +89,7 @@ const editorPanelModules = [
   "source-files.js",
   "source-loader.js",
   "source-renderer.js",
+  "source-viewport.js",
   "workbench-input.js"
 ];
 for (const moduleName of editorPanelModules) {
@@ -105,6 +106,10 @@ for (const forbiddenResponsibility of ["AbortController", "TOKEN_PATTERNS", "set
     "workbench-input.js must remain orchestration-only; move " + forbiddenResponsibility + " to its focused module."
   );
 }
+assert(
+  workbenchSource.includes("createSourceViewport"),
+  "workbench-input.js must coordinate the virtualized source viewport."
+);
 
 const scriptFiles = collectFiles(repositoryRoot, /\.(?:js|mjs)$/);
 for (const file of scriptFiles) {
@@ -121,6 +126,35 @@ for (const file of scriptFiles) {
     assert(existsSync(importedFile), "Missing JavaScript dependency: " + relative(repositoryRoot, importedFile));
   }
 }
+
+const sourceViewportUrl = pathToFileURL(
+  resolve(repositoryRoot, "js/components/editor-panel/source-viewport.js")
+).href;
+const {
+  calculateSourceWindow,
+  calculateMinimapRanges,
+  MAX_MINIMAP_SAMPLES
+} = await import(sourceViewportUrl);
+const largeSourceWindow = calculateSourceWindow({
+  lineCount: 100000,
+  scrollTop: 950000,
+  clientHeight: 760,
+  lineHeight: 19,
+  paddingTop: 4
+});
+assert(
+  largeSourceWindow.end - largeSourceWindow.start <= 80,
+  "Source virtualization renders too many DOM rows for a normal viewport."
+);
+const largeMinimapRanges = calculateMinimapRanges(100000);
+assert(
+  largeMinimapRanges.length === MAX_MINIMAP_SAMPLES,
+  "Minimap virtualization must cap overview DOM samples."
+);
+assert(
+  largeMinimapRanges[0]?.start === 0 && largeMinimapRanges.at(-1)?.end === 99999,
+  "Minimap virtualization must cover the complete source range."
+);
 
 const pointerCaptureModules = [
   "js/components/infinite-canvas/pan-input.js",
