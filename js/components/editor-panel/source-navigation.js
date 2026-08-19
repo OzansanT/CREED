@@ -183,6 +183,13 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     return controls.findWidget.contains(target) || controls.goToWidget.contains(target);
   }
 
+  function captureReturnFocus() {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && !isOwnControl(activeElement)) {
+      returnFocus = activeElement;
+    }
+  }
+
   function setFindError(message = "") {
     controls.findWidget.classList.toggle("has-error", Boolean(message));
     controls.findInput.setAttribute("aria-invalid", String(Boolean(message)));
@@ -280,7 +287,11 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
   }
 
   function restoreFocus() {
-    if (returnFocus instanceof HTMLElement && returnFocus.isConnected && !returnFocus.hidden) {
+    if (
+      returnFocus instanceof HTMLElement
+      && returnFocus.isConnected
+      && !returnFocus.closest("[hidden]")
+    ) {
       returnFocus.focus();
     }
     returnFocus = null;
@@ -312,8 +323,8 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
 
   function openFind() {
     if (!isSourceActive?.()) return false;
+    captureReturnFocus();
     if (controls.goToWidget.hidden === false) closeGoTo({ restore: false });
-    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     controls.findWidget.hidden = false;
     controls.findInput.value = query;
     controls.findInput.focus();
@@ -344,8 +355,8 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
 
   function openGoTo() {
     if (!isSourceActive?.()) return false;
+    captureReturnFocus();
     if (controls.findWidget.hidden === false) closeFind({ clear: false, restore: false });
-    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     controls.goToWidget.hidden = false;
     controls.goToInput.value = ":";
     controls.goToHint.textContent = "Type :line or :line:column";
