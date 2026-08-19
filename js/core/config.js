@@ -6,3 +6,4 @@ export const GRID_ORDERS = Object.freeze([1, 2, 4, 8]);
 export const STORAGE_KEY = "infiniteCanvasLODState.v3";
 export const PANEL_LAYOUT_STORAGE_KEY = "creedPanelLayout.v2";
 export const LEGACY_PANEL_LAYOUT_STORAGE_KEY = "creedPanelLayout.v1";
+export const EDITOR_WORKSPACE_STORAGE_KEY = "creedEditorWorkspace.v1";
