@@ -80,6 +80,32 @@ assert(
   "Root main.js must remain only the compatibility bootstrap for js/main.js."
 );
 
+const editorPanelModules = [
+  "editor-panel-main.js",
+  "editor-tabs.js",
+  "explorer-controller.js",
+  "file-metadata.js",
+  "minimap-controller.js",
+  "source-files.js",
+  "source-loader.js",
+  "source-renderer.js",
+  "workbench-input.js"
+];
+for (const moduleName of editorPanelModules) {
+  assert(
+    existsSync(resolve(repositoryRoot, "js/components/editor-panel", moduleName)),
+    "Missing editor-panel module: " + moduleName
+  );
+}
+
+const workbenchSource = read("js/components/editor-panel/workbench-input.js");
+for (const forbiddenResponsibility of ["AbortController", "TOKEN_PATTERNS", "setPointerCapture", "lostpointercapture"]) {
+  assert(
+    !workbenchSource.includes(forbiddenResponsibility),
+    "workbench-input.js must remain orchestration-only; move " + forbiddenResponsibility + " to its focused module."
+  );
+}
+
 const scriptFiles = collectFiles(repositoryRoot, /\.(?:js|mjs)$/);
 for (const file of scriptFiles) {
   const result = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
@@ -100,7 +126,7 @@ const pointerCaptureModules = [
   "js/components/infinite-canvas/pan-input.js",
   "js/components/infinite-canvas/card-input.js",
   "js/components/panel-resize/panel-resize-input.js",
-  "js/components/editor-panel/workbench-input.js"
+  "js/components/editor-panel/minimap-controller.js"
 ];
 for (const modulePath of pointerCaptureModules) {
   assert(
