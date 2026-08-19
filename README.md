@@ -7,8 +7,12 @@ CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Cod
 - IDs are stable JavaScript and ARIA hooks.
 - Classes own presentation and use component-oriented names.
 - Repeated elements use classes plus `data-*` attributes instead of sequential IDs.
+- CSS source lives under `css/`; application JavaScript lives under `js/`.
 - Each visual component has one `*-main.css` entry and focused CSS colony files.
-- `index.html` loads only `css/generated/creed.css`.
+- Component JavaScript is grouped under `js/components/<component>/` where practical.
+- Shared JS infrastructure lives in `js/core/`; shared UI helpers live in `js/ui/`.
+- Repository-root `main.js` is only a compatibility bootstrap; `js/main.js` is the application orchestration entry.
+- `index.html` loads only `css/generated/creed.css` for styles.
 - Edit CSS source colonies, then run `node scripts/build-css.mjs`.
 - Internal ES-module imports do not use manual cache-version query strings.
 - Run `node scripts/build-source-files.mjs` after adding, renaming, or deleting repository files.
@@ -48,12 +52,13 @@ node scripts/build-source-files.mjs
 node scripts/check-architecture.mjs
 ```
 
-`npm run check` verifies generated CSS freshness before running the architecture checks.
+`npm run check` verifies generated CSS freshness, JavaScript syntax/import integrity, DOM wiring, Explorer inventory freshness, pointer-capture hardening, and the JS colony boundary.
 
 ## Current directory tree
 
 ```text
 CREED/
+├── AGENTS.md
 ├── css/
 │   ├── components/
 │   │   ├── activity-bar/
@@ -141,6 +146,7 @@ CREED/
 │   │       ├── titlebar-brand.css
 │   │       ├── titlebar-main.css
 │   │       └── titlebar-shell.css
+│   ├── creed-main.css
 │   ├── foundation/
 │   │   ├── accessibility.css
 │   │   ├── design-tokens.css
@@ -157,54 +163,65 @@ CREED/
 │   │   ├── panel-resize-main.css
 │   │   ├── responsive.css
 │   │   └── workbench-main.css
-│   ├── primitives/
-│   │   ├── buttons.css
-│   │   ├── icon-buttons.css
-│   │   ├── icons.css
-│   │   ├── inputs.css
-│   │   ├── menus.css
-│   │   ├── scrollbars.css
-│   │   ├── tabs.css
-│   │   └── toolbars.css
-│   └── creed-main.css
-├── scripts/
-│   ├── build-css.mjs
-│   ├── build-source-files.mjs
-│   └── check-architecture.mjs
-├── AGENTS.md
-├── README.md
-├── anchors.js
-├── bottom-panel-input.js
-├── bottom-panel-main.js
-├── card-input.js
-├── config.js
-├── coordinates.js
-├── editor-panel-main.js
-├── editor-tabs.js
-├── elements.js
-├── grid-lod.js
-├── icons.js
+│   └── primitives/
+│       ├── buttons.css
+│       ├── icon-buttons.css
+│       ├── icons.css
+│       ├── inputs.css
+│       ├── menus.css
+│       ├── scrollbars.css
+│       ├── tabs.css
+│       └── toolbars.css
 ├── index.html
-├── infinitecanvas-main.js
-├── json-file.js
-├── keyboard.js
+├── js/
+│   ├── components/
+│   │   ├── bottom-panel/
+│   │   │   ├── bottom-panel-input.js
+│   │   │   └── bottom-panel-main.js
+│   │   ├── editor-panel/
+│   │   │   ├── editor-panel-main.js
+│   │   │   ├── editor-tabs.js
+│   │   │   ├── source-files.js
+│   │   │   └── workbench-input.js
+│   │   ├── infinite-canvas/
+│   │   │   ├── anchors.js
+│   │   │   ├── card-input.js
+│   │   │   ├── grid-lod.js
+│   │   │   ├── infinitecanvas-main.js
+│   │   │   ├── json-file.js
+│   │   │   ├── keyboard.js
+│   │   │   ├── pan-input.js
+│   │   │   ├── reset-input.js
+│   │   │   ├── sidebar-input.js
+│   │   │   ├── viewport.js
+│   │   │   └── wheel-input.js
+│   │   ├── panel-resize/
+│   │   │   └── panel-resize-input.js
+│   │   ├── primary-sidebar/
+│   │   │   ├── primary-sidebar-input.js
+│   │   │   └── primary-sidebar-main.js
+│   │   └── secondary-sidebar/
+│   │       ├── secondary-sidebar-input.js
+│   │       └── secondary-sidebar-main.js
+│   ├── core/
+│   │   ├── config.js
+│   │   ├── coordinates.js
+│   │   ├── elements.js
+│   │   ├── state.js
+│   │   └── storage.js
+│   ├── main.js
+│   └── ui/
+│       ├── icons.js
+│       ├── toast.js
+│       ├── ui.js
+│       └── unavailable-controls.js
 ├── main.js
 ├── package.json
-├── pan-input.js
-├── panel-resize-input.js
-├── primary-sidebar-input.js
-├── reset-input.js
-├── secondary-sidebar-input.js
-├── secondary-sidebar-main.js
-├── sidebar-input.js
-├── source-files.js
-├── state.js
-├── storage.js
-├── toast.js
-├── ui.js
-├── viewport.js
-├── wheel-input.js
-└── workbench-input.js
+├── README.md
+└── scripts/
+    ├── build-css.mjs
+    ├── build-source-files.mjs
+    └── check-architecture.mjs
 ```
 
 ## Current file relationship tree
@@ -215,55 +232,55 @@ index.html
 │   └── css/generated/creed.css
 └── JavaScript
     └── main.js
-        ├── elements.js
-        ├── toast.js
-        ├── primary-sidebar-input.js
-        ├── secondary-sidebar-main.js
-        │   └── secondary-sidebar-input.js
-        ├── bottom-panel-main.js
-        │   └── bottom-panel-input.js
-        ├── panel-resize-input.js
-        │   ├── state.js
-        │   └── storage.js
-        │       ├── config.js
-        │       ├── state.js
-        │       └── coordinates.js
-        ├── icons.js
-        ├── editor-panel-main.js
-        │   └── workbench-input.js
-        │       ├── source-files.js
-        │       └── editor-tabs.js
-        │           └── icons.js
-        └── infinitecanvas-main.js
-            ├── state.js
-            ├── storage.js
-            │   ├── config.js
-            │   ├── state.js
-            │   └── coordinates.js
-            ├── ui.js
-            │   ├── grid-lod.js
-            │   │   └── config.js
-            │   └── coordinates.js
-            ├── toast.js
-            ├── viewport.js
-            │   ├── config.js
-            │   ├── state.js
-            │   └── coordinates.js
-            ├── anchors.js
-            │   ├── config.js
-            │   ├── state.js
-            │   └── coordinates.js
-            ├── pan-input.js
-            ├── wheel-input.js
-            │   └── viewport.js
-            ├── keyboard.js
-            ├── sidebar-input.js
-            │   └── coordinates.js
-            ├── reset-input.js
-            │   ├── storage.js
-            │   └── viewport.js
-            ├── card-input.js
-            └── json-file.js
+        └── js/main.js
+            ├── js/core/elements.js
+            ├── js/ui/icons.js
+            ├── js/ui/toast.js
+            ├── js/ui/unavailable-controls.js
+            ├── js/components/primary-sidebar/primary-sidebar-main.js
+            │   └── js/components/primary-sidebar/primary-sidebar-input.js
+            ├── js/components/secondary-sidebar/secondary-sidebar-main.js
+            │   └── js/components/secondary-sidebar/secondary-sidebar-input.js
+            ├── js/components/bottom-panel/bottom-panel-main.js
+            │   └── js/components/bottom-panel/bottom-panel-input.js
+            ├── js/components/panel-resize/panel-resize-input.js
+            │   ├── js/core/state.js
+            │   └── js/core/storage.js
+            │       ├── js/core/config.js
+            │       ├── js/core/state.js
+            │       └── js/core/coordinates.js
+            ├── js/components/editor-panel/editor-panel-main.js
+            │   └── js/components/editor-panel/workbench-input.js
+            │       ├── js/components/editor-panel/source-files.js
+            │       └── js/components/editor-panel/editor-tabs.js
+            │           └── js/ui/icons.js
+            └── js/components/infinite-canvas/infinitecanvas-main.js
+                ├── js/core/state.js
+                ├── js/core/storage.js
+                ├── js/ui/ui.js
+                │   ├── js/components/infinite-canvas/grid-lod.js
+                │   │   └── js/core/config.js
+                │   └── js/core/coordinates.js
+                ├── js/ui/toast.js
+                ├── js/components/infinite-canvas/viewport.js
+                │   ├── js/core/config.js
+                │   ├── js/core/state.js
+                │   └── js/core/coordinates.js
+                ├── js/components/infinite-canvas/anchors.js
+                │   ├── js/core/config.js
+                │   ├── js/core/state.js
+                │   └── js/core/coordinates.js
+                ├── js/components/infinite-canvas/pan-input.js
+                ├── js/components/infinite-canvas/wheel-input.js
+                │   └── js/components/infinite-canvas/viewport.js
+                ├── js/components/infinite-canvas/keyboard.js
+                ├── js/components/infinite-canvas/sidebar-input.js
+                │   └── js/core/coordinates.js
+                ├── js/components/infinite-canvas/reset-input.js
+                │   ├── js/core/storage.js
+                │   └── js/components/infinite-canvas/viewport.js
+                ├── js/components/infinite-canvas/card-input.js
+                └── js/components/infinite-canvas/json-file.js
 
 css/creed-main.css
 ├── css/foundation/reset.css
