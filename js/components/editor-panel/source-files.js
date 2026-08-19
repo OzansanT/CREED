@@ -103,6 +103,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "js/components/editor-panel/editor-panel-main.js",
   "js/components/editor-panel/editor-session-state.js",
   "js/components/editor-panel/editor-tabs.js",
+  "js/components/editor-panel/editor-workspace-storage.js",
   "js/components/editor-panel/explorer-controller.js",
   "js/components/editor-panel/file-metadata.js",
   "js/components/editor-panel/minimap-controller.js",
