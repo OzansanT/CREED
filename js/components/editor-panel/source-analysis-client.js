@@ -1,5 +1,7 @@
 import { analyzeSource, MAX_MINIMAP_SAMPLES } from "./source-analysis.js";
 
+export const SOURCE_WORKER_THRESHOLD = 64 * 1024;
+
 function createDefaultWorker() {
   if (typeof Worker !== "function") return null;
   return new Worker(new URL("./source-analysis-worker.js", import.meta.url), {
@@ -10,7 +12,8 @@ function createDefaultWorker() {
 
 export function createSourceAnalysisClient({
   workerFactory = createDefaultWorker,
-  maximumSamples = MAX_MINIMAP_SAMPLES
+  maximumSamples = MAX_MINIMAP_SAMPLES,
+  workerThreshold = SOURCE_WORKER_THRESHOLD
 } = {}) {
   const cache = new Map();
   const pendingByFile = new Map();
@@ -127,6 +130,11 @@ export function createSourceAnalysisClient({
       reject: rejectPromise
     };
     pendingByFile.set(fileName, entry);
+
+    if (source.length < workerThreshold) {
+      queueMicrotask(() => resolveSynchronously(entry));
+      return promise;
+    }
 
     const activeWorker = ensureWorker();
     if (!activeWorker) {
