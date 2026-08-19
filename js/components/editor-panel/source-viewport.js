@@ -50,12 +50,19 @@ export function calculateSourceWindow({
   paddingTop = 0,
   overscan = SOURCE_OVERSCAN_LINES
 }) {
+  const safeLineCount = Math.max(0, lineCount);
+  if (safeLineCount === 0) return { start: 0, end: 0 };
+
   const safeLineHeight = Math.max(1, lineHeight);
+  const safeOverscan = Math.max(0, overscan);
   const viewportLines = Math.max(1, Math.ceil(clientHeight / safeLineHeight));
-  const firstVisible = Math.max(0, Math.floor((scrollTop - paddingTop) / safeLineHeight));
+  const firstVisible = Math.min(
+    safeLineCount - 1,
+    Math.max(0, Math.floor((scrollTop - paddingTop) / safeLineHeight))
+  );
   return {
-    start: Math.max(0, firstVisible - overscan),
-    end: Math.min(lineCount, firstVisible + viewportLines + overscan)
+    start: Math.max(0, firstVisible - safeOverscan),
+    end: Math.min(safeLineCount, firstVisible + viewportLines + safeOverscan)
   };
 }
 
@@ -169,6 +176,7 @@ export function createSourceViewport({ target, minimap, scroller }) {
     delete minimap.dataset.sampleCount;
   }
 
+  scroller.style.overflowAnchor = "none";
   scroller.addEventListener("scroll", scheduleRender, { passive: true });
   const resizeObserver = typeof ResizeObserver === "function"
     ? new ResizeObserver(scheduleRender)
