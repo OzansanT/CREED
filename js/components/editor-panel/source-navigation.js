@@ -237,9 +237,11 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     activeIndex = -1;
     truncated = false;
     setFindError("");
+    controls.previousButton.disabled = true;
+    controls.nextButton.disabled = true;
+    viewport.clearSearch();
 
     if (!query) {
-      viewport.clearSearch();
       updateFindControls();
       return { matches, truncated };
     }
@@ -263,7 +265,6 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
       return result;
     } catch (error) {
       if (generation !== searchGeneration) return { matches: [], truncated: false };
-      viewport.clearSearch();
       const message = options.useRegex ? "Invalid regex" : "Search unavailable";
       setFindError(message);
       onStatus?.(message);
@@ -300,6 +301,8 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
   function closeGoTo({ restore = true } = {}) {
     controls.goToWidget.hidden = true;
     controls.goToWidget.classList.remove("has-error");
+    if (query) updateFindControls();
+    else onStatus?.("");
     if (restore) restoreFocus();
   }
 
@@ -377,6 +380,8 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
     controls.findWidget.hidden = true;
     controls.goToWidget.hidden = true;
     setFindError("");
+    controls.previousButton.disabled = true;
+    controls.nextButton.disabled = true;
     viewport.clearSearch();
     onStatus?.("");
   }
