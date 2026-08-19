@@ -86,6 +86,7 @@ panelResize = bindPanelResize({
 
 infiniteCanvas.bind({
   showCanvas: editorPanel.showCanvas,
+  resetEditorWorkspace: editorPanel.resetWorkspace,
   primarySidebar,
   secondarySidebar,
   bottomPanel,
