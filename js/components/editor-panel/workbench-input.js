@@ -1,5 +1,6 @@
 import { createEditorSessionStore } from "./editor-session-state.js";
 import {
+  clearEditorWorkspace,
   loadEditorWorkspace,
   saveEditorWorkspace
 } from "./editor-workspace-storage.js";
@@ -239,6 +240,17 @@ export function bindWorkbenchFiles({
     else showCanvasPanel();
   }
 
+  function resetEditorWorkspace() {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = 0;
+    restoringWorkspace = true;
+    tabs.clear();
+    sessions.clear();
+    clearEditorWorkspace();
+    restoringWorkspace = false;
+    return true;
+  }
+
   const sourceEditorHost = sourceScroller.parentElement;
   sourceScroller.addEventListener("scroll", scheduleEditorWorkspacePersist, { passive: true });
   sourceEditorHost?.addEventListener("input", scheduleEditorWorkspacePersist);
@@ -268,6 +280,7 @@ export function bindWorkbenchFiles({
       const fileName = tabs.getActiveFile();
       if (fileName) tabs.activate(fileName);
     },
-    persistWorkspace: flushEditorWorkspace
+    persistWorkspace: flushEditorWorkspace,
+    resetWorkspace: resetEditorWorkspace
   });
 }
