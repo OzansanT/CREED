@@ -1,5 +1,3 @@
-import { getFileExtension } from "./file-metadata.js";
-
 const TOKEN_PATTERNS = Object.freeze({
   js: /(\/\/.*$|\/\*.*?\*\/|\x60(?:\\.|[^\x60])*\x60|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|\b(?:import|from|export|function|return|const|let|var|if|else|for|while|class|new|try|catch|finally|throw|async|await|true|false|null|undefined)\b|\b\d+(?:\.\d+)?\b)/g,
   css: /(\/\*.*?\*\/|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|#[0-9a-fA-F]{3,8}\b|--[\w-]+|[.#]?-?[\w-]+(?=\s*\{)|\b[a-z-]+(?=\s*:)|-?\b\d+(?:\.\d+)?(?:px|%|em|rem|vh|vw|s|ms)?\b)/g,
@@ -60,45 +58,31 @@ function appendHighlightedCode(line, target, extension) {
     cursor = match.index + match[0].length;
   }
 
-  if (cursor < line.length) {
-    target.append(document.createTextNode(line.slice(cursor)));
-  }
+  if (cursor < line.length) target.append(document.createTextNode(line.slice(cursor)));
   if (!target.hasChildNodes()) target.textContent = " ";
 }
 
-export function renderSourceCode({ source, target, minimap, fileName }) {
-  const codeFragment = document.createDocumentFragment();
-  const minimapLines = document.createElement("div");
-  const minimapViewport = document.createElement("div");
-  const lines = source.replace(/\r\n/g, "\n").split("\n");
-  const extension = getFileExtension(fileName);
+export function createSourceLineRow({ line, index, extension }) {
+  const row = document.createElement("div");
+  const number = document.createElement("span");
+  const code = document.createElement("span");
 
-  minimapLines.className = "source-editor__minimap-lines";
-  minimapLines.style.gridTemplateRows = "repeat(" + lines.length + ", minmax(0, 1fr))";
-  minimapViewport.className = "source-editor__minimap-viewport";
+  row.className = "source-editor__line";
+  row.dataset.lineNumber = String(index + 1);
+  number.className = "source-editor__line-number";
+  number.textContent = String(index + 1);
+  code.className = "source-editor__line-code";
+  appendHighlightedCode(line, code, extension);
+  row.append(number, code);
+  return row;
+}
 
-  lines.forEach((line, index) => {
-    const row = document.createElement("div");
-    const number = document.createElement("span");
-    const code = document.createElement("span");
-    const minimapLine = document.createElement("div");
-
-    row.className = "source-editor__line";
-    row.dataset.lineNumber = String(index + 1);
-    number.className = "source-editor__line-number";
-    number.textContent = String(index + 1);
-    code.className = "source-editor__line-code";
-    appendHighlightedCode(line, code, extension);
-
-    minimapLine.className = "source-editor__minimap-line source-editor__minimap-line--" + extension;
-    minimapLine.dataset.lineNumber = String(index + 1);
-    minimapLine.style.width = Math.min(94, Math.max(4, line.trim().length * 0.72)) + "px";
-
-    row.append(number, code);
-    codeFragment.append(row);
-    minimapLines.append(minimapLine);
-  });
-
-  target.replaceChildren(codeFragment);
-  minimap.replaceChildren(minimapLines, minimapViewport);
+export function createMinimapSample({ line, index, extension, startLine, endLine }) {
+  const sample = document.createElement("div");
+  sample.className = "source-editor__minimap-line source-editor__minimap-line--" + extension;
+  sample.dataset.lineNumber = String(index + 1);
+  sample.dataset.lineStart = String(startLine + 1);
+  sample.dataset.lineEnd = String(endLine + 1);
+  sample.style.width = Math.min(94, Math.max(4, line.trim().length * 0.72)) + "px";
+  return sample;
 }
