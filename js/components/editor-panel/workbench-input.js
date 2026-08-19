@@ -3,7 +3,7 @@ import { createExplorerController } from "./explorer-controller.js";
 import { getFileKind, getLanguageLabel } from "./file-metadata.js";
 import { createMinimapController } from "./minimap-controller.js";
 import { createSourceLoader } from "./source-loader.js";
-import { renderSourceCode } from "./source-renderer.js";
+import { createSourceViewport } from "./source-viewport.js";
 
 export function bindWorkbenchFiles({
   rootToggle,
@@ -39,6 +39,12 @@ export function bindWorkbenchFiles({
     scroller: sourceScroller
   });
 
+  const sourceViewport = createSourceViewport({
+    target: codeContent,
+    minimap: codeMinimap,
+    scroller: sourceScroller
+  });
+
   const explorer = createExplorerController({
     rootToggle,
     fileTree,
@@ -57,29 +63,28 @@ export function bindWorkbenchFiles({
   function renderLoadedFile(fileName, source) {
     if (activeFile !== fileName) return;
     codeContent.removeAttribute("aria-busy");
-    renderSourceCode({
-      source,
-      target: codeContent,
-      minimap: codeMinimap,
-      fileName
+    sourceScroller.scrollTop = 0;
+    sourceScroller.scrollLeft = 0;
+    sourceViewport.setSource({ source, fileName });
+    requestAnimationFrame(() => {
+      sourceViewport.refresh();
+      minimap.updateViewport();
     });
-    sourceScroller.scrollTo({ top: 0, left: 0 });
-    requestAnimationFrame(minimap.updateViewport);
   }
 
   const sourceLoader = createSourceLoader({
     onLoading: (fileName) => {
       if (activeFile !== fileName) return;
+      sourceViewport.clear();
       codeContent.setAttribute("aria-busy", "true");
       codeContent.textContent = "Loading…";
-      codeMinimap.replaceChildren();
     },
     onLoaded: renderLoadedFile,
     onError: (fileName, message) => {
       if (activeFile === fileName) {
+        sourceViewport.clear();
         codeContent.removeAttribute("aria-busy");
         codeContent.textContent = "Unable to display " + fileName + ".";
-        codeMinimap.replaceChildren();
       }
       onError?.(message);
     },
