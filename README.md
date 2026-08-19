@@ -1,40 +1,17 @@
 # CREED
 
-CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Codespaces-inspired shell. It combines an Explorer, multi-tab source viewer, infinite canvas, resizable bottom panel, secondary sidebar with chat view, and persistent layout state.
+CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Codespaces-inspired shell. It combines an Explorer, multi-tab source viewer, infinite canvas, resizable bottom panel, secondary sidebar, and persistent layout state.
 
 ## Architecture rules
 
-- IDs are stable JavaScript and ARIA hooks.
-- Classes own presentation and use component-oriented names.
-- Repeated elements use classes plus `data-*` attributes instead of sequential IDs.
 - CSS source lives under `css/`; application JavaScript lives under `js/`.
-- Each visual component has one `*-main.css` entry and focused CSS colony files.
-- Component JavaScript is grouped under `js/components/<component>/` where practical.
-- Shared JS infrastructure lives in `js/core/`; shared UI helpers live in `js/ui/`.
-- Repository-root `main.js` is only a compatibility bootstrap; `js/main.js` is the application orchestration entry.
-- `index.html` loads only `css/generated/creed.css` for styles.
-- Edit CSS source colonies, then run `node scripts/build-css.mjs`.
+- Shared JavaScript infrastructure belongs in `js/core/`; shared UI helpers belong in `js/ui/`.
+- Component behavior belongs in `js/components/<component>/`.
+- `main.js` is only the compatibility bootstrap; `js/main.js` is the application orchestration entry.
+- The editor panel is split by responsibility: Explorer, tabs, file metadata, source loading, source rendering, minimap input, and workbench orchestration.
+- IDs remain stable JavaScript and ARIA hooks. Classes own presentation.
 - Internal ES-module imports do not use manual cache-version query strings.
-- Run `node scripts/build-source-files.mjs` after adding, renaming, or deleting repository files.
-
-## Main visual regions
-
-```text
-#app.app-shell
-├── #restrictedModeBanner.restricted-mode-banner
-├── #titleBar.app-titlebar
-├── #activityBar.activity-bar
-├── #primarySidebar.primary-sidebar
-├── #workbench.workbench
-│   ├── #editorPanel.editor-panel
-│   │   ├── #canvasView.editor-view--canvas
-│   │   └── #sourceEditorView.editor-view--source
-│   └── #bottomPanel.bottom-panel
-├── #secondarySidebar.secondary-sidebar
-│   └── #chatView.chat-view
-├── #notificationLayer.notification-layer
-└── #statusBar.status-bar
-```
+- After adding, renaming, or deleting files, regenerate `js/components/editor-panel/source-files.js` with `npm run build:inventory`.
 
 ## Development commands
 
@@ -43,7 +20,7 @@ npm run build
 npm run check
 ```
 
-Equivalent focused commands:
+Focused commands:
 
 ```bash
 node scripts/build-css.mjs
@@ -52,7 +29,7 @@ node scripts/build-source-files.mjs
 node scripts/check-architecture.mjs
 ```
 
-`npm run check` verifies generated CSS freshness, JavaScript syntax/import integrity, DOM wiring, Explorer inventory freshness, pointer-capture hardening, and the JS colony boundary.
+`npm run check` verifies CSS bundle freshness, JavaScript syntax/import integrity, DOM wiring, Explorer inventory freshness, pointer-capture recovery, JS colony boundaries, and editor-panel responsibility boundaries.
 
 ## Current directory tree
 
@@ -181,7 +158,12 @@ CREED/
 │   │   ├── editor-panel/
 │   │   │   ├── editor-panel-main.js
 │   │   │   ├── editor-tabs.js
+│   │   │   ├── explorer-controller.js
+│   │   │   ├── file-metadata.js
+│   │   │   ├── minimap-controller.js
 │   │   │   ├── source-files.js
+│   │   │   ├── source-loader.js
+│   │   │   ├── source-renderer.js
 │   │   │   └── workbench-input.js
 │   │   ├── infinite-canvas/
 │   │   │   ├── anchors.js
@@ -246,39 +228,30 @@ index.html
             ├── js/components/panel-resize/panel-resize-input.js
             │   ├── js/core/state.js
             │   └── js/core/storage.js
-            │       ├── js/core/config.js
-            │       ├── js/core/state.js
-            │       └── js/core/coordinates.js
             ├── js/components/editor-panel/editor-panel-main.js
             │   └── js/components/editor-panel/workbench-input.js
-            │       ├── js/components/editor-panel/source-files.js
-            │       └── js/components/editor-panel/editor-tabs.js
-            │           └── js/ui/icons.js
+            │       ├── js/components/editor-panel/editor-tabs.js
+            │       │   └── js/ui/icons.js
+            │       ├── js/components/editor-panel/explorer-controller.js
+            │       │   ├── js/components/editor-panel/source-files.js
+            │       │   └── js/components/editor-panel/file-metadata.js
+            │       ├── js/components/editor-panel/file-metadata.js
+            │       ├── js/components/editor-panel/minimap-controller.js
+            │       ├── js/components/editor-panel/source-loader.js
+            │       └── js/components/editor-panel/source-renderer.js
+            │           └── js/components/editor-panel/file-metadata.js
             └── js/components/infinite-canvas/infinitecanvas-main.js
                 ├── js/core/state.js
                 ├── js/core/storage.js
                 ├── js/ui/ui.js
-                │   ├── js/components/infinite-canvas/grid-lod.js
-                │   │   └── js/core/config.js
-                │   └── js/core/coordinates.js
                 ├── js/ui/toast.js
                 ├── js/components/infinite-canvas/viewport.js
-                │   ├── js/core/config.js
-                │   ├── js/core/state.js
-                │   └── js/core/coordinates.js
                 ├── js/components/infinite-canvas/anchors.js
-                │   ├── js/core/config.js
-                │   ├── js/core/state.js
-                │   └── js/core/coordinates.js
                 ├── js/components/infinite-canvas/pan-input.js
                 ├── js/components/infinite-canvas/wheel-input.js
-                │   └── js/components/infinite-canvas/viewport.js
                 ├── js/components/infinite-canvas/keyboard.js
                 ├── js/components/infinite-canvas/sidebar-input.js
-                │   └── js/core/coordinates.js
                 ├── js/components/infinite-canvas/reset-input.js
-                │   ├── js/core/storage.js
-                │   └── js/components/infinite-canvas/viewport.js
                 ├── js/components/infinite-canvas/card-input.js
                 └── js/components/infinite-canvas/json-file.js
 
@@ -318,4 +291,4 @@ css/creed-main.css
 └── css/layout/responsive.css
 ```
 
-The CSS component `*-main.css` files continue the relationship graph through their literal sibling `@import` declarations. `css/generated/creed.css` is generated from this source graph and must not be edited directly.
+`css/generated/creed.css` is generated from the CSS source graph and should not be edited directly.
