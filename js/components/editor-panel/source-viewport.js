@@ -16,6 +16,15 @@ function getPaddingTop(target) {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
+function getCharacterWidth(target) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) return 7.2;
+  context.font = getComputedStyle(target).font;
+  const width = context.measureText("0").width;
+  return Number.isFinite(width) && width > 0 ? width : 7.2;
+}
+
 function createSpacer(height) {
   const spacer = document.createElement("div");
   spacer.setAttribute("aria-hidden", "true");
@@ -50,20 +59,29 @@ export function calculateSourceWindow({
 
 export function createSourceViewport({ target, minimap, scroller }) {
   const analysisClient = createSourceAnalysisClient();
+  let activeFileName = "";
   let sourceText = "";
   let lineStarts = new Uint32Array(0);
   let lineEnds = new Uint32Array(0);
   let minimapSamples = [];
   let extension = "";
   let lineHeight = DEFAULT_LINE_HEIGHT;
+  let characterWidth = 7.2;
   let paddingTop = 0;
   let renderFrame = 0;
   let sourceGeneration = 0;
+  let searchMatches = [];
+  let searchMatchesByLine = new Map();
+  let activeSearchIndex = -1;
   let lastStart = -1;
   let lastEnd = -1;
 
   function getLine(index) {
     return sourceText.slice(lineStarts[index], lineEnds[index]);
+  }
+
+  function getActiveSearchMatch() {
+    return activeSearchIndex >= 0 ? searchMatches[activeSearchIndex] || null : null;
   }
 
   function renderWindow(force = false) {
@@ -85,10 +103,17 @@ export function createSourceViewport({ target, minimap, scroller }) {
     });
     if (!force && start === lastStart && end === lastEnd) return;
 
+    const activeSearchMatch = getActiveSearchMatch();
     const fragment = document.createDocumentFragment();
     fragment.append(createSpacer(start * lineHeight));
     for (let index = start; index < end; index += 1) {
-      fragment.append(createSourceLineRow({ line: getLine(index), index, extension }));
+      fragment.append(createSourceLineRow({
+        line: getLine(index),
+        index,
+        extension,
+        searchMatches: searchMatchesByLine.get(index) || [],
+        activeSearchMatch
+      }));
     }
     fragment.append(createSpacer((lineCount - end) * lineHeight));
     target.replaceChildren(fragment);
@@ -120,19 +145,29 @@ export function createSourceViewport({ target, minimap, scroller }) {
     minimap.dataset.sampleCount = String(minimapSamples.length);
   }
 
+  function resetSearchState({ render = true } = {}) {
+    searchMatches = [];
+    searchMatchesByLine = new Map();
+    activeSearchIndex = -1;
+    if (render && lineStarts.length > 0) renderWindow(true);
+  }
+
   async function setSource({ source, fileName }) {
     const generation = sourceGeneration + 1;
     sourceGeneration = generation;
     const analysis = await analysisClient.analyze(fileName, source);
     if (generation !== sourceGeneration) return false;
 
+    activeFileName = fileName;
     sourceText = source;
     lineStarts = analysis.lineStarts;
     lineEnds = analysis.lineEnds;
     minimapSamples = analysis.minimapSamples;
     extension = getFileExtension(fileName);
     lineHeight = getLineHeight(target);
+    characterWidth = getCharacterWidth(target);
     paddingTop = getPaddingTop(target);
+    resetSearchState({ render: false });
     lastStart = -1;
     lastEnd = -1;
     target.dataset.lineCount = String(analysis.lineCount);
@@ -142,15 +177,63 @@ export function createSourceViewport({ target, minimap, scroller }) {
     return true;
   }
 
+  async function search(query, options) {
+    if (!activeFileName || lineStarts.length === 0) {
+      throw new Error("Source is not ready for search.");
+    }
+    return analysisClient.search(activeFileName, query, options);
+  }
+
+  function setSearchResults(matches, activeIndex = -1) {
+    searchMatches = Array.isArray(matches) ? matches : [];
+    searchMatchesByLine = new Map();
+    for (const match of searchMatches) {
+      const lineMatches = searchMatchesByLine.get(match.line) || [];
+      lineMatches.push(match);
+      searchMatchesByLine.set(match.line, lineMatches);
+    }
+    activeSearchIndex = searchMatches.length > 0
+      ? Math.min(searchMatches.length - 1, Math.max(0, activeIndex))
+      : -1;
+    renderWindow(true);
+  }
+
+  function setActiveSearchIndex(index) {
+    if (searchMatches.length === 0) {
+      activeSearchIndex = -1;
+      return null;
+    }
+    activeSearchIndex = (index + searchMatches.length) % searchMatches.length;
+    renderWindow(true);
+    return searchMatches[activeSearchIndex];
+  }
+
+  function goToLocation(line, column = 1) {
+    const lineCount = lineStarts.length;
+    if (lineCount === 0) return null;
+
+    const safeLine = Math.min(lineCount, Math.max(1, Math.trunc(Number(line) || 1)));
+    const lineText = getLine(safeLine - 1);
+    const safeColumn = Math.min(lineText.length + 1, Math.max(1, Math.trunc(Number(column) || 1)));
+    const lineTop = paddingTop + ((safeLine - 1) * lineHeight);
+    scroller.scrollTop = Math.max(0, lineTop - (scroller.clientHeight * 0.45));
+    const columnLeft = (safeColumn - 1) * characterWidth;
+    scroller.scrollLeft = Math.max(0, columnLeft - (scroller.clientWidth * 0.35));
+    renderWindow(true);
+    return { line: safeLine, column: safeColumn };
+  }
+
   function clear() {
     sourceGeneration += 1;
     if (renderFrame) cancelAnimationFrame(renderFrame);
     renderFrame = 0;
+    activeFileName = "";
     sourceText = "";
     lineStarts = new Uint32Array(0);
     lineEnds = new Uint32Array(0);
     minimapSamples = [];
     extension = "";
+    resetSearchState({ render: false });
     lastStart = -1;
     lastEnd = -1;
     delete target.dataset.lineCount;
@@ -173,9 +256,15 @@ export function createSourceViewport({ target, minimap, scroller }) {
 
   return Object.freeze({
     setSource,
+    search,
+    setSearchResults,
+    setActiveSearchIndex,
+    clearSearch: () => resetSearchState(),
+    goToLocation,
     clear,
     release: analysisClient.release,
     refresh: () => renderWindow(true),
+    isReady: () => Boolean(activeFileName) && lineStarts.length > 0,
     getRenderedRange: () => ({ start: lastStart, end: lastEnd, total: lineStarts.length })
   });
 }
