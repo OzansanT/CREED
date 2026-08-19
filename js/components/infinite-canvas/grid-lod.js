@@ -1,4 +1,4 @@
-import { BASE_GRID, GRID_BREAKPOINTS, GRID_ORDERS } from "./config.js";
+import { BASE_GRID, GRID_BREAKPOINTS, GRID_ORDERS } from "../../core/config.js";
 export function getGridOrder(zoom) { if (zoom >= GRID_BREAKPOINTS.ORDER_1_MIN) return 1; if (zoom >= GRID_BREAKPOINTS.ORDER_2_MIN) return 2; if (zoom >= GRID_BREAKPOINTS.ORDER_4_MIN) return 4; return 8; }
 export function updateGridLOD(elements, state) {
   const activeOrder = getGridOrder(state.zoom);

@@ -1,5 +1,5 @@
-import { updateGridLOD } from "./grid-lod.js";
-import { getViewportWorldCenter } from "./coordinates.js";
+import { updateGridLOD } from "../components/infinite-canvas/grid-lod.js";
+import { getViewportWorldCenter } from "../core/coordinates.js";
 
 function cleanCoordinate(value) {
   const rounded = Math.round(value);

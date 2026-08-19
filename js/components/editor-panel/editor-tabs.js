@@ -1,4 +1,4 @@
-import { createIcon } from "./icons.js";
+import { createIcon } from "../../ui/icons.js";
 
 export function createEditorTabs({
   container,

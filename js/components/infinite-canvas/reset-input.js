@@ -1,4 +1,4 @@
-import { clearStoredState } from "./storage.js";
+import { clearStoredState } from "../../core/storage.js";
 import { returnToOrigin } from "./viewport.js";
 
 function resetCanvasModel(state) {

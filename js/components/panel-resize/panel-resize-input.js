@@ -1,9 +1,9 @@
-import { clamp } from "./state.js";
+import { clamp } from "../../core/state.js";
 import {
   clearPanelLayout,
   loadPanelLayout,
   savePanelLayout
-} from "./storage.js";
+} from "../../core/storage.js";
 
 const DEFAULT_PRIMARY_WIDTH = 293;
 const DEFAULT_SECONDARY_WIDTH = 290;

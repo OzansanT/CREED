@@ -1,6 +1,6 @@
-import { MIN_ZOOM, MAX_ZOOM } from "./config.js";
-import { clamp } from "./state.js";
-import { getCanvasCenter, screenToWorld } from "./coordinates.js";
+import { MIN_ZOOM, MAX_ZOOM } from "../../core/config.js";
+import { clamp } from "../../core/state.js";
+import { getCanvasCenter, screenToWorld } from "../../core/coordinates.js";
 export function setZoom({ state, nextZoom, pivotX, pivotY, update, persist }) {
   const oldZoom = state.zoom; const clampedZoom = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
   if (Math.abs(clampedZoom - oldZoom) < 0.000001) return;

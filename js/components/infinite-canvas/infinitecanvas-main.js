@@ -1,7 +1,7 @@
-import { state } from "./state.js";
-import { loadState, saveState } from "./storage.js";
-import { updateUI } from "./ui.js";
-import { showToast } from "./toast.js";
+import { state } from "../../core/state.js";
+import { loadState, saveState } from "../../core/storage.js";
+import { updateUI } from "../../ui/ui.js";
+import { showToast } from "../../ui/toast.js";
 import { setZoomFromCenter, returnToOrigin, preserveCenterOnResize } from "./viewport.js";
 import { setAnchor, goToAnchor, clearAnchor } from "./anchors.js";
 import { bindPan } from "./pan-input.js";

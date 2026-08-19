@@ -1,4 +1,4 @@
-import { getViewportWorldCenter } from "./coordinates.js";
+import { getViewportWorldCenter } from "../../core/coordinates.js";
 
 function playCardClick(card) {
   card.classList.remove("was-clicked");
