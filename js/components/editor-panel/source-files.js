@@ -62,6 +62,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "css/components/source-editor/source-editor-states.css",
   "css/components/source-editor/source-lines.css",
   "css/components/source-editor/source-minimap.css",
+  "css/components/source-editor/source-navigation.css",
   "css/components/source-editor/source-scroller.css",
   "css/components/source-editor/source-syntax.css",
   "css/components/status-bar/status-bar-items.css",
