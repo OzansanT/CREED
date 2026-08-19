@@ -1,3 +1,4 @@
+import { createEditorSessionStore } from "./editor-session-state.js";
 import { createEditorTabs } from "./editor-tabs.js";
 import { createExplorerController } from "./explorer-controller.js";
 import { getFileKind, getLanguageLabel } from "./file-metadata.js";
@@ -50,13 +51,42 @@ export function bindWorkbenchFiles({
     getActiveFile: () => activeFile,
     onStatus: setNavigationStatus
   });
+  const sessions = createEditorSessionStore();
   const explorer = createExplorerController({
     rootToggle,
     fileTree,
     onOpen: (fileName) => tabs?.open(fileName, getFileKind(fileName))
   });
 
+  function captureActiveSession() {
+    if (!activeFile || !sourceViewport.isReady()) return null;
+    return sessions.save(activeFile, {
+      viewport: {
+        scrollTop: sourceScroller.scrollTop,
+        scrollLeft: sourceScroller.scrollLeft
+      },
+      navigation: sourceNavigation.getSessionState()
+    });
+  }
+
+  async function restoreFileSession(fileName) {
+    const session = sessions.get(fileName);
+    if (!session) {
+      sourceScroller.scrollTop = 0;
+      sourceScroller.scrollLeft = 0;
+      return true;
+    }
+
+    await sourceNavigation.restoreSessionState(session.navigation);
+    if (activeFile !== fileName) return false;
+    sourceScroller.scrollTop = session.viewport.scrollTop;
+    sourceScroller.scrollLeft = session.viewport.scrollLeft;
+    sourceViewport.refresh();
+    return true;
+  }
+
   function showCanvasPanel() {
+    captureActiveSession();
     sourceNavigation.reset();
     activeFile = "";
     sourceViewport.clear();
@@ -77,6 +107,8 @@ export function bindWorkbenchFiles({
     try {
       const rendered = await sourceViewport.setSource({ source, fileName });
       if (!rendered || activeFile !== fileName) return;
+      const restored = await restoreFileSession(fileName);
+      if (!restored || activeFile !== fileName) return;
       codeContent.removeAttribute("aria-busy");
       requestAnimationFrame(() => {
         sourceViewport.refresh();
@@ -97,6 +129,8 @@ export function bindWorkbenchFiles({
       if (activeFile !== fileName) return;
       sourceNavigation.reset();
       sourceViewport.clear();
+      sourceScroller.scrollTop = 0;
+      sourceScroller.scrollLeft = 0;
       codeContent.setAttribute("aria-busy", "true");
       codeContent.textContent = "Loading…";
     },
@@ -113,9 +147,13 @@ export function bindWorkbenchFiles({
   });
 
   function showFilePanel(fileName) {
+    if (activeFile === fileName && !codeView.hidden) return;
+    captureActiveSession();
     sourceNavigation.reset();
     activeFile = fileName;
     sourceViewport.clear();
+    sourceScroller.scrollTop = 0;
+    sourceScroller.scrollLeft = 0;
     canvasView.hidden = true;
     codeView.hidden = false;
     explorer.setSelected(fileName);
@@ -130,7 +168,13 @@ export function bindWorkbenchFiles({
     codeView,
     onActivate: (fileName) => fileName ? showFilePanel(fileName) : showCanvasPanel(),
     onClose: (fileName) => {
-      if (activeFile === fileName) sourceNavigation.reset();
+      if (activeFile === fileName) {
+        sourceNavigation.reset();
+        activeFile = "";
+        sourceViewport.clear();
+        codeContent.removeAttribute("aria-busy");
+      }
+      sessions.remove(fileName);
       sourceLoader.release(fileName);
       sourceViewport.release(fileName);
     }
