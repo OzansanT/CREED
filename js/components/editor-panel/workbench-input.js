@@ -53,6 +53,8 @@ export function bindWorkbenchFiles({
 
   function showCanvasPanel() {
     activeFile = "";
+    sourceViewport.clear();
+    codeContent.removeAttribute("aria-busy");
     canvasView.hidden = false;
     codeView.hidden = true;
     explorer.setSelected("");
@@ -60,16 +62,28 @@ export function bindWorkbenchFiles({
     onCanvasShow?.();
   }
 
-  function renderLoadedFile(fileName, source) {
+  async function renderLoadedFile(fileName, source) {
     if (activeFile !== fileName) return;
-    codeContent.removeAttribute("aria-busy");
+    codeContent.setAttribute("aria-busy", "true");
+    codeContent.textContent = "Indexing…";
     sourceScroller.scrollTop = 0;
     sourceScroller.scrollLeft = 0;
-    sourceViewport.setSource({ source, fileName });
-    requestAnimationFrame(() => {
-      sourceViewport.refresh();
-      minimap.updateViewport();
-    });
+
+    try {
+      const rendered = await sourceViewport.setSource({ source, fileName });
+      if (!rendered || activeFile !== fileName) return;
+      codeContent.removeAttribute("aria-busy");
+      requestAnimationFrame(() => {
+        sourceViewport.refresh();
+        minimap.updateViewport();
+      });
+    } catch (error) {
+      if (activeFile !== fileName) return;
+      sourceViewport.clear();
+      codeContent.removeAttribute("aria-busy");
+      codeContent.textContent = "Unable to index " + fileName + ".";
+      onError?.(error instanceof Error ? error.message : String(error));
+    }
   }
 
   const sourceLoader = createSourceLoader({
@@ -87,14 +101,12 @@ export function bindWorkbenchFiles({
         codeContent.textContent = "Unable to display " + fileName + ".";
       }
       onError?.(message);
-    },
-    onSettled: (fileName) => {
-      if (activeFile === fileName) codeContent.removeAttribute("aria-busy");
     }
   });
 
   function showFilePanel(fileName) {
     activeFile = fileName;
+    sourceViewport.clear();
     canvasView.hidden = true;
     codeView.hidden = false;
     explorer.setSelected(fileName);
@@ -115,7 +127,10 @@ export function bindWorkbenchFiles({
       if (fileName) showFilePanel(fileName);
       else showCanvasPanel();
     },
-    onClose: sourceLoader.release
+    onClose: (fileName) => {
+      sourceLoader.release(fileName);
+      sourceViewport.release(fileName);
+    }
   });
 
   showCanvasPanel();
