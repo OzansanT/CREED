@@ -93,6 +93,7 @@ export function createInfiniteCanvasRuntime(elements) {
 
   function bind({
     showCanvas,
+    resetEditorWorkspace,
     primarySidebar,
     secondarySidebar,
     bottomPanel,
@@ -172,6 +173,7 @@ export function createInfiniteCanvasRuntime(elements) {
       persist,
       notify,
       onInfiniteReset: () => {
+        resetEditorWorkspace?.();
         primarySidebar.setVisible(true, false);
         secondarySidebar.setVisible(true, false);
         bottomPanel.setVisible(true, false);
