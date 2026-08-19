@@ -8,13 +8,15 @@ CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Cod
 - Shared JavaScript infrastructure belongs in `js/core/`; shared UI helpers belong in `js/ui/`.
 - Component behavior belongs in `js/components/<component>/`.
 - Repository-root `main.js` is only the compatibility bootstrap; `js/main.js` is application orchestration.
-- Editor-panel responsibilities are split across Explorer, tabs, metadata, loading, worker analysis/search, rendering, virtual viewport, minimap, source navigation, and workbench orchestration.
+- Editor-panel responsibilities are split across Explorer, tabs, per-tab session state, metadata, loading, worker analysis/search, rendering, virtual viewport, minimap, source navigation, and workbench orchestration.
+- Each open source tab keeps independent tab-lifetime session state: vertical/horizontal scroll position, Find query/options/current match, Find/Go To widget visibility, and last committed Go To line/column.
+- Source-tab state is captured when leaving the tab or switching to Infinite Canvas, restored only after that file is indexed again, and removed when the tab is explicitly closed. It is intentionally not browser-reload persistence.
 - Large source files use visible-line virtualization and a capped minimap instead of one DOM node per source line.
 - Source analysis at or above 64 KiB uses a module Web Worker; small files and worker failures use the same pure synchronous fallback.
 - Whole-file search is bounded to 5,000 returned matches and supports Match Case, Whole Word, and Regular Expression modes.
 - `Ctrl/Cmd+F` opens the non-blocking Find widget. `Enter` / `F3` moves forward, `Shift+Enter` / `Shift+F3` moves backward, and `Alt+C` / `Alt+W` / `Alt+R` toggle Match Case / Whole Word / Regex.
 - `Ctrl/Cmd+G` opens the non-blocking Go To Line/Column widget. `:line` and `:line:column` preview navigation live against the virtual viewport.
-- `Escape` closes the active source-navigation widget; file/canvas switches reset source-navigation state.
+- `Escape` closes the active source-navigation widget.
 - Internal ES-module imports do not use manual cache-version query strings.
 - After adding, renaming, or deleting files, regenerate `js/components/editor-panel/source-files.js` with `npm run build:inventory`.
 
@@ -178,6 +180,7 @@ CREED/
 │       │   └── bottom-panel-main.js
 │       ├── editor-panel/
 │       │   ├── editor-panel-main.js
+│       │   ├── editor-session-state.js
 │       │   ├── editor-tabs.js
 │       │   ├── explorer-controller.js
 │       │   ├── file-metadata.js
@@ -241,6 +244,7 @@ index.html
             │   └── js/core/storage.js
             ├── js/components/editor-panel/editor-panel-main.js
             │   └── js/components/editor-panel/workbench-input.js
+            │       ├── js/components/editor-panel/editor-session-state.js
             │       ├── js/components/editor-panel/editor-tabs.js
             │       │   └── js/ui/icons.js
             │       ├── js/components/editor-panel/explorer-controller.js
