@@ -1,0 +1,94 @@
+@layer components {
+  .source-editor { position: relative; }
+
+  .source-navigation {
+    position: absolute;
+    z-index: 12;
+    top: 8px;
+    right: 112px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid #cfcfd5;
+    border-radius: 4px;
+    background: #f8f8fb;
+    color: #3f3f44;
+    box-shadow: 0 4px 14px rgba(20, 20, 30, .14);
+    font: 11px/1.2 "Segoe UI", system-ui, sans-serif;
+  }
+
+  .source-navigation--find { width: min(620px, calc(100% - 136px)); }
+  .source-navigation--goto { width: min(430px, calc(100% - 136px)); }
+
+  .source-navigation__input {
+    min-width: 110px;
+    height: 24px;
+    flex: 1 1 220px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    outline: 0;
+    font: 12px/20px Consolas, "Courier New", monospace;
+  }
+
+  .source-navigation__input:focus { border-color: var(--color-status); }
+  .source-navigation.has-error .source-navigation__input { border-color: var(--color-danger); }
+
+  .source-navigation__options { display: flex; align-items: center; gap: 1px; }
+  .source-navigation__button {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: #56565c;
+    box-shadow: none;
+    font-size: 11px;
+    font-weight: 650;
+  }
+
+  .source-navigation__button:hover:not(:disabled) {
+    transform: none;
+    border-color: transparent;
+    background: #e3e3e7;
+    box-shadow: none;
+  }
+
+  .source-navigation__button:disabled { opacity: .36; }
+  .source-navigation__button .ui-icon { width: 14px; height: 14px; }
+  .source-navigation__toggle.is-active,
+  .source-navigation__toggle[aria-pressed="true"] { background: #d8eaf7; color: #075c9a; }
+
+  .source-navigation__count {
+    min-width: 72px;
+    overflow: hidden;
+    color: #6f6f75;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .source-navigation.has-error .source-navigation__count { color: var(--color-danger); }
+  .source-navigation__label { flex: 0 0 auto; padding: 0 4px; font-weight: 600; white-space: nowrap; }
+  .source-navigation__input--goto { flex-basis: 150px; }
+  .source-navigation__hint { min-width: 122px; overflow: hidden; color: #737378; text-overflow: ellipsis; white-space: nowrap; }
+
+  .source-editor__search-match { padding: 0; background: #f3d86a; color: inherit; }
+  .source-editor__search-match.is-current { outline: 1px solid #c78f00; background: #f0bd39; }
+}
+
+@layer responsive {
+  @media (max-width: 900px) {
+    .source-navigation { right: 8px; }
+    .source-navigation--find,
+    .source-navigation--goto { width: calc(100% - 16px); }
+    .source-navigation__count { min-width: 58px; }
+    .source-navigation__label { display: none; }
+  }
+}
