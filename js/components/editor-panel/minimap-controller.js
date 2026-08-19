@@ -1,7 +1,8 @@
 export function createMinimapController({ minimap, scroller }) {
   let activePointerId = null;
+  let viewportFrame = 0;
 
-  function updateViewport() {
+  function renderViewport() {
     const viewport = minimap.querySelector(".source-editor__minimap-viewport");
     const maximum = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
     const viewportRatio = scroller.scrollHeight > 0
@@ -16,6 +17,20 @@ export function createMinimapController({ minimap, scroller }) {
       viewport.style.transform = "translateY(" + (availableTravel * scrollRatio) + "px)";
     }
     minimap.setAttribute("aria-valuenow", String(Math.round(scrollRatio * 100)));
+  }
+
+  function scheduleViewportUpdate() {
+    if (viewportFrame) return;
+    viewportFrame = requestAnimationFrame(() => {
+      viewportFrame = 0;
+      renderViewport();
+    });
+  }
+
+  function updateViewport() {
+    if (viewportFrame) cancelAnimationFrame(viewportFrame);
+    viewportFrame = 0;
+    renderViewport();
   }
 
   function scrollFromPointer(event) {
@@ -62,7 +77,13 @@ export function createMinimapController({ minimap, scroller }) {
     scroller.scrollTop = next;
   });
 
-  scroller.addEventListener("scroll", updateViewport, { passive: true });
+  scroller.addEventListener("scroll", scheduleViewportUpdate, { passive: true });
+  const resizeObserver = typeof ResizeObserver === "function"
+    ? new ResizeObserver(scheduleViewportUpdate)
+    : null;
+  resizeObserver?.observe(scroller);
+  resizeObserver?.observe(minimap);
+  if (!resizeObserver) window.addEventListener("resize", scheduleViewportUpdate, { passive: true });
 
   return Object.freeze({ updateViewport });
 }
