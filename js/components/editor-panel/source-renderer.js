@@ -77,12 +77,12 @@ export function createSourceLineRow({ line, index, extension }) {
   return row;
 }
 
-export function createMinimapSample({ line, index, extension, startLine, endLine }) {
-  const sample = document.createElement("div");
-  sample.className = "source-editor__minimap-line source-editor__minimap-line--" + extension;
-  sample.dataset.lineNumber = String(index + 1);
-  sample.dataset.lineStart = String(startLine + 1);
-  sample.dataset.lineEnd = String(endLine + 1);
-  sample.style.width = Math.min(94, Math.max(4, line.trim().length * 0.72)) + "px";
-  return sample;
+export function createMinimapSample({ sample, extension }) {
+  const element = document.createElement("div");
+  element.className = "source-editor__minimap-line source-editor__minimap-line--" + extension;
+  element.dataset.lineNumber = String(sample.index + 1);
+  element.dataset.lineStart = String(sample.startLine + 1);
+  element.dataset.lineEnd = String(sample.endLine + 1);
+  element.style.width = sample.width + "px";
+  return element;
 }
