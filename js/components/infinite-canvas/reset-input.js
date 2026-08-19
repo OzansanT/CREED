@@ -32,7 +32,7 @@ export function bindResetControls({
 
   function resetInfinite() {
     const confirmed = confirmAction(
-      "Infinite Reset will restore the canvas, sidebar menu, panel visibility and panel sizes. Continue?"
+      "Infinite Reset will restore the canvas, sidebar menu, panel visibility, panel sizes and editor tabs/sessions. Continue?"
     );
     if (!confirmed) return false;
 
@@ -41,7 +41,7 @@ export function bindResetControls({
     state.sidebarView = "canvas";
     onInfiniteReset?.();
     returnToOrigin({ state, canvas, update, persist });
-    notify?.("Infinite canvas reset");
+    notify?.("Infinite workspace reset");
     return true;
   }
 
