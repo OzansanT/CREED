@@ -1,4 +1,5 @@
 export const MAX_MINIMAP_SAMPLES = 240;
+export const MAX_SEARCH_MATCHES = 5000;
 
 export function calculateMinimapRanges(lineCount, maximumSamples = MAX_MINIMAP_SAMPLES) {
   const safeLineCount = Math.max(0, lineCount);
@@ -78,4 +79,42 @@ export function analyzeSource(source, maximumSamples = MAX_MINIMAP_SAMPLES) {
     maximumColumns,
     minimapSamples: createMinimapSamples(text, lineStarts, lineEnds, maximumSamples)
   };
+}
+
+export function searchSource(source, query, {
+  matchCase = false,
+  maxMatches = MAX_SEARCH_MATCHES
+} = {}) {
+  const text = typeof source === "string" ? source : String(source ?? "");
+  const needleText = typeof query === "string" ? query : String(query ?? "");
+  if (!needleText) return { matches: [], truncated: false };
+
+  const needle = matchCase ? needleText : needleText.toLocaleLowerCase();
+  const safeMaximum = Math.max(1, Number.isFinite(maxMatches) ? Math.floor(maxMatches) : MAX_SEARCH_MATCHES);
+  const matches = [];
+  let line = 0;
+  let lineStart = 0;
+
+  for (let index = 0; index <= text.length; index += 1) {
+    if (index < text.length && text.charCodeAt(index) !== 10) continue;
+    const lineEnd = index > lineStart && text.charCodeAt(index - 1) === 13
+      ? index - 1
+      : index;
+    const lineText = text.slice(lineStart, lineEnd);
+    const haystack = matchCase ? lineText : lineText.toLocaleLowerCase();
+    let column = haystack.indexOf(needle);
+
+    while (column !== -1) {
+      matches.push({ line, column, length: needleText.length });
+      if (matches.length >= safeMaximum) {
+        return { matches, truncated: true };
+      }
+      column = haystack.indexOf(needle, column + Math.max(1, needle.length));
+    }
+
+    line += 1;
+    lineStart = index + 1;
+  }
+
+  return { matches, truncated: false };
 }
