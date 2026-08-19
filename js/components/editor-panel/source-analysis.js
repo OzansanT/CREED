@@ -89,7 +89,7 @@ export function searchSource(source, query, {
   const needleText = typeof query === "string" ? query : String(query ?? "");
   if (!needleText) return { matches: [], truncated: false };
 
-  const needle = matchCase ? needleText : needleText.toLocaleLowerCase();
+  const needle = matchCase ? needleText : needleText.toLowerCase();
   const safeMaximum = Math.max(1, Number.isFinite(maxMatches) ? Math.floor(maxMatches) : MAX_SEARCH_MATCHES);
   const matches = [];
   let line = 0;
@@ -101,7 +101,7 @@ export function searchSource(source, query, {
       ? index - 1
       : index;
     const lineText = text.slice(lineStart, lineEnd);
-    const haystack = matchCase ? lineText : lineText.toLocaleLowerCase();
+    const haystack = matchCase ? lineText : lineText.toLowerCase();
     let column = haystack.indexOf(needle);
 
     while (column !== -1) {
