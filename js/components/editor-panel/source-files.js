@@ -107,6 +107,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "js/components/editor-panel/source-files.js",
   "js/components/editor-panel/source-loader.js",
   "js/components/editor-panel/source-renderer.js",
+  "js/components/editor-panel/source-viewport.js",
   "js/components/editor-panel/workbench-input.js",
   "js/components/infinite-canvas/anchors.js",
   "js/components/infinite-canvas/card-input.js",
