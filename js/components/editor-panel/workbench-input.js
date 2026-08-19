@@ -44,6 +44,7 @@ export function bindWorkbenchFiles({
   const minimap = createMinimapController({ minimap: codeMinimap, scroller: sourceScroller });
   const sourceViewport = createSourceViewport({ target: codeContent, minimap: codeMinimap, scroller: sourceScroller });
   const sourceNavigation = bindSourceNavigation({
+    host: sourceScroller.parentElement,
     viewport: sourceViewport,
     isSourceActive: () => Boolean(activeFile) && !codeView.hidden,
     getActiveFile: () => activeFile,
