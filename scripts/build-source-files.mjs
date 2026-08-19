@@ -25,4 +25,4 @@ const content = [
   ""
 ].join("\n");
 
-writeFileSync(resolve(repositoryRoot, "source-files.js"), content);
+writeFileSync(resolve(repositoryRoot, "js/components/editor-panel/source-files.js"), content);
