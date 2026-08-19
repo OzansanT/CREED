@@ -3,6 +3,7 @@ import { createExplorerController } from "./explorer-controller.js";
 import { getFileKind, getLanguageLabel } from "./file-metadata.js";
 import { createMinimapController } from "./minimap-controller.js";
 import { createSourceLoader } from "./source-loader.js";
+import { bindSourceNavigation } from "./source-navigation.js";
 import { createSourceViewport } from "./source-viewport.js";
 
 export function bindWorkbenchFiles({
@@ -24,27 +25,30 @@ export function bindWorkbenchFiles({
   onError
 }) {
   let activeFile = "";
+  let baseStatusLanguage = "{ } Canvas";
   let tabs = null;
 
+  function setNavigationStatus(status) {
+    statusLanguage.textContent = status ? baseStatusLanguage + " · " + status : baseStatusLanguage;
+  }
+
   function setFileContext(kind, name, language) {
+    baseStatusLanguage = language;
     breadcrumbKind.textContent = kind;
     breadcrumbName.textContent = name;
     chatContextKind.textContent = kind;
     chatContextName.textContent = name;
-    statusLanguage.textContent = language;
+    setNavigationStatus("");
   }
 
-  const minimap = createMinimapController({
-    minimap: codeMinimap,
-    scroller: sourceScroller
+  const minimap = createMinimapController({ minimap: codeMinimap, scroller: sourceScroller });
+  const sourceViewport = createSourceViewport({ target: codeContent, minimap: codeMinimap, scroller: sourceScroller });
+  const sourceNavigation = bindSourceNavigation({
+    viewport: sourceViewport,
+    isSourceActive: () => Boolean(activeFile) && !codeView.hidden,
+    getActiveFile: () => activeFile,
+    onStatus: setNavigationStatus
   });
-
-  const sourceViewport = createSourceViewport({
-    target: codeContent,
-    minimap: codeMinimap,
-    scroller: sourceScroller
-  });
-
   const explorer = createExplorerController({
     rootToggle,
     fileTree,
@@ -52,6 +56,7 @@ export function bindWorkbenchFiles({
   });
 
   function showCanvasPanel() {
+    sourceNavigation.reset();
     activeFile = "";
     sourceViewport.clear();
     codeContent.removeAttribute("aria-busy");
@@ -68,7 +73,6 @@ export function bindWorkbenchFiles({
     codeContent.textContent = "Indexing…";
     sourceScroller.scrollTop = 0;
     sourceScroller.scrollLeft = 0;
-
     try {
       const rendered = await sourceViewport.setSource({ source, fileName });
       if (!rendered || activeFile !== fileName) return;
@@ -79,6 +83,7 @@ export function bindWorkbenchFiles({
       });
     } catch (error) {
       if (activeFile !== fileName) return;
+      sourceNavigation.reset();
       sourceViewport.clear();
       codeContent.removeAttribute("aria-busy");
       codeContent.textContent = "Unable to index " + fileName + ".";
@@ -89,6 +94,7 @@ export function bindWorkbenchFiles({
   const sourceLoader = createSourceLoader({
     onLoading: (fileName) => {
       if (activeFile !== fileName) return;
+      sourceNavigation.reset();
       sourceViewport.clear();
       codeContent.setAttribute("aria-busy", "true");
       codeContent.textContent = "Loading…";
@@ -96,6 +102,7 @@ export function bindWorkbenchFiles({
     onLoaded: renderLoadedFile,
     onError: (fileName, message) => {
       if (activeFile === fileName) {
+        sourceNavigation.reset();
         sourceViewport.clear();
         codeContent.removeAttribute("aria-busy");
         codeContent.textContent = "Unable to display " + fileName + ".";
@@ -105,36 +112,30 @@ export function bindWorkbenchFiles({
   });
 
   function showFilePanel(fileName) {
+    sourceNavigation.reset();
     activeFile = fileName;
     sourceViewport.clear();
     canvasView.hidden = true;
     codeView.hidden = false;
     explorer.setSelected(fileName);
     setFileContext(getFileKind(fileName), fileName, getLanguageLabel(fileName));
-
-    if (sourceLoader.has(fileName)) {
-      renderLoadedFile(fileName, sourceLoader.get(fileName));
-    } else {
-      sourceLoader.load(fileName);
-    }
+    if (sourceLoader.has(fileName)) renderLoadedFile(fileName, sourceLoader.get(fileName));
+    else sourceLoader.load(fileName);
   }
 
   tabs = createEditorTabs({
     container: fileTabs,
     canvasTab,
     codeView,
-    onActivate: (fileName) => {
-      if (fileName) showFilePanel(fileName);
-      else showCanvasPanel();
-    },
+    onActivate: (fileName) => fileName ? showFilePanel(fileName) : showCanvasPanel(),
     onClose: (fileName) => {
+      if (activeFile === fileName) sourceNavigation.reset();
       sourceLoader.release(fileName);
       sourceViewport.release(fileName);
     }
   });
 
   showCanvasPanel();
-
   return Object.freeze({
     showCanvas: tabs.showCanvas,
     showCode: () => {
