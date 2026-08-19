@@ -37,6 +37,21 @@ export function normalizeEditorWorkspaceState(value = {}) {
   };
 }
 
+export function migrateEditorWorkspaceState(value) {
+  if (!value || typeof value !== "object") return null;
+
+  if (value.version === EDITOR_WORKSPACE_SCHEMA_VERSION) {
+    return normalizeEditorWorkspaceState(value);
+  }
+
+  // Migration path for early unversioned workspace snapshots used during development.
+  if (value.version == null && Array.isArray(value.openFiles)) {
+    return normalizeEditorWorkspaceState(value);
+  }
+
+  return null;
+}
+
 export function saveEditorWorkspace(value) {
   const workspace = normalizeEditorWorkspaceState(value);
   try {
@@ -50,9 +65,10 @@ export function saveEditorWorkspace(value) {
 export function loadEditorWorkspace() {
   try {
     const saved = JSON.parse(localStorage.getItem(EDITOR_WORKSPACE_STORAGE_KEY));
-    if (!saved || typeof saved !== "object") return null;
-    if (saved.version !== EDITOR_WORKSPACE_SCHEMA_VERSION) return null;
-    return normalizeEditorWorkspaceState(saved);
+    const migrated = migrateEditorWorkspaceState(saved);
+    if (!migrated) return null;
+    if (saved?.version !== EDITOR_WORKSPACE_SCHEMA_VERSION) saveEditorWorkspace(migrated);
+    return migrated;
   } catch {
     return null;
   }
