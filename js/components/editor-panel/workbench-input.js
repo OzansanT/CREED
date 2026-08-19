@@ -1,4 +1,8 @@
 import { createEditorSessionStore } from "./editor-session-state.js";
+import {
+  loadEditorWorkspace,
+  saveEditorWorkspace
+} from "./editor-workspace-storage.js";
 import { createEditorTabs } from "./editor-tabs.js";
 import { createExplorerController } from "./explorer-controller.js";
 import { getFileKind, getLanguageLabel } from "./file-metadata.js";
@@ -6,6 +10,8 @@ import { createMinimapController } from "./minimap-controller.js";
 import { createSourceLoader } from "./source-loader.js";
 import { bindSourceNavigation } from "./source-navigation.js";
 import { createSourceViewport } from "./source-viewport.js";
+
+const EDITOR_WORKSPACE_PERSIST_DELAY_MS = 180;
 
 export function bindWorkbenchFiles({
   rootToggle,
@@ -28,6 +34,8 @@ export function bindWorkbenchFiles({
   let activeFile = "";
   let baseStatusLanguage = "{ } Canvas";
   let tabs = null;
+  let persistTimer = 0;
+  let restoringWorkspace = true;
 
   function setNavigationStatus(status) {
     statusLanguage.textContent = status ? baseStatusLanguage + " · " + status : baseStatusLanguage;
@@ -69,6 +77,37 @@ export function bindWorkbenchFiles({
     });
   }
 
+  function persistEditorWorkspace() {
+    if (!tabs) return false;
+    captureActiveSession();
+    const openFiles = tabs.getOpenFiles();
+    const sessionSnapshot = Object.fromEntries(openFiles.map((fileName) => [
+      fileName,
+      sessions.get(fileName) || {}
+    ]));
+    return saveEditorWorkspace({
+      openFiles,
+      activeFile: tabs.getActiveFile(),
+      sessions: sessionSnapshot
+    });
+  }
+
+  function flushEditorWorkspace() {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = 0;
+    if (restoringWorkspace) return false;
+    return persistEditorWorkspace();
+  }
+
+  function scheduleEditorWorkspacePersist() {
+    if (restoringWorkspace || !tabs) return;
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = window.setTimeout(() => {
+      persistTimer = 0;
+      persistEditorWorkspace();
+    }, EDITOR_WORKSPACE_PERSIST_DELAY_MS);
+  }
+
   async function restoreFileSession(fileName) {
     const session = sessions.get(fileName);
     if (!session) {
@@ -96,6 +135,7 @@ export function bindWorkbenchFiles({
     explorer.setSelected("");
     setFileContext("◇", "Infinite Canvas", "{ } Canvas");
     onCanvasShow?.();
+    scheduleEditorWorkspacePersist();
   }
 
   async function renderLoadedFile(fileName, source) {
@@ -114,6 +154,7 @@ export function bindWorkbenchFiles({
         sourceViewport.refresh();
         minimap.updateViewport();
       });
+      scheduleEditorWorkspacePersist();
     } catch (error) {
       if (activeFile !== fileName) return;
       sourceNavigation.reset();
@@ -160,6 +201,7 @@ export function bindWorkbenchFiles({
     setFileContext(getFileKind(fileName), fileName, getLanguageLabel(fileName));
     if (sourceLoader.has(fileName)) renderLoadedFile(fileName, sourceLoader.get(fileName));
     else sourceLoader.load(fileName);
+    scheduleEditorWorkspacePersist();
   }
 
   tabs = createEditorTabs({
@@ -177,15 +219,55 @@ export function bindWorkbenchFiles({
       sessions.remove(fileName);
       sourceLoader.release(fileName);
       sourceViewport.release(fileName);
+      scheduleEditorWorkspacePersist();
     }
   });
 
-  showCanvasPanel();
+  function restorePersistedWorkspace() {
+    const workspace = loadEditorWorkspace();
+    if (!workspace) {
+      showCanvasPanel();
+      return;
+    }
+
+    for (const fileName of workspace.openFiles) {
+      sessions.save(fileName, workspace.sessions[fileName]);
+      tabs.open(fileName, getFileKind(fileName), { activate: false });
+    }
+
+    if (workspace.activeFile) tabs.activate(workspace.activeFile);
+    else showCanvasPanel();
+  }
+
+  const sourceEditorHost = sourceScroller.parentElement;
+  sourceScroller.addEventListener("scroll", scheduleEditorWorkspacePersist, { passive: true });
+  sourceEditorHost?.addEventListener("input", scheduleEditorWorkspacePersist);
+  sourceEditorHost?.addEventListener("click", scheduleEditorWorkspacePersist);
+  document.addEventListener("keydown", (event) => {
+    if (!activeFile) return;
+    const key = event.key.toLowerCase();
+    const commandKey = event.ctrlKey || event.metaKey;
+    const affectsNavigation = event.key === "F3"
+      || event.key === "Escape"
+      || (event.altKey && ["c", "w", "r"].includes(key))
+      || (commandKey && ["f", "g"].includes(key));
+    if (affectsNavigation) scheduleEditorWorkspacePersist();
+  });
+  window.addEventListener("pagehide", flushEditorWorkspace);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushEditorWorkspace();
+  });
+
+  restorePersistedWorkspace();
+  restoringWorkspace = false;
+  persistEditorWorkspace();
+
   return Object.freeze({
     showCanvas: tabs.showCanvas,
     showCode: () => {
       const fileName = tabs.getActiveFile();
       if (fileName) tabs.activate(fileName);
-    }
+    },
+    persistWorkspace: flushEditorWorkspace
   });
 }
