@@ -81,16 +81,43 @@ export function analyzeSource(source, maximumSamples = MAX_MINIMAP_SAMPLES) {
   };
 }
 
+function escapeRegularExpression(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isWordCharacter(character) {
+  return Boolean(character) && /[A-Za-z0-9_]/.test(character);
+}
+
+function isWholeWordMatch(line, start, length) {
+  return !isWordCharacter(line[start - 1]) && !isWordCharacter(line[start + length]);
+}
+
+function createSearchExpression(query, { matchCase, useRegex }) {
+  const pattern = useRegex ? query : escapeRegularExpression(query);
+  try {
+    return new RegExp(pattern, matchCase ? "g" : "gi");
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error("Invalid regular expression: " + detail);
+  }
+}
+
 export function searchSource(source, query, {
   matchCase = false,
+  wholeWord = false,
+  useRegex = false,
   maxMatches = MAX_SEARCH_MATCHES
 } = {}) {
   const text = typeof source === "string" ? source : String(source ?? "");
-  const needleText = typeof query === "string" ? query : String(query ?? "");
-  if (!needleText) return { matches: [], truncated: false };
+  const needle = typeof query === "string" ? query : String(query ?? "");
+  if (!needle) return { matches: [], truncated: false };
 
-  const needle = matchCase ? needleText : needleText.toLowerCase();
   const safeMaximum = Math.max(1, Number.isFinite(maxMatches) ? Math.floor(maxMatches) : MAX_SEARCH_MATCHES);
+  const expression = createSearchExpression(needle, {
+    matchCase: Boolean(matchCase),
+    useRegex: Boolean(useRegex)
+  });
   const matches = [];
   let line = 0;
   let lineStart = 0;
@@ -101,15 +128,18 @@ export function searchSource(source, query, {
       ? index - 1
       : index;
     const lineText = text.slice(lineStart, lineEnd);
-    const haystack = matchCase ? lineText : lineText.toLowerCase();
-    let column = haystack.indexOf(needle);
+    expression.lastIndex = 0;
 
-    while (column !== -1) {
-      matches.push({ line, column, length: needleText.length });
-      if (matches.length >= safeMaximum) {
-        return { matches, truncated: true };
+    let match = expression.exec(lineText);
+    while (match) {
+      const length = match[0].length;
+      if (length > 0 && (!wholeWord || isWholeWordMatch(lineText, match.index, length))) {
+        matches.push({ line, column: match.index, length });
+        if (matches.length >= safeMaximum) return { matches, truncated: true };
       }
-      column = haystack.indexOf(needle, column + Math.max(1, needle.length));
+
+      if (length === 0) expression.lastIndex = match.index + 1;
+      match = expression.exec(lineText);
     }
 
     line += 1;
