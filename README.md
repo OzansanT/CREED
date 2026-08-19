@@ -8,8 +8,10 @@ CREED is a browser-based infinite-canvas workbench with a Visual Studio Code/Cod
 - Shared JavaScript infrastructure belongs in `js/core/`; shared UI helpers belong in `js/ui/`.
 - Component behavior belongs in `js/components/<component>/`.
 - `main.js` is only the compatibility bootstrap; `js/main.js` is the application orchestration entry.
-- The editor panel is split by responsibility: Explorer, tabs, file metadata, source loading, source rendering, virtualized source viewport, minimap input, and workbench orchestration.
+- The editor panel is split by responsibility: Explorer, tabs, file metadata, source loading, source rendering, worker-backed source analysis, virtualized source viewport, minimap input, and workbench orchestration.
 - Large source files use a bounded visible-line window with overscan; the minimap uses a capped representative overview instead of one DOM node per source line.
+- Source analysis at or above 64 KiB is delegated to a module Web Worker for line indexing, maximum-width discovery, and minimap sampling. Small files and worker failures use the same pure synchronous analyzer as a fallback.
+- Worker analysis returns transferable typed line-offset buffers rather than cloning a full array of source-line strings back to the UI thread.
 - IDs remain stable JavaScript and ARIA hooks. Classes own presentation.
 - Internal ES-module imports do not use manual cache-version query strings.
 - After adding, renaming, or deleting files, regenerate `js/components/editor-panel/source-files.js` with `npm run build:inventory`.
@@ -30,7 +32,7 @@ node scripts/build-source-files.mjs
 node scripts/check-architecture.mjs
 ```
 
-`npm run check` verifies CSS bundle freshness, JavaScript syntax/import integrity, DOM wiring, Explorer inventory freshness, pointer-capture recovery, JS colony boundaries, editor-panel responsibility boundaries, and large-source virtualization bounds.
+`npm run check` verifies CSS bundle freshness, JavaScript syntax/import integrity, DOM wiring, Explorer inventory freshness, pointer-capture recovery, JS colony boundaries, editor-panel responsibility boundaries, large-source virtualization bounds, and worker-backed source-analysis contracts.
 
 ## Current directory tree
 
@@ -162,6 +164,9 @@ CREED/
 │   │   │   ├── explorer-controller.js
 │   │   │   ├── file-metadata.js
 │   │   │   ├── minimap-controller.js
+│   │   │   ├── source-analysis-client.js
+│   │   │   ├── source-analysis-worker.js
+│   │   │   ├── source-analysis.js
 │   │   │   ├── source-files.js
 │   │   │   ├── source-loader.js
 │   │   │   ├── source-renderer.js
@@ -242,6 +247,8 @@ index.html
             │       ├── js/components/editor-panel/source-loader.js
             │       └── js/components/editor-panel/source-viewport.js
             │           ├── js/components/editor-panel/file-metadata.js
+            │           ├── js/components/editor-panel/source-analysis-client.js
+            │           │   └── js/components/editor-panel/source-analysis.js
             │           └── js/components/editor-panel/source-renderer.js
             └── js/components/infinite-canvas/infinitecanvas-main.js
                 ├── js/core/state.js
@@ -257,6 +264,9 @@ index.html
                 ├── js/components/infinite-canvas/reset-input.js
                 ├── js/components/infinite-canvas/card-input.js
                 └── js/components/infinite-canvas/json-file.js
+
+js/components/editor-panel/source-analysis-worker.js
+└── js/components/editor-panel/source-analysis.js
 
 css/creed-main.css
 ├── css/foundation/reset.css
