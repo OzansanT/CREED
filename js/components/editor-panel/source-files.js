@@ -148,4 +148,5 @@ export const WORKSPACE_FILES = Object.freeze([
   "scripts/build-css.mjs",
   "scripts/build-source-files.mjs",
   "scripts/check-architecture.mjs",
+  "scripts/check-editor-workspace.mjs",
 ]);
