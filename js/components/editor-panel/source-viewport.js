@@ -1,14 +1,10 @@
 import { getFileExtension } from "./file-metadata.js";
+import { createSourceAnalysisClient } from "./source-analysis-client.js";
 import { createMinimapSample, createSourceLineRow } from "./source-renderer.js";
 
 const DEFAULT_LINE_HEIGHT = 19;
 export const SOURCE_OVERSCAN_LINES = 12;
-export const MAX_MINIMAP_SAMPLES = 240;
 const WIDTH_GUTTER_COLUMNS = 12;
-
-function splitSourceLines(source) {
-  return source.replace(/\r\n/g, "\n").split("\n");
-}
 
 function getLineHeight(target) {
   const value = Number.parseFloat(getComputedStyle(target).lineHeight);
@@ -20,26 +16,12 @@ function getPaddingTop(target) {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
-function getMaximumColumns(lines) {
-  return lines.reduce((maximum, line) => Math.max(maximum, line.length), 0);
-}
-
 function createSpacer(height) {
   const spacer = document.createElement("div");
   spacer.setAttribute("aria-hidden", "true");
   spacer.style.height = Math.max(0, height) + "px";
   spacer.style.pointerEvents = "none";
   return spacer;
-}
-
-function chooseRepresentativeLine(lines, start, end) {
-  let representativeIndex = start;
-  for (let index = start + 1; index <= end; index += 1) {
-    if (lines[index].trim().length > lines[representativeIndex].trim().length) {
-      representativeIndex = index;
-    }
-  }
-  return representativeIndex;
 }
 
 export function calculateSourceWindow({
@@ -66,27 +48,28 @@ export function calculateSourceWindow({
   };
 }
 
-export function calculateMinimapRanges(lineCount, maximumSamples = MAX_MINIMAP_SAMPLES) {
-  const sampleCount = Math.min(Math.max(0, lineCount), Math.max(1, maximumSamples));
-  return Array.from({ length: sampleCount }, (_, sampleIndex) => {
-    const start = Math.floor(sampleIndex * lineCount / sampleCount);
-    const end = Math.max(start, Math.floor((sampleIndex + 1) * lineCount / sampleCount) - 1);
-    return { start, end };
-  });
-}
-
 export function createSourceViewport({ target, minimap, scroller }) {
-  let lines = [];
+  const analysisClient = createSourceAnalysisClient();
+  let sourceText = "";
+  let lineStarts = new Uint32Array(0);
+  let lineEnds = new Uint32Array(0);
+  let minimapSamples = [];
   let extension = "";
   let lineHeight = DEFAULT_LINE_HEIGHT;
   let paddingTop = 0;
   let renderFrame = 0;
+  let sourceGeneration = 0;
   let lastStart = -1;
   let lastEnd = -1;
 
+  function getLine(index) {
+    return sourceText.slice(lineStarts[index], lineEnds[index]);
+  }
+
   function renderWindow(force = false) {
     renderFrame = 0;
-    if (lines.length === 0) {
+    const lineCount = lineStarts.length;
+    if (lineCount === 0) {
       target.replaceChildren();
       lastStart = -1;
       lastEnd = -1;
@@ -94,7 +77,7 @@ export function createSourceViewport({ target, minimap, scroller }) {
     }
 
     const { start, end } = calculateSourceWindow({
-      lineCount: lines.length,
+      lineCount,
       scrollTop: scroller.scrollTop,
       clientHeight: scroller.clientHeight,
       lineHeight,
@@ -105,9 +88,9 @@ export function createSourceViewport({ target, minimap, scroller }) {
     const fragment = document.createDocumentFragment();
     fragment.append(createSpacer(start * lineHeight));
     for (let index = start; index < end; index += 1) {
-      fragment.append(createSourceLineRow({ line: lines[index], index, extension }));
+      fragment.append(createSourceLineRow({ line: getLine(index), index, extension }));
     }
-    fragment.append(createSpacer((lines.length - end) * lineHeight));
+    fragment.append(createSpacer((lineCount - end) * lineHeight));
     target.replaceChildren(fragment);
     target.dataset.renderedStart = String(start + 1);
     target.dataset.renderedEnd = String(end);
@@ -124,45 +107,49 @@ export function createSourceViewport({ target, minimap, scroller }) {
   function renderMinimapOverview() {
     const overview = document.createElement("div");
     const viewport = document.createElement("div");
-    const ranges = calculateMinimapRanges(lines.length);
 
     overview.className = "source-editor__minimap-lines";
-    overview.style.gridTemplateRows = "repeat(" + ranges.length + ", minmax(0, 1fr))";
+    overview.style.gridTemplateRows = "repeat(" + minimapSamples.length + ", minmax(0, 1fr))";
     viewport.className = "source-editor__minimap-viewport";
 
-    for (const { start, end } of ranges) {
-      const representativeIndex = chooseRepresentativeLine(lines, start, end);
-      overview.append(createMinimapSample({
-        line: lines[representativeIndex],
-        index: representativeIndex,
-        extension,
-        startLine: start,
-        endLine: end
-      }));
+    for (const sample of minimapSamples) {
+      overview.append(createMinimapSample({ sample, extension }));
     }
 
     minimap.replaceChildren(overview, viewport);
-    minimap.dataset.sampleCount = String(ranges.length);
+    minimap.dataset.sampleCount = String(minimapSamples.length);
   }
 
-  function setSource({ source, fileName }) {
-    lines = splitSourceLines(source);
+  async function setSource({ source, fileName }) {
+    const generation = sourceGeneration + 1;
+    sourceGeneration = generation;
+    const analysis = await analysisClient.analyze(fileName, source);
+    if (generation !== sourceGeneration) return false;
+
+    sourceText = source;
+    lineStarts = analysis.lineStarts;
+    lineEnds = analysis.lineEnds;
+    minimapSamples = analysis.minimapSamples;
     extension = getFileExtension(fileName);
     lineHeight = getLineHeight(target);
     paddingTop = getPaddingTop(target);
     lastStart = -1;
     lastEnd = -1;
-    target.dataset.lineCount = String(lines.length);
-    target.style.minWidth = "max(100%, " + (getMaximumColumns(lines) + WIDTH_GUTTER_COLUMNS) + "ch)";
+    target.dataset.lineCount = String(analysis.lineCount);
+    target.style.minWidth = "max(100%, " + (analysis.maximumColumns + WIDTH_GUTTER_COLUMNS) + "ch)";
     renderMinimapOverview();
     renderWindow(true);
-    return lines.length;
+    return true;
   }
 
   function clear() {
+    sourceGeneration += 1;
     if (renderFrame) cancelAnimationFrame(renderFrame);
     renderFrame = 0;
-    lines = [];
+    sourceText = "";
+    lineStarts = new Uint32Array(0);
+    lineEnds = new Uint32Array(0);
+    minimapSamples = [];
     extension = "";
     lastStart = -1;
     lastEnd = -1;
@@ -187,7 +174,8 @@ export function createSourceViewport({ target, minimap, scroller }) {
   return Object.freeze({
     setSource,
     clear,
+    release: analysisClient.release,
     refresh: () => renderWindow(true),
-    getRenderedRange: () => ({ start: lastStart, end: lastEnd, total: lines.length })
+    getRenderedRange: () => ({ start: lastStart, end: lastEnd, total: lineStarts.length })
   });
 }
