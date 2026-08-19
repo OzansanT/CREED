@@ -82,6 +82,11 @@ const editorPanelModules = [
 for (const moduleName of editorPanelModules) {
   assert(existsSync(resolve(repositoryRoot, "js/components/editor-panel", moduleName)), "Missing editor-panel module: " + moduleName);
 }
+assert(existsSync(resolve(repositoryRoot, "css/components/source-editor/source-navigation.css")), "Missing source-navigation.css feature styles.");
+assert(
+  read("css/components/source-editor/source-editor-main.css").includes('@import url("./source-navigation.css")'),
+  "source-editor-main.css must import source-navigation.css."
+);
 
 const workbenchSource = read("js/components/editor-panel/workbench-input.js");
 for (const forbiddenResponsibility of ["AbortController", "TOKEN_PATTERNS", "setPointerCapture", "lostpointercapture"]) {
@@ -89,6 +94,7 @@ for (const forbiddenResponsibility of ["AbortController", "TOKEN_PATTERNS", "set
 }
 assert(workbenchSource.includes("createSourceViewport"), "workbench-input.js must coordinate the virtualized source viewport.");
 assert(workbenchSource.includes("bindSourceNavigation"), "workbench-input.js must wire source search/navigation through its focused controller.");
+assert(workbenchSource.includes("host: sourceScroller.parentElement"), "workbench-input.js must mount navigation controls in the source editor shell.");
 
 const sourceViewportSource = read("js/components/editor-panel/source-viewport.js");
 assert(sourceViewportSource.includes("createSourceAnalysisClient"), "source-viewport.js must delegate full-source analysis to the analysis client.");
@@ -99,6 +105,7 @@ const sourceAnalysisClientSource = read("js/components/editor-panel/source-analy
 assert(sourceAnalysisClientSource.includes('new URL("./source-analysis-worker.js", import.meta.url)'), "source-analysis-client.js must resolve the module worker relative to its own module URL.");
 assert(sourceAnalysisClientSource.includes("analyzeSource") && sourceAnalysisClientSource.includes("searchSource"), "source-analysis-client.js must retain synchronous analysis and search fallbacks.");
 assert(sourceAnalysisClientSource.includes('type: "search-source"'), "source-analysis-client.js must route large-source search through the worker.");
+assert(sourceAnalysisClientSource.includes("wholeWord") && sourceAnalysisClientSource.includes("useRegex"), "source-analysis-client.js must preserve advanced find options across worker/local search.");
 
 const sourceAnalysisWorkerSource = read("js/components/editor-panel/source-analysis-worker.js");
 assert(sourceAnalysisWorkerSource.includes("analysis.lineStarts.buffer") && sourceAnalysisWorkerSource.includes("analysis.lineEnds.buffer"), "source-analysis-worker.js must transfer typed line-index buffers instead of cloning them.");
@@ -107,6 +114,15 @@ assert(sourceAnalysisWorkerSource.includes('type === "search-source"'), "source-
 const sourceNavigationSource = read("js/components/editor-panel/source-navigation.js");
 assert(sourceNavigationSource.includes('key === "f"') && sourceNavigationSource.includes('key === "g"') && sourceNavigationSource.includes('event.key === "F3"'), "source-navigation.js must expose find, go-to-line, and next/previous match shortcuts.");
 assert(sourceNavigationSource.includes("contenteditable"), "source-navigation.js must avoid shortcut conflicts with interactive/contenteditable controls.");
+assert(!sourceNavigationSource.includes("window.prompt"), "source-navigation.js must use non-blocking editor widgets instead of window.prompt.");
+for (const widgetId of [
+  "sourceFindWidget", "sourceFindInput", "sourceFindMatchCount", "sourceFindPreviousBtn",
+  "sourceFindNextBtn", "sourceFindMatchCaseBtn", "sourceFindWholeWordBtn", "sourceFindRegexBtn",
+  "sourceFindCloseBtn", "sourceGoToWidget", "sourceGoToInput", "sourceGoToHint", "sourceGoToCloseBtn"
+]) {
+  assert(sourceNavigationSource.includes(widgetId), "source-navigation.js is missing stable widget ID: " + widgetId);
+}
+assert(sourceNavigationSource.includes("FIND_DEBOUNCE_MS"), "Find input must debounce live whole-file searches.");
 
 const scriptFiles = collectFiles(repositoryRoot, /\.(?:js|mjs)$/);
 for (const file of scriptFiles) {
@@ -143,12 +159,26 @@ assert("alpha\r\nbeta\n".slice(indexedSource.lineStarts[0], indexedSource.lineEn
 const searchResult = searchSource("Alpha beta\r\nalpha ALPHA\nnone", "alpha");
 assert(searchResult.matches.length === 3, "Whole-source search returned the wrong match count.");
 assert(searchResult.matches[1]?.line === 1 && searchResult.matches[1]?.column === 0, "Whole-source search returned the wrong line/column index.");
+const wholeWordSearch = searchSource("cat catalog cat_cat cat", "cat", { wholeWord: true });
+assert(wholeWordSearch.matches.length === 2, "Whole-word search must reject identifier/sub-string matches.");
+const regexSearch = searchSource("foo1 bar\nfoo22 foo3", "foo\\d+", { useRegex: true });
+assert(regexSearch.matches.length === 3 && regexSearch.matches[1]?.line === 1, "Regex search must return complete line/column matches.");
+const caseSearch = searchSource("Alpha alpha", "Alpha", { matchCase: true });
+assert(caseSearch.matches.length === 1 && caseSearch.matches[0]?.column === 0, "Match-case search must remain case sensitive.");
+let invalidRegexRejected = false;
+try {
+  searchSource("alpha", "[", { useRegex: true });
+} catch {
+  invalidRegexRejected = true;
+}
+assert(invalidRegexRejected, "Invalid regex queries must fail instead of producing misleading results.");
 const cappedSearch = searchSource("x ".repeat(MAX_SEARCH_MATCHES + 20), "x", { maxMatches: MAX_SEARCH_MATCHES });
 assert(cappedSearch.matches.length === MAX_SEARCH_MATCHES && cappedSearch.truncated, "Whole-source search must bound very large result sets.");
 
 const sourceNavigationUrl = pathToFileURL(resolve(repositoryRoot, "js/components/editor-panel/source-navigation.js")).href;
 const { parseSourceLocation } = await import(sourceNavigationUrl);
 assert(JSON.stringify(parseSourceLocation("400:12")) === JSON.stringify({ line: 400, column: 12 }), "Go-to-line parser must accept line:column syntax.");
+assert(JSON.stringify(parseSourceLocation(":400:12")) === JSON.stringify({ line: 400, column: 12 }), "Go-to-line parser must accept VS Code-style :line:column syntax.");
 assert(parseSourceLocation("bad") === null, "Go-to-line parser must reject invalid locations.");
 
 const pointerCaptureModules = [
@@ -171,6 +201,7 @@ assert(storageSource.includes("getViewportWorldCenter") && storageSource.include
 const generatedCss = read("css/generated/creed.css");
 assert(generatedCss.length > 1000, "Generated CSS bundle is unexpectedly small.");
 assert(!/@import\s/.test(generatedCss), "Generated CSS bundle still contains @import rules.");
+assert(generatedCss.includes("source-navigation.css"), "Generated CSS bundle must include source-navigation.css.");
 
 const inventorySource = read("js/components/editor-panel/source-files.js");
 const inventory = [...inventorySource.matchAll(/^\s+"([^"]+)",$/gm)].map((match) => match[1]);
