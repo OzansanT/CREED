@@ -152,9 +152,10 @@ export function createEditorTabs({
     return tab;
   }
 
-  function open(fileName, kind) {
+  function open(fileName, kind, { activate: shouldActivate = true } = {}) {
     if (!tabs.has(fileName)) createFileTab(fileName, kind);
-    activate(fileName);
+    if (shouldActivate) activate(fileName);
+    else synchronizeTabs();
   }
 
   canvasTab.addEventListener("click", () => activate(""));
