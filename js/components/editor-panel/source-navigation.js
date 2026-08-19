@@ -66,12 +66,12 @@ export function bindSourceNavigation({ viewport, isSourceActive, getActiveFile, 
       if (matches.length > 0) goToMatch(activeIndex);
       else updateStatus();
       return result;
-    } catch (error) {
+    } catch {
       if (generation === searchGeneration) {
         viewport.clearSearch();
         onStatus?.("Search unavailable");
       }
-      throw error;
+      return { matches: [], truncated: false };
     }
   }
 
