@@ -470,7 +470,10 @@ export function bindSourceNavigation({ host, viewport, isSourceActive, getActive
       : "Type :line or :line:column";
 
     if (restoredQuery) {
-      const result = await find(restoredQuery, { navigate: false });
+      const restorePromise = find(restoredQuery, { navigate: false });
+      const expectedSearchGeneration = searchGeneration;
+      const result = await restorePromise;
+      if (searchGeneration !== expectedSearchGeneration) return getSessionState();
       if (result.matches?.length) {
         activeIndex = restoredActiveIndex >= 0
           ? Math.min(result.matches.length - 1, restoredActiveIndex)
