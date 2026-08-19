@@ -188,13 +188,20 @@ export function createSourceAnalysisClient({
 
   function search(fileName, query, {
     matchCase = false,
+    wholeWord = false,
+    useRegex = false,
     maxMatches = MAX_SEARCH_MATCHES
   } = {}) {
     const record = cache.get(fileName);
     if (!record) return Promise.reject(new Error("Source must be indexed before searching."));
     if (!query) return Promise.resolve({ matches: [], truncated: false });
 
-    const options = { matchCase: Boolean(matchCase), maxMatches };
+    const options = {
+      matchCase: Boolean(matchCase),
+      wholeWord: Boolean(wholeWord),
+      useRegex: Boolean(useRegex),
+      maxMatches
+    };
     if (record.source.length < workerThreshold || workerDisabled) {
       return Promise.resolve(searchSource(record.source, query, options));
     }
