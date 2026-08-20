@@ -1,6 +1,7 @@
 export function getElements() {
   return {
     app: document.getElementById("app"),
+    activityBar: document.getElementById("activityBar"),
     canvas: document.getElementById("canvasViewport"),
     world: document.getElementById("canvasWorld"),
     originCard: document.getElementById("originCard"),
@@ -20,6 +21,7 @@ export function getElements() {
     canvasMenuBtn: document.getElementById("canvasControlsTabBtn"),
     infiniteCanvasMenuBtn: document.getElementById("infiniteCanvasTabBtn"),
     componentsMenuBtn: document.getElementById("componentsTabBtn"),
+    explorerSectionTabs: document.querySelector(".explorer-sections__tabs"),
     canvasControlsPanel: document.getElementById("canvasControlsPanel"),
     componentsPanel: document.getElementById("componentsPanel"),
     addJsonCardBtn: document.getElementById("addJsonCardBtn"),
@@ -27,6 +29,7 @@ export function getElements() {
 
     workspaceDisclosureBtn: document.getElementById("workspaceDisclosureBtn"),
     workspaceTree: document.getElementById("workspaceTree"),
+    editorTabs: document.getElementById("editorTabs"),
     canvasTab: document.getElementById("canvasTab"),
     fileTabs: document.getElementById("fileTabs"),
     editorBreadcrumbKind: document.getElementById("editorBreadcrumbKind"),
@@ -40,6 +43,7 @@ export function getElements() {
     chatContextName: document.getElementById("chatContextName"),
     statusLanguage: document.getElementById("statusLanguage"),
 
+    bottomPanelTabsRoot: document.getElementById("bottomPanelTabs"),
     bottomPanelTabs: [...document.querySelectorAll(".bottom-panel__tab[data-panel-view]")],
     bottomPanelViews: [...document.querySelectorAll(".bottom-panel__view")],
     terminalView: document.getElementById("terminalView"),

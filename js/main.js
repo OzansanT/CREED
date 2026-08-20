@@ -1,4 +1,5 @@
 import { getElements } from "./core/elements.js";
+import { bindAccessibilityNavigation } from "./ui/accessibility.js";
 import { showToast } from "./ui/toast.js";
 import { hydrateIcons } from "./ui/icons.js";
 import { disableUnavailableControls } from "./ui/unavailable-controls.js";
@@ -15,6 +16,13 @@ hydrateIcons();
 disableUnavailableControls();
 
 const elements = getElements();
+bindAccessibilityNavigation({
+  activityBar: elements.activityBar,
+  sidebarTabs: elements.explorerSectionTabs,
+  editorTabs: elements.editorTabs,
+  bottomTabs: elements.bottomPanelTabsRoot
+});
+
 const infiniteCanvas = createInfiniteCanvasRuntime(elements);
 
 const editorPanel = bindEditorPanel({
