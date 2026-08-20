@@ -1,3 +1,4 @@
+import { createCommandEngine } from "../../core/command-engine.js";
 import { state } from "../../core/state.js";
 import { loadState, saveState } from "../../core/storage.js";
 import { updateUI } from "../../ui/ui.js";
@@ -25,6 +26,7 @@ export function createInfiniteCanvasRuntime(elements) {
 
   const persist = () => saveState(elements.canvas);
   const notify = (message) => showToast(elements.toast, message);
+  const history = createCommandEngine({ update, persist });
 
   function home() {
     returnToOrigin({ state, canvas: elements.canvas, update, persist });
@@ -46,6 +48,14 @@ export function createInfiniteCanvasRuntime(elements) {
     notify("Anchor cleared");
   }
 
+  function undo() {
+    if (history.undo()) notify("Undo");
+  }
+
+  function redo() {
+    if (history.redo()) notify("Redo");
+  }
+
   function initializePosition() {
     const restored = loadState(elements.canvas);
     if (!restored) {
@@ -57,6 +67,7 @@ export function createInfiniteCanvasRuntime(elements) {
       state.y = center.y;
       state.zoom = 1;
     }
+    history.clear();
     update();
   }
 
@@ -141,27 +152,32 @@ export function createInfiniteCanvasRuntime(elements) {
       showCanvas,
       state,
       update,
-      persist
+      persist,
+      history
     });
     bindCardDrag({
       card: elements.originCard,
       state,
       positionKey: "originCard",
       update,
-      persist
+      persist,
+      history
     });
     bindCardDrag({
       card: elements.jsonComponentCard,
       state,
       positionKey: "jsonCard",
       update,
-      persist
+      persist,
+      history
     });
     bindJsonFileButton({ button: elements.openJsonFileBtn });
     bindKeyboard({
       onHome: home,
       onSetAnchor: saveAnchor,
-      onGoAnchor: restoreAnchor
+      onGoAnchor: restoreAnchor,
+      onUndo: undo,
+      onRedo: redo
     });
 
     bindResetControls({
@@ -172,7 +188,9 @@ export function createInfiniteCanvasRuntime(elements) {
       update,
       persist,
       notify,
+      onCanvasReset: () => history.clear(),
       onInfiniteReset: () => {
+        history.clear();
         resetEditorWorkspace?.();
         primarySidebar.setVisible(true, false);
         secondarySidebar.setVisible(true, false);
@@ -188,6 +206,7 @@ export function createInfiniteCanvasRuntime(elements) {
   return Object.freeze({
     update,
     bind,
+    history,
     scheduleViewportCenterPreservation
   });
 }

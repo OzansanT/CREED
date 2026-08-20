@@ -1,3 +1,5 @@
+import { createCommand } from "../../core/command-engine.js";
+
 function playClickAnimation(card) {
   card.classList.remove("was-clicked");
   void card.offsetWidth;
@@ -10,7 +12,19 @@ function isInteractiveTarget(target) {
   );
 }
 
-export function bindCardDrag({ card, state, positionKey = "originCard", update, persist }) {
+function applyPosition(target, position) {
+  target.worldX = position.worldX;
+  target.worldY = position.worldY;
+}
+
+export function bindCardDrag({
+  card,
+  state,
+  positionKey = "originCard",
+  update,
+  persist,
+  history
+}) {
   let activePointerId = null;
   let moved = false;
   const dragStart = { x: 0, y: 0 };
@@ -63,8 +77,29 @@ export function bindCardDrag({ card, state, positionKey = "originCard", update, 
       card.releasePointerCapture(pointerId);
     }
 
-    if (!moved) playClickAnimation(card);
-    persist?.();
+    if (!moved) {
+      playClickAnimation(card);
+      persist?.();
+      return;
+    }
+
+    const before = { worldX: cardStart.worldX, worldY: cardStart.worldY };
+    const after = {
+      worldX: state[positionKey].worldX,
+      worldY: state[positionKey].worldY
+    };
+
+    if (!history) {
+      persist?.();
+      return;
+    }
+
+    history.record(createCommand({
+      label: "Move " + positionKey,
+      redo: () => applyPosition(state[positionKey], after),
+      undo: () => applyPosition(state[positionKey], before),
+      isNoop: () => before.worldX === after.worldX && before.worldY === after.worldY
+    }));
   }
 
   card.addEventListener("pointerup", stopDragging);
