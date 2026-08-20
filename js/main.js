@@ -8,6 +8,7 @@ import { bindBottomPanel } from "./components/bottom-panel/bottom-panel-main.js"
 import { bindTerminalSessions } from "./components/bottom-panel/terminal-session.js";
 import { bindPanelResize } from "./components/panel-resize/panel-resize-input.js";
 import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js";
+import { bindQuickOpen } from "./components/editor-panel/quick-open.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 
 hydrateIcons();
@@ -33,6 +34,11 @@ const editorPanel = bindEditorPanel({
   statusLanguage: elements.statusLanguage,
   onCanvasShow: infiniteCanvas.scheduleViewportCenterPreservation,
   onError: (message) => showToast(elements.toast, message)
+});
+
+bindQuickOpen({
+  openFile: editorPanel.openFile,
+  notify: (message) => showToast(elements.toast, message)
 });
 
 let panelResize = null;
