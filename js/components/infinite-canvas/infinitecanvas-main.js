@@ -1,6 +1,7 @@
 import { createCommandEngine } from "../../core/command-engine.js";
 import { state } from "../../core/state.js";
 import { loadState, saveState } from "../../core/storage.js";
+import { createRenderScheduler } from "../../ui/render-scheduler.js";
 import { updateUI } from "../../ui/ui.js";
 import { showToast } from "../../ui/toast.js";
 import { setZoomFromCenter, returnToOrigin, preserveCenterOnResize } from "./viewport.js";
@@ -14,16 +15,8 @@ import { bindCardDrag } from "./card-input.js";
 import { bindJsonFileButton } from "./json-file.js";
 
 export function createInfiniteCanvasRuntime(elements) {
-  let renderFrame = 0;
-
-  const update = () => {
-    if (renderFrame) return;
-    renderFrame = requestAnimationFrame(() => {
-      renderFrame = 0;
-      updateUI(elements, state);
-    });
-  };
-
+  const renderScheduler = createRenderScheduler(() => updateUI(elements, state));
+  const update = renderScheduler.schedule;
   const persist = () => saveState(elements.canvas);
   const notify = (message) => showToast(elements.toast, message);
   const history = createCommandEngine({ update, persist });
@@ -207,6 +200,7 @@ export function createInfiniteCanvasRuntime(elements) {
     update,
     bind,
     history,
+    renderScheduler,
     scheduleViewportCenterPreservation
   });
 }
