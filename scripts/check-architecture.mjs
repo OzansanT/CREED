@@ -130,7 +130,7 @@ for (const file of scriptFiles) {
   assert(result.status === 0, "JavaScript syntax failed for " + relative(repositoryRoot, file) + "\n" + result.stderr);
 
   const source = readFileSync(file, "utf8");
-  const imports = [...source.matchAll(/(?:import|export)\s+(?:[^"']+?\s+from\s+)?["']([^"']+)["']/g)]
+  const imports = [...source.matchAll(/^\s*(?:import|export)\s+(?:[^"']+?\s+from\s+)?["']([^"']+)["']/gm)]
     .map((match) => match[1])
     .filter((specifier) => specifier.startsWith("."));
   for (const specifier of imports) {
