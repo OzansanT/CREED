@@ -4,6 +4,7 @@ import { loadState, saveState } from "../../core/storage.js";
 import { createRenderScheduler } from "../../ui/render-scheduler.js";
 import { updateUI } from "../../ui/ui.js";
 import { showToast } from "../../ui/toast.js";
+import { fitCurrentCanvasContent } from "./canvas-navigation.js";
 import { setZoomFromCenter, returnToOrigin, preserveCenterOnResize } from "./viewport.js";
 import { setAnchor, goToAnchor, clearAnchor } from "./anchors.js";
 import { bindPan } from "./pan-input.js";
@@ -24,6 +25,18 @@ export function createInfiniteCanvasRuntime(elements) {
   function home() {
     returnToOrigin({ state, canvas: elements.canvas, update, persist });
     notify("Returned to origin");
+  }
+
+  function fitContent() {
+    const fitted = fitCurrentCanvasContent({
+      state,
+      canvas: elements.canvas,
+      originCard: elements.originCard,
+      jsonCard: elements.jsonComponentCard,
+      update,
+      persist
+    });
+    if (fitted) notify("Fit canvas content");
   }
 
   function saveAnchor() {
@@ -172,7 +185,8 @@ export function createInfiniteCanvasRuntime(elements) {
       onSetAnchor: saveAnchor,
       onGoAnchor: restoreAnchor,
       onUndo: undo,
-      onRedo: redo
+      onRedo: redo,
+      onFitContent: fitContent
     });
 
     bindResetControls({
@@ -203,6 +217,7 @@ export function createInfiniteCanvasRuntime(elements) {
     bind,
     history,
     renderScheduler,
+    fitContent,
     scheduleViewportCenterPreservation
   });
 }
