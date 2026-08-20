@@ -18,10 +18,10 @@ assert.deepEqual(
 assert.deepEqual(
   rankQuickOpenFiles("editor", files),
   [
-    "js/components/editor-panel/workbench-input.js",
-    "css/components/editor-panel/editor-tabs.css"
+    "css/components/editor-panel/editor-tabs.css",
+    "js/components/editor-panel/workbench-input.js"
   ],
-  "path substring matches should remain stable in source order when scores are equivalent"
+  "path substring matches should prefer earlier occurrences in the path"
 );
 
 assert.deepEqual(
