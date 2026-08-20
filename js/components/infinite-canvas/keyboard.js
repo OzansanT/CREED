@@ -19,7 +19,7 @@ function isInteractiveTarget(target) {
   return target instanceof Element && Boolean(target.closest(INTERACTIVE_SELECTOR));
 }
 
-export function bindKeyboard({ onHome, onSetAnchor, onGoAnchor, onUndo, onRedo }) {
+export function bindKeyboard({ onHome, onSetAnchor, onGoAnchor, onUndo, onRedo, onFitContent }) {
   window.addEventListener("keydown", (event) => {
     if (
       event.defaultPrevented ||
@@ -45,6 +45,12 @@ export function bindKeyboard({ onHome, onSetAnchor, onGoAnchor, onUndo, onRedo }
     if (event.key === "0") {
       event.preventDefault();
       onHome();
+      return;
+    }
+
+    if (key === "f" && !event.shiftKey) {
+      event.preventDefault();
+      onFitContent?.();
       return;
     }
 
