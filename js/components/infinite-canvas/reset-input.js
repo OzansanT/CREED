@@ -15,6 +15,7 @@ export function bindResetControls({
   update,
   persist,
   notify,
+  onCanvasReset,
   onInfiniteReset,
   confirmAction = (message) => window.confirm(message)
 }) {
@@ -25,6 +26,7 @@ export function bindResetControls({
     if (!confirmed) return false;
 
     resetCanvasModel(state);
+    onCanvasReset?.();
     returnToOrigin({ state, canvas, update, persist });
     notify?.("Canvas reset");
     return true;
