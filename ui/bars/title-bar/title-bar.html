@@ -1,0 +1,27 @@
+<header id="titleBar" class="app-titlebar" data-ui-bar="title-bar" aria-label="Codespaces command bar">
+  <div id="navigationControls" class="app-titlebar__navigation navigation-controls">
+    <div id="titleBarBrand" class="app-titlebar__brand" aria-label="CREED">
+      <span class="app-titlebar__brand-mark" data-icon="creed" aria-hidden="true"></span>
+      <span>CREED</span>
+    </div>
+    <button class="navigation-controls__button icon-button" data-icon="arrow-left" type="button" aria-label="Back" title="Back"></button>
+    <button class="navigation-controls__button icon-button" data-icon="arrow-right" type="button" aria-label="Forward" title="Forward"></button>
+  </div>
+
+  <div id="commandCenter" class="app-titlebar__center command-center" role="search">
+    <span class="command-center__search" data-icon="search" aria-hidden="true"></span>
+    <span>CREED [Codespaces: friendly fishstick]</span>
+    <span class="command-center__bell" data-icon="bell" aria-hidden="true"></span>
+  </div>
+
+  <div class="app-titlebar__actions">
+    <div id="layoutControls" class="app-titlebar__layout layout-controls toolbar" aria-label="Layout controls">
+      <button id="togglePrimarySidebarBtn" class="layout-toggle layout-toggle--primary-sidebar" data-icon="panel-left" type="button" title="Toggle primary sidebar" aria-label="Toggle primary sidebar" aria-controls="primarySidebar" aria-expanded="true"></button>
+      <button id="toggleBottomPanelBtn" class="layout-toggle layout-toggle--bottom-panel" data-icon="panel-bottom" type="button" title="Toggle bottom panel" aria-label="Toggle bottom panel" aria-controls="bottomPanel" aria-expanded="true"></button>
+      <button id="toggleSecondarySidebarBtn" class="layout-toggle layout-toggle--secondary-sidebar" data-icon="panel-right" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="secondarySidebar" aria-expanded="true"></button>
+    </div>
+    <button id="returnToOriginBtn" class="titlebar-action" type="button" title="Return to origin"><span data-icon="home" aria-hidden="true"></span><span class="titlebar-action__label">Home</span></button>
+    <button id="resetCanvasBtn" class="titlebar-action" type="button" title="Reset canvas view, saved location and components"><span data-icon="reset" aria-hidden="true"></span><span class="titlebar-action__label">Canvas Reset</span></button>
+    <button id="resetWorkspaceBtn" class="titlebar-action titlebar-action--danger" type="button" title="Reset the entire infinite workspace and panel layout"><span data-icon="infinity" aria-hidden="true"></span><span class="titlebar-action__label">Infinite Reset</span></button>
+  </div>
+</header>

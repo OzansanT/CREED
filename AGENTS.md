@@ -24,6 +24,14 @@
 - Do not add manual cache-version query strings to internal ES-module imports.
 - Do not create duplicate update files such as `-v2`, `-fix`, `-new`, `-updated`, `-copy`, or `-final`.
 
+### Bar UI sources
+- Visible workbench bars own their markup under `ui/bars/<bar>/` and are registered in `ui/bars/bar-registry.json`.
+- `ui/main-frame.html` is the editable shell; `index.html` is generated static output from the frame plus registered bar partials.
+- Keep bar CSS in the existing owning CSS component colony. The registry points to that `*-main.css`; do not move CSS merely because markup is extracted into a bar partial.
+- Keep bar behavior in the existing `js/components/` or `js/ui/` owner. The registry records `behaviorOwners`; do not recreate the legacy parallel `js/bars/` layer.
+- Bar assembly is build-time only. Do not fetch or inject bar HTML at runtime.
+- After bar markup, registry, or frame changes, run `npm run build:frame` and keep `index.html` synchronized.
+
 ## Before creating a file
 
 ```text
@@ -43,10 +51,11 @@ Do not duplicate existing functionality.
 
 Every new file must be connected to the project.
 
+- Bar HTML: register it in `ui/bars/bar-registry.json`, place exactly one matching `<!-- @bar ... -->` slot in `ui/main-frame.html`, then rebuild `index.html`.
 - CSS: connect the source file through its owning `*-main.css`; connect a new component entry through `css/creed-main.css`; then rebuild `css/generated/creed.css`.
 - JavaScript: connect the module through its owning component entry or `js/main.js` orchestration entry.
 - Keep cross-colony dependencies explicit through relative `import` / `export` paths.
-- Remove obsolete CSS imports, JS imports, and generated inventory entries when files move or are deleted.
+- Remove obsolete CSS imports, JS imports, bar registry entries, and generated inventory entries when files move or are deleted.
 - Do not leave orphan files.
 
 ## Structure
@@ -64,6 +73,13 @@ js/
 ├── core/
 ├── components/
 └── ui/
+
+ui/
+├── main-frame.html
+└── bars/
+    ├── bar-registry.json
+    └── <bar>/
+        └── <bar>.html
 ```
 
 Component JavaScript should align with the owning workbench region rather than accumulating at repository root.
@@ -83,7 +99,7 @@ npm run build:inventory
 npm run check
 ```
 
-The check must fail for stale generated CSS, duplicate or missing required IDs, missing relative JS dependencies, JavaScript syntax errors, stale Explorer inventory, legacy DOM tokens, manual cache-versioned internal module imports, or application JS leaking back into repository root.
+The check must fail for a stale generated frame or CSS bundle, invalid bar ownership, duplicate or missing required IDs, missing relative JS dependencies, JavaScript syntax errors, stale Explorer inventory, legacy DOM tokens, manual cache-versioned internal module imports, or application JS leaking back into repository root.
 
 ## Required after every code or structural update
 
@@ -104,7 +120,7 @@ Regenerate the tree from the actual current repository state after every update.
 
 Regenerate the actual source relationship tree after every update.
 
-Only show relationships that actually exist through HTML `<link>` / `<script>` references, CSS `@import`, or JavaScript `import` / `export` dependencies. Do not invent dependencies or use wildcard placeholders as if they were concrete relationships.
+Only show relationships that actually exist through HTML `<link>` / `<script>` references, CSS `@import`, JavaScript `import` / `export` dependencies, or build-time bar composition declared by `ui/bars/bar-registry.json`. Do not invent dependencies or use wildcard placeholders as if they were concrete relationships.
 
 ## Core rule
 

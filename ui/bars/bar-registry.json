@@ -1,0 +1,106 @@
+[
+  {
+    "slot": "restricted-mode",
+    "rootId": "restrictedModeBanner",
+    "template": "ui/bars/restricted-mode/restricted-mode.html",
+    "styleEntry": "css/components/restricted-mode/restricted-mode-main.css",
+    "behaviorOwners": []
+  },
+  {
+    "slot": "title-bar",
+    "rootId": "titleBar",
+    "template": "ui/bars/title-bar/title-bar.html",
+    "styleEntry": "css/components/titlebar/titlebar-main.css",
+    "behaviorOwners": [
+      "js/components/primary-sidebar/primary-sidebar-main.js",
+      "js/components/bottom-panel/bottom-panel-main.js",
+      "js/components/secondary-sidebar/secondary-sidebar-main.js",
+      "js/components/infinite-canvas/infinitecanvas-main.js"
+    ]
+  },
+  {
+    "slot": "activity-bar",
+    "rootId": "activityBar",
+    "template": "ui/bars/activity-bar/activity-bar.html",
+    "styleEntry": "css/components/activity-bar/activity-bar-main.css",
+    "behaviorOwners": [
+      "js/components/primary-sidebar/primary-sidebar-main.js",
+      "js/ui/unavailable-controls.js"
+    ]
+  },
+  {
+    "slot": "primary-sidebar-header",
+    "rootId": "primarySidebarHeader",
+    "template": "ui/bars/primary-sidebar-header/primary-sidebar-header.html",
+    "styleEntry": "css/components/primary-sidebar/primary-sidebar-main.css",
+    "behaviorOwners": []
+  },
+  {
+    "slot": "workspace-bar",
+    "rootId": "workspaceHeader",
+    "template": "ui/bars/workspace/workspace-bar.html",
+    "styleEntry": "css/components/explorer/explorer-main.css",
+    "behaviorOwners": [
+      "js/components/editor-panel/explorer-controller.js"
+    ]
+  },
+  {
+    "slot": "primary-sidebar-footer",
+    "rootId": "primarySidebarFooter",
+    "template": "ui/bars/primary-sidebar-footer/primary-sidebar-footer.html",
+    "styleEntry": "css/components/primary-sidebar/primary-sidebar-main.css",
+    "behaviorOwners": []
+  },
+  {
+    "slot": "editor-tabs",
+    "rootId": "editorTabs",
+    "template": "ui/bars/editor-tabs/editor-tabs.html",
+    "styleEntry": "css/components/editor-panel/editor-panel-main.css",
+    "behaviorOwners": [
+      "js/components/editor-panel/editor-tabs.js"
+    ]
+  },
+  {
+    "slot": "editor-breadcrumbs",
+    "rootId": "editorBreadcrumbs",
+    "template": "ui/bars/editor-breadcrumbs/editor-breadcrumbs.html",
+    "styleEntry": "css/components/editor-panel/editor-panel-main.css",
+    "behaviorOwners": [
+      "js/components/editor-panel/editor-panel-main.js"
+    ]
+  },
+  {
+    "slot": "bottom-panel-bar",
+    "rootId": "bottomPanelHeader",
+    "template": "ui/bars/bottom-panel/bottom-panel-bar.html",
+    "styleEntry": "css/components/bottom-panel/bottom-panel-main.css",
+    "behaviorOwners": [
+      "js/components/bottom-panel/bottom-panel-main.js"
+    ]
+  },
+  {
+    "slot": "secondary-sidebar-header",
+    "rootId": "secondarySidebarHeader",
+    "template": "ui/bars/secondary-sidebar-header/secondary-sidebar-header.html",
+    "styleEntry": "css/components/secondary-sidebar/secondary-sidebar-main.css",
+    "behaviorOwners": [
+      "js/components/secondary-sidebar/secondary-sidebar-main.js"
+    ]
+  },
+  {
+    "slot": "secondary-sidebar-footer",
+    "rootId": "secondarySidebarFooter",
+    "template": "ui/bars/secondary-sidebar-footer/secondary-sidebar-footer.html",
+    "styleEntry": "css/components/secondary-sidebar/secondary-sidebar-main.css",
+    "behaviorOwners": []
+  },
+  {
+    "slot": "status-bar",
+    "rootId": "statusBar",
+    "template": "ui/bars/status-bar/status-bar.html",
+    "styleEntry": "css/components/status-bar/status-bar-main.css",
+    "behaviorOwners": [
+      "js/components/editor-panel/editor-panel-main.js"
+    ]
+  }
+]
