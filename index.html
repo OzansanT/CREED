@@ -6,11 +6,11 @@
   <title>CREED — Infinite Canvas Workbench</title>
 
   <!-- Generated from the controllable CSS colonies under ./css/. -->
-  <link rel="stylesheet" href="./css/generated/creed.css?v=20260818-1" />
+  <link data-creed-styles rel="stylesheet" href="./css/generated/creed.css" />
 </head>
 <body>
   <div id="app" class="app-shell">
-    <div id="restrictedModeBanner" class="restricted-mode-banner" role="status">
+    <div id="restrictedModeBanner" class="restricted-mode-banner" data-ui-bar="restricted-mode" role="status">
       <svg class="restricted-mode-banner__icon" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 2 4.5 5v5.5c0 4.8 3 8.8 7.5 11.5 4.5-2.7 7.5-6.7 7.5-11.5V5L12 2Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
         <path d="M9.5 11.5 11 13l3.6-4" fill="none" stroke="currentColor" stroke-width="1.8"/>
@@ -22,7 +22,7 @@
       </span>
     </div>
 
-    <header id="titleBar" class="app-titlebar" aria-label="Codespaces command bar">
+    <header id="titleBar" class="app-titlebar" data-ui-bar="title-bar" aria-label="Codespaces command bar">
       <div id="navigationControls" class="app-titlebar__navigation navigation-controls">
         <div id="titleBarBrand" class="app-titlebar__brand" aria-label="CREED">
           <span class="app-titlebar__brand-mark" data-icon="creed" aria-hidden="true"></span>
@@ -44,13 +44,13 @@
           <button id="toggleBottomPanelBtn" class="layout-toggle layout-toggle--bottom-panel" data-icon="panel-bottom" type="button" title="Toggle bottom panel" aria-label="Toggle bottom panel" aria-controls="bottomPanel" aria-expanded="true"></button>
           <button id="toggleSecondarySidebarBtn" class="layout-toggle layout-toggle--secondary-sidebar" data-icon="panel-right" type="button" title="Toggle secondary sidebar" aria-label="Toggle secondary sidebar" aria-controls="secondarySidebar" aria-expanded="true"></button>
         </div>
-        <button id="returnToOriginBtn" class="titlebar-action" title="Return to origin"><span data-icon="home" aria-hidden="true"></span><span class="titlebar-action__label">Home</span></button>
+        <button id="returnToOriginBtn" class="titlebar-action" type="button" title="Return to origin"><span data-icon="home" aria-hidden="true"></span><span class="titlebar-action__label">Home</span></button>
         <button id="resetCanvasBtn" class="titlebar-action" type="button" title="Reset canvas view, saved location and components"><span data-icon="reset" aria-hidden="true"></span><span class="titlebar-action__label">Canvas Reset</span></button>
         <button id="resetWorkspaceBtn" class="titlebar-action titlebar-action--danger" type="button" title="Reset the entire infinite workspace and panel layout"><span data-icon="infinity" aria-hidden="true"></span><span class="titlebar-action__label">Infinite Reset</span></button>
       </div>
     </header>
 
-    <nav id="activityBar" class="activity-bar" aria-label="Primary activity">
+    <nav id="activityBar" class="activity-bar" data-ui-bar="activity-bar" aria-label="Primary activity">
       <div class="activity-bar__primary">
         <button id="activityMenuBtn" class="activity-button activity-button--menu" type="button" aria-label="Application menu" title="Application menu">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12M6 12h12M6 16h12"/></svg>
@@ -86,13 +86,13 @@
 
     <aside id="primarySidebar" class="primary-sidebar panel" aria-label="Explorer and CREED tools">
       <div id="primarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--primary" role="separator" aria-label="Resize primary sidebar" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="900" aria-valuenow="293" tabindex="0"></div>
-      <div id="primarySidebarHeader" class="primary-sidebar__header panel__header">
+      <div id="primarySidebarHeader" class="primary-sidebar__header panel__header" data-ui-bar="primary-sidebar-header">
         <span>Gezgin</span>
         <span data-icon="more-horizontal" aria-hidden="true"></span>
       </div>
 
       <div id="explorerView" class="primary-sidebar__content explorer-view panel__content">
-        <div id="workspaceHeader" class="workspace-header">
+        <div id="workspaceHeader" class="workspace-header" data-ui-bar="workspace-bar">
           <button id="workspaceDisclosureBtn" class="workspace-header__disclosure" type="button" aria-expanded="true" aria-controls="workspaceTree" title="Collapse CREED files">
             <span class="workspace-header__chevron" data-icon="chevron-right" aria-hidden="true"></span>
             <strong class="workspace-header__name">CREED</strong>
@@ -124,7 +124,7 @@
         </div>
 
         <div class="explorer-view__panels">
-          <section id="canvasControlsPanel" class="explorer-view__panel is-active" role="tabpanel">
+          <section id="canvasControlsPanel" class="explorer-view__panel is-active" role="tabpanel" aria-labelledby="canvasControlsTabBtn">
             <h3>Canvas Controls</h3>
             <p>Drag anywhere to pan. Grid density changes automatically as you zoom.</p>
 
@@ -156,14 +156,14 @@
             <div class="section">
               <span class="label">Saved Canvas Location</span>
               <div class="button-stack">
-                <button id="setAnchorBtn" class="button--primary">Save Current View</button>
-                <button id="goAnchorBtn" disabled>Return to Saved View</button>
-                <button id="clearAnchorBtn" disabled>Clear Saved View</button>
+                <button id="setAnchorBtn" class="button--primary" type="button">Save Current View</button>
+                <button id="goAnchorBtn" type="button" disabled>Return to Saved View</button>
+                <button id="clearAnchorBtn" type="button" disabled>Clear Saved View</button>
               </div>
             </div>
           </section>
 
-          <section id="componentsPanel" class="explorer-view__panel" role="tabpanel" hidden>
+          <section id="componentsPanel" class="explorer-view__panel" role="tabpanel" aria-labelledby="componentsTabBtn" hidden>
             <h3>Components</h3>
             <div class="section">
               <span class="label">Automation</span>
@@ -175,7 +175,7 @@
         </div>
       </div>
 
-      <div id="primarySidebarFooter" class="primary-sidebar__footer panel__footer">
+      <div id="primarySidebarFooter" class="primary-sidebar__footer panel__footer" data-ui-bar="primary-sidebar-footer">
         <span>› Anahat</span>
         <span>› Zaman Çizelgesi</span>
       </div>
@@ -183,7 +183,7 @@
 
     <div id="workbench" class="workbench">
       <section id="editorPanel" class="editor-panel workbench__editor" aria-label="Infinite canvas and source editor">
-        <div id="editorTabs" class="editor-panel__header editor-tabs" role="tablist" aria-label="Editor tabs">
+        <div id="editorTabs" class="editor-panel__header editor-tabs" data-ui-bar="editor-tabs" role="tablist" aria-label="Editor tabs">
           <button id="canvasTab" class="editor-tab editor-tab--canvas is-active" type="button" role="tab" aria-selected="true" aria-controls="canvasView">
             <span class="file-kind" data-icon="infinity" aria-hidden="true"></span>
             <span class="editor-tab__label">Infinite Canvas</span>
@@ -195,7 +195,7 @@
           </div>
         </div>
 
-        <div id="editorBreadcrumbs" class="editor-breadcrumbs">
+        <div id="editorBreadcrumbs" class="editor-breadcrumbs" data-ui-bar="editor-breadcrumbs">
           <span id="editorBreadcrumbKind" class="editor-breadcrumbs__item file-kind">◇</span>
           <span id="editorBreadcrumbName" class="editor-breadcrumbs__item">Infinite Canvas</span>
         </div>
@@ -230,11 +230,11 @@
                 <div class="canvas-hint">Drag to pan · Ctrl/Cmd + wheel to zoom</div>
 
                 <div id="canvasZoomControls" class="canvas-zoom" aria-label="Zoom control">
-                  <button id="zoomOutBtn" class="canvas-zoom__button" title="Zoom out">−</button>
+                  <button id="zoomOutBtn" class="canvas-zoom__button" type="button" title="Zoom out">−</button>
                   <input id="zoomRange" class="canvas-zoom__range" type="range" min="20" max="300" value="100" step="1" aria-label="Zoom percentage" />
                   <div id="zoomReadout" class="canvas-zoom__readout">100%</div>
                   <div id="lodBadge" class="canvas-lod-badge">GRID 1×</div>
-                  <button id="zoomInBtn" class="canvas-zoom__button" title="Zoom in">+</button>
+                  <button id="zoomInBtn" class="canvas-zoom__button" type="button" title="Zoom in">+</button>
                 </div>
               </div>
             </main>
@@ -253,7 +253,7 @@
 
       <section id="bottomPanel" class="bottom-panel workbench__bottom-panel panel" aria-label="Bottom panel">
         <div id="bottomPanelResizeHandle" class="panel-resize-handle panel-resize-handle--horizontal panel-resize-handle--bottom" role="separator" aria-label="Resize bottom panel" aria-orientation="horizontal" aria-valuemin="120" aria-valuemax="700" aria-valuenow="320" tabindex="0"></div>
-        <div id="bottomPanelHeader" class="bottom-panel__header panel__header">
+        <div id="bottomPanelHeader" class="bottom-panel__header panel__header" data-ui-bar="bottom-panel-bar">
           <div id="bottomPanelTabs" class="bottom-panel__tabs" role="tablist" aria-label="Bottom panel views">
             <button id="problemsTabBtn" class="bottom-panel__tab" type="button" role="tab" aria-selected="false" aria-controls="problemsView" data-panel-view="problems">Sorunlar</button>
             <button id="outputTabBtn" class="bottom-panel__tab" type="button" role="tab" aria-selected="false" aria-controls="outputView" data-panel-view="output">Çıktı</button>
@@ -267,7 +267,7 @@
             <button id="splitTerminalBtn" class="icon-button" data-icon="split" type="button" aria-label="Split terminal" title="Split terminal"></button>
             <button id="killTerminalBtn" class="icon-button" data-icon="trash" type="button" aria-label="Kill terminal" title="Kill terminal"></button>
             <button class="icon-button" data-icon="more-horizontal" type="button" aria-label="More terminal actions" title="More terminal actions"></button>
-            <button id="maximizeBottomPanelBtn" class="icon-button" data-icon="maximize" type="button" aria-label="Maximize panel" title="Maximize panel"></button>
+            <button id="maximizeBottomPanelBtn" class="icon-button" data-icon="maximize" type="button" aria-label="Maximize panel" aria-pressed="false" title="Maximize panel"></button>
             <button id="closeBottomPanelBtn" class="icon-button" data-icon="close" type="button" aria-label="Close panel" title="Close panel"></button>
           </div>
         </div>
@@ -276,7 +276,7 @@
           <div id="outputView" class="bottom-panel__view bottom-panel__view--output" role="tabpanel" aria-labelledby="outputTabBtn" hidden>Görüntülenecek çıktı yok.</div>
           <div id="debugConsoleView" class="bottom-panel__view bottom-panel__view--debug" role="tabpanel" aria-labelledby="debugConsoleTabBtn" hidden>Hata ayıklama oturumu başlatılmadı.</div>
           <div id="terminalView" class="bottom-panel__view bottom-panel__view--terminal terminal-view" role="tabpanel" aria-labelledby="terminalTabBtn">
-            <div class="terminal-view__body">
+            <div class="terminal-view__body terminal-prompt">
               <span class="terminal-prompt__user">@OzansanT</span> ➜ <span class="terminal-prompt__path">/workspaces/CREED</span> <span class="terminal-prompt__branch">(main)</span> $
             </div>
           </div>
@@ -287,13 +287,13 @@
 
     <aside id="secondarySidebar" class="secondary-sidebar panel" aria-label="Sohbet">
       <div id="secondarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--secondary" role="separator" aria-label="Resize secondary sidebar" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="900" aria-valuenow="290" tabindex="0"></div>
-      <div id="secondarySidebarHeader" class="secondary-sidebar__header panel__header">
+      <div id="secondarySidebarHeader" class="secondary-sidebar__header panel__header" data-ui-bar="secondary-sidebar-header">
         <span class="secondary-sidebar__title">Sohbet</span>
         <div class="secondary-sidebar__actions">
           <button id="newChatBtn" class="icon-button" data-icon="plus" type="button" aria-label="New chat" title="New chat"></button>
           <button id="chatSettingsBtn" class="icon-button" data-icon="settings" type="button" aria-label="Chat settings" title="Chat settings"></button>
           <button class="icon-button" data-icon="more-horizontal" type="button" aria-label="More chat actions" title="More chat actions"></button>
-          <button id="maximizeSecondarySidebarBtn" class="icon-button" data-icon="maximize" type="button" aria-label="Maximize chat" title="Maximize chat"></button>
+          <button id="maximizeSecondarySidebarBtn" class="icon-button" data-icon="maximize" type="button" aria-label="Maximize chat" aria-pressed="false" title="Maximize chat"></button>
           <button id="closeSecondarySidebarBtn" class="icon-button" data-icon="close" type="button" aria-label="Close chat" title="Close chat"></button>
         </div>
       </div>
@@ -315,14 +315,17 @@
           </div>
         </section>
       </div>
-      <div id="secondarySidebarFooter" class="secondary-sidebar__footer panel__footer"><span>▣ Yerel</span><span>♢ Varsayılan Onaylar</span></div>
+      <div id="secondarySidebarFooter" class="secondary-sidebar__footer panel__footer" data-ui-bar="secondary-sidebar-footer">
+        <span>▣ Yerel</span>
+        <span>♢ Varsayılan Onaylar</span>
+      </div>
     </aside>
 
     <div id="notificationLayer" class="notification-layer" aria-live="polite">
       <div id="toastRegion" class="toast-region toast" role="status"></div>
     </div>
 
-    <footer id="statusBar" class="status-bar" aria-label="Status bar">
+    <footer id="statusBar" class="status-bar" data-ui-bar="status-bar" aria-label="Status bar">
       <div class="status-bar__left">
         <span class="status-bar__remote"><span data-icon="remote" aria-hidden="true"></span>Codespaces: friendly fishstick</span>
         <span class="status-bar__item"><span data-icon="shield-check" aria-hidden="true"></span>Kısıtlı Mod</span>
@@ -341,6 +344,6 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js?v=20260818-1"></script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>

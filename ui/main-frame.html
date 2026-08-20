@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CREED — Infinite Canvas Workbench</title>
+
+  <!-- Generated from the controllable CSS colonies under ./css/. -->
+  <link data-creed-styles rel="stylesheet" href="./css/generated/creed.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <!-- @bar restricted-mode -->
+
+    <!-- @bar title-bar -->
+
+    <!-- @bar activity-bar -->
+
+    <aside id="primarySidebar" class="primary-sidebar panel" aria-label="Explorer and CREED tools">
+      <div id="primarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--primary" role="separator" aria-label="Resize primary sidebar" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="900" aria-valuenow="293" tabindex="0"></div>
+      <!-- @bar primary-sidebar-header -->
+
+      <div id="explorerView" class="primary-sidebar__content explorer-view panel__content">
+        <!-- @bar workspace-bar -->
+
+        <div id="workspaceTree" class="workspace-tree" role="listbox" aria-label="CREED files"></div>
+
+        <div id="explorerSections" class="explorer-sections">
+          <h2>CREED Tools</h2>
+          <div class="explorer-sections__tabs" role="tablist" aria-label="Sidebar sections">
+            <button id="canvasControlsTabBtn" class="explorer-section is-active" type="button" role="tab" aria-selected="true" aria-controls="canvasControlsPanel">
+              Canvas Controls
+            </button>
+            <button id="infiniteCanvasTabBtn" class="explorer-section" type="button" role="tab" aria-selected="false" aria-controls="canvasView">
+              Infinite Canvas
+            </button>
+            <button id="componentsTabBtn" class="explorer-section" type="button" role="tab" aria-selected="false" aria-controls="componentsPanel">
+              Components
+            </button>
+          </div>
+        </div>
+
+        <div class="explorer-view__panels">
+          <section id="canvasControlsPanel" class="explorer-view__panel is-active" role="tabpanel" aria-labelledby="canvasControlsTabBtn">
+            <h3>Canvas Controls</h3>
+            <p>Drag anywhere to pan. Grid density changes automatically as you zoom.</p>
+
+            <div class="section">
+              <span class="label">Position</span>
+              <div class="stats">
+                <div class="stat"><span>X</span><strong id="xStat">0</strong></div>
+                <div class="stat"><span>Y</span><strong id="yStat">0</strong></div>
+                <div class="stat"><span>Zoom</span><strong id="zoomStat">100%</strong></div>
+                <div class="stat"><span>Grid Order</span><strong id="orderStat">1×</strong></div>
+              </div>
+            </div>
+
+            <div class="section">
+              <span class="label">Grid LOD Breakpoints</span>
+              <div class="lod-list">
+                <div class="lod-row" data-order="1"><span>≥ 75%</span><span class="lod-swatch"></span><span>1×</span></div>
+                <div class="lod-row" data-order="2"><span>45–74%</span><span class="lod-swatch"></span><span>2×</span></div>
+                <div class="lod-row" data-order="4"><span>28–44%</span><span class="lod-swatch"></span><span>4×</span></div>
+                <div class="lod-row" data-order="8"><span>&lt; 28%</span><span class="lod-swatch"></span><span>8×</span></div>
+              </div>
+            </div>
+
+            <div class="section">
+              <span class="label">Shortcuts</span>
+              <p class="shortcut-copy"><b>Drag</b> — pan<br><b>Ctrl/Cmd + wheel</b> — zoom<br><b>0</b> — origin<br><b>A</b> — save view<br><b>Shift + A</b> — return</p>
+            </div>
+
+            <div class="section">
+              <span class="label">Saved Canvas Location</span>
+              <div class="button-stack">
+                <button id="setAnchorBtn" class="button--primary" type="button">Save Current View</button>
+                <button id="goAnchorBtn" type="button" disabled>Return to Saved View</button>
+                <button id="clearAnchorBtn" type="button" disabled>Clear Saved View</button>
+              </div>
+            </div>
+          </section>
+
+          <section id="componentsPanel" class="explorer-view__panel" role="tabpanel" aria-labelledby="componentsTabBtn" hidden>
+            <h3>Components</h3>
+            <div class="section">
+              <span class="label">Automation</span>
+              <div class="button-stack">
+                <button id="addJsonCardBtn" class="button--primary" type="button">Add JSON Card</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- @bar primary-sidebar-footer -->
+    </aside>
+
+    <div id="workbench" class="workbench">
+      <section id="editorPanel" class="editor-panel workbench__editor" aria-label="Infinite canvas and source editor">
+        <!-- @bar editor-tabs -->
+
+        <!-- @bar editor-breadcrumbs -->
+
+        <div id="editorViewport" class="editor-viewport">
+          <div id="canvasView" class="editor-view editor-view--canvas" role="tabpanel" aria-labelledby="canvasTab">
+            <main id="canvasViewport" class="infinite-canvas" aria-label="CREED infinite canvas">
+              <div class="infinite-canvas__grid" data-grid-order="1"></div>
+              <div class="infinite-canvas__grid" data-grid-order="2"></div>
+              <div class="infinite-canvas__grid" data-grid-order="4"></div>
+              <div class="infinite-canvas__grid" data-grid-order="8"></div>
+
+              <div id="canvasWorld" class="infinite-canvas__world">
+                <section id="originCard" class="canvas-card canvas-card--origin" tabindex="0" aria-label="Draggable CREED origin card">
+                  <small>● WORLD ORIGIN</small>
+                  <h1>CREED</h1>
+                  <p>Infinite canvas inside a Codespaces-inspired workbench. Pan, zoom, save views and place components.</p>
+                </section>
+
+                <section id="jsonComponentCard" class="canvas-card canvas-card--component" tabindex="0" aria-label="JSON file component" hidden>
+                  <small>COMPONENT</small>
+                  <h2>JSON File</h2>
+                  <button id="openJsonFileBtn" class="button--primary" type="button">Open JSON File</button>
+                </section>
+
+                <div id="anchorMarker" class="canvas-anchor">
+                  <span class="canvas-anchor__label">Saved canvas view</span>
+                </div>
+              </div>
+
+              <div id="canvasOverlay" class="infinite-canvas__overlay">
+                <div class="canvas-hint">Drag to pan · Ctrl/Cmd + wheel to zoom</div>
+
+                <div id="canvasZoomControls" class="canvas-zoom" aria-label="Zoom control">
+                  <button id="zoomOutBtn" class="canvas-zoom__button" type="button" title="Zoom out">−</button>
+                  <input id="zoomRange" class="canvas-zoom__range" type="range" min="20" max="300" value="100" step="1" aria-label="Zoom percentage" />
+                  <div id="zoomReadout" class="canvas-zoom__readout">100%</div>
+                  <div id="lodBadge" class="canvas-lod-badge">GRID 1×</div>
+                  <button id="zoomInBtn" class="canvas-zoom__button" type="button" title="Zoom in">+</button>
+                </div>
+              </div>
+            </main>
+          </div>
+
+          <div id="sourceEditorView" class="editor-view editor-view--source" role="tabpanel" aria-labelledby="canvasTab" hidden>
+            <div id="sourceEditor" class="source-editor">
+              <div id="sourceScroller" class="source-editor__scroller">
+                <div id="sourceContent" class="source-editor__content" aria-live="polite"></div>
+              </div>
+              <div id="sourceMinimap" class="source-editor__minimap" role="scrollbar" aria-label="Source minimap" aria-controls="sourceScroller" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0" title="Click or drag to navigate"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="bottomPanel" class="bottom-panel workbench__bottom-panel panel" aria-label="Bottom panel">
+        <div id="bottomPanelResizeHandle" class="panel-resize-handle panel-resize-handle--horizontal panel-resize-handle--bottom" role="separator" aria-label="Resize bottom panel" aria-orientation="horizontal" aria-valuemin="120" aria-valuemax="700" aria-valuenow="320" tabindex="0"></div>
+        <!-- @bar bottom-panel-bar -->
+        <div id="bottomPanelContent" class="bottom-panel__content panel__content">
+          <div id="problemsView" class="bottom-panel__view bottom-panel__view--problems" role="tabpanel" aria-labelledby="problemsTabBtn" hidden>Hiçbir sorun algılanmadı.</div>
+          <div id="outputView" class="bottom-panel__view bottom-panel__view--output" role="tabpanel" aria-labelledby="outputTabBtn" hidden>Görüntülenecek çıktı yok.</div>
+          <div id="debugConsoleView" class="bottom-panel__view bottom-panel__view--debug" role="tabpanel" aria-labelledby="debugConsoleTabBtn" hidden>Hata ayıklama oturumu başlatılmadı.</div>
+          <div id="terminalView" class="bottom-panel__view bottom-panel__view--terminal terminal-view" role="tabpanel" aria-labelledby="terminalTabBtn">
+            <div class="terminal-view__body terminal-prompt">
+              <span class="terminal-prompt__user">@OzansanT</span> ➜ <span class="terminal-prompt__path">/workspaces/CREED</span> <span class="terminal-prompt__branch">(main)</span> $
+            </div>
+          </div>
+          <div id="portsView" class="bottom-panel__view bottom-panel__view--ports" role="tabpanel" aria-labelledby="portsTabBtn" hidden>İletilen bağlantı noktası yok.</div>
+        </div>
+      </section>
+    </div>
+
+    <aside id="secondarySidebar" class="secondary-sidebar panel" aria-label="Sohbet">
+      <div id="secondarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--secondary" role="separator" aria-label="Resize secondary sidebar" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="900" aria-valuenow="290" tabindex="0"></div>
+      <!-- @bar secondary-sidebar-header -->
+      <div id="secondarySidebarContent" class="secondary-sidebar__content panel__content">
+        <section id="chatView" class="chat-view" aria-label="Chat view">
+          <div id="chatEmptyState" class="chat-view__empty">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M9 10h25a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H21l-8 6v-6H9a5 5 0 0 1-5-5V15a5 5 0 0 1 5-5Z"/>
+              <path d="m36 6 1.5 3.5L41 11l-3.5 1.5L36 16l-1.5-3.5L31 11l3.5-1.5Z"/>
+            </svg>
+            <strong>Aracıyla Oluşturun</strong>
+            <span>Yapay zeka yanıtları hatalı olabilir</span>
+          </div>
+          <div id="chatMessages" class="chat-view__messages" aria-live="polite"></div>
+          <div id="chatComposer" class="chat-composer">
+            <div id="chatContext" class="chat-composer__context"><span data-icon="plus" aria-hidden="true"></span><span id="chatContextKind" class="file-kind">◇</span><em id="chatContextName">Infinite Canvas</em></div>
+            <textarea id="chatPromptInput" class="chat-composer__input" rows="2" aria-label="Describe what to create" placeholder="Ne oluşturulacağını açıkla"></textarea>
+            <div class="chat-composer__toolbar toolbar"><span data-icon="plus" aria-hidden="true"></span><span>Agent</span><span>Models</span><span data-icon="sliders" aria-hidden="true"></span><button id="sendChatMessageBtn" class="chat-composer__send icon-button" data-icon="send" type="button" aria-label="Send message" title="Send message"></button></div>
+          </div>
+        </section>
+      </div>
+      <!-- @bar secondary-sidebar-footer -->
+    </aside>
+
+    <div id="notificationLayer" class="notification-layer" aria-live="polite">
+      <div id="toastRegion" class="toast-region toast" role="status"></div>
+    </div>
+
+    <!-- @bar status-bar -->
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
