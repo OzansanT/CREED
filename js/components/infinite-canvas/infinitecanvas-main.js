@@ -154,7 +154,8 @@ export function createInfiniteCanvasRuntime(elements) {
       positionKey: "originCard",
       update,
       persist,
-      history
+      history,
+      getSnapPoints: () => state.jsonCard.visible ? [state.jsonCard] : []
     });
     bindCardDrag({
       card: elements.jsonComponentCard,
@@ -162,7 +163,8 @@ export function createInfiniteCanvasRuntime(elements) {
       positionKey: "jsonCard",
       update,
       persist,
-      history
+      history,
+      getSnapPoints: () => [state.originCard]
     });
     bindJsonFileButton({ button: elements.openJsonFileBtn });
     bindKeyboard({
