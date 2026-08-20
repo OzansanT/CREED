@@ -1,6 +1,10 @@
 {
   "name": "creed-workbench",
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "npm run build:frame && npm run build:css && npm run build:inventory",
     "build:frame": "node scripts/build-main-frame.mjs",
