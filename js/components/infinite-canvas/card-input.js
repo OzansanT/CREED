@@ -1,4 +1,5 @@
 import { createCommand } from "../../core/command-engine.js";
+import { snapWorldPoint } from "./snapping.js";
 
 function playClickAnimation(card) {
   card.classList.remove("was-clicked");
@@ -23,7 +24,8 @@ export function bindCardDrag({
   positionKey = "originCard",
   update,
   persist,
-  history
+  history,
+  getSnapPoints = () => []
 }) {
   let activePointerId = null;
   let moved = false;
@@ -60,8 +62,21 @@ export function bindCardDrag({
     const deltaX = event.clientX - dragStart.x;
     const deltaY = event.clientY - dragStart.y;
     moved ||= Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2;
-    state[positionKey].worldX = cardStart.worldX + deltaX / state.zoom;
-    state[positionKey].worldY = cardStart.worldY + deltaY / state.zoom;
+
+    const rawPosition = {
+      worldX: cardStart.worldX + deltaX / state.zoom,
+      worldY: cardStart.worldY + deltaY / state.zoom
+    };
+    const nextPosition = event.altKey
+      ? rawPosition
+      : snapWorldPoint({
+        x: rawPosition.worldX,
+        y: rawPosition.worldY,
+        zoom: state.zoom,
+        candidates: getSnapPoints()
+      });
+
+    applyPosition(state[positionKey], nextPosition);
     update();
   });
 
