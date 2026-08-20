@@ -5,6 +5,7 @@ import { disableUnavailableControls } from "./ui/unavailable-controls.js";
 import { bindPrimarySidebar } from "./components/primary-sidebar/primary-sidebar-main.js";
 import { bindSecondarySidebar } from "./components/secondary-sidebar/secondary-sidebar-main.js";
 import { bindBottomPanel } from "./components/bottom-panel/bottom-panel-main.js";
+import { bindTerminalSessions } from "./components/bottom-panel/terminal-session.js";
 import { bindPanelResize } from "./components/panel-resize/panel-resize-input.js";
 import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
@@ -67,6 +68,19 @@ const bottomPanel = bindBottomPanel({
   maximizeButton: elements.maximizeBottomPanelBtn,
   closeButton: elements.closeBottomPanelBtn,
   onLayoutChange: handlePanelVisibilityChange
+});
+
+bindTerminalSessions({
+  view: elements.terminalView,
+  newButton: elements.newTerminalBtn,
+  splitButton: elements.splitTerminalBtn,
+  killButton: elements.killTerminalBtn,
+  openFile: editorPanel.openFile,
+  showView: (viewName) => {
+    bottomPanel.setVisible(true);
+    bottomPanel.setActiveView(viewName);
+  },
+  notify: (message) => showToast(elements.toast, message)
 });
 
 panelResize = bindPanelResize({

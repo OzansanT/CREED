@@ -42,6 +42,10 @@ export function getElements() {
 
     bottomPanelTabs: [...document.querySelectorAll(".bottom-panel__tab[data-panel-view]")],
     bottomPanelViews: [...document.querySelectorAll(".bottom-panel__view")],
+    terminalView: document.getElementById("terminalView"),
+    newTerminalBtn: document.getElementById("newTerminalBtn"),
+    splitTerminalBtn: document.getElementById("splitTerminalBtn"),
+    killTerminalBtn: document.getElementById("killTerminalBtn"),
     maximizeBottomPanelBtn: document.getElementById("maximizeBottomPanelBtn"),
     closeBottomPanelBtn: document.getElementById("closeBottomPanelBtn"),
     maximizeSecondarySidebarBtn: document.getElementById("maximizeSecondarySidebarBtn"),

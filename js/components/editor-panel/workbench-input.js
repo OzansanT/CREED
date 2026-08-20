@@ -224,6 +224,12 @@ export function bindWorkbenchFiles({
     }
   });
 
+  function openFile(fileName) {
+    if (typeof fileName !== "string" || !fileName) return false;
+    tabs.open(fileName, getFileKind(fileName));
+    return true;
+  }
+
   function restorePersistedWorkspace() {
     const workspace = loadEditorWorkspace();
     if (!workspace) {
@@ -280,6 +286,7 @@ export function bindWorkbenchFiles({
       const fileName = tabs.getActiveFile();
       if (fileName) tabs.activate(fileName);
     },
+    openFile,
     persistWorkspace: flushEditorWorkspace,
     resetWorkspace: resetEditorWorkspace
   });
