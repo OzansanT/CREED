@@ -9,6 +9,7 @@
     "check:history": "node scripts/check-command-history.mjs",
     "check:render": "node scripts/check-render-scheduler.mjs",
     "check:terminal": "node scripts/check-terminal-session.mjs",
-    "check": "node scripts/build-main-frame.mjs --check && node scripts/build-css.mjs --check && node scripts/check-architecture.mjs && node scripts/check-editor-workspace.mjs && npm run check:history && npm run check:render && npm run check:terminal"
+    "check:snapping": "node scripts/check-snapping.mjs",
+    "check": "node scripts/build-main-frame.mjs --check && node scripts/build-css.mjs --check && node scripts/check-architecture.mjs && node scripts/check-editor-workspace.mjs && npm run check:history && npm run check:render && npm run check:terminal && npm run check:snapping"
   }
 }
