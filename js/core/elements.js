@@ -55,6 +55,7 @@ export function getElements() {
     bottomPanelTabsRoot: document.getElementById("bottomPanelTabs"),
     bottomPanelTabs: [...document.querySelectorAll(".bottom-panel__tab[data-panel-view]")],
     bottomPanelViews: [...document.querySelectorAll(".bottom-panel__view")],
+    problemsView: document.getElementById("problemsView"),
     outputView: document.getElementById("outputView"),
     debugConsoleView: document.getElementById("debugConsoleView"),
     terminalView: document.getElementById("terminalView"),
