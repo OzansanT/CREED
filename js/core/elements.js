@@ -8,8 +8,10 @@ export function getElements() {
     jsonComponentCard: document.getElementById("jsonComponentCard"),
 
     primarySidebar: document.getElementById("primarySidebar"),
+    explorerView: document.getElementById("explorerView"),
     togglePrimarySidebarBtn: document.getElementById("togglePrimarySidebarBtn"),
     activityExplorerBtn: document.getElementById("activityExplorerBtn"),
+    activitySearchBtn: document.getElementById("activitySearchBtn"),
     toggleSecondarySidebarBtn: document.getElementById("toggleSecondarySidebarBtn"),
     secondarySidebar: document.getElementById("secondarySidebar"),
     toggleBottomPanelBtn: document.getElementById("toggleBottomPanelBtn"),
@@ -35,6 +37,7 @@ export function getElements() {
     editorTabs: document.getElementById("editorTabs"),
     canvasTab: document.getElementById("canvasTab"),
     fileTabs: document.getElementById("fileTabs"),
+    splitEditorBtn: document.getElementById("splitEditorBtn"),
     editorBreadcrumbKind: document.getElementById("editorBreadcrumbKind"),
     editorBreadcrumbName: document.getElementById("editorBreadcrumbName"),
     canvasView: document.getElementById("canvasView"),
