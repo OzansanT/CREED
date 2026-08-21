@@ -26,10 +26,12 @@ export function createTaskDag(tasks = []) {
     return order;
   }
 
+  const validatedOrder = topologicalOrder();
+
   async function execute(context = {}) {
     const results = new Map();
     const events = [];
-    for (const id of topologicalOrder()) {
+    for (const id of validatedOrder) {
       const task = nodes.get(id);
       events.push({ type: "started", id });
       try {
@@ -42,11 +44,11 @@ export function createTaskDag(tasks = []) {
         throw Object.assign(error instanceof Error ? error : new Error(String(error)), { taskId: id, events });
       }
     }
-    return Object.freeze({ order: topologicalOrder(), results: Object.fromEntries(results), events });
+    return Object.freeze({ order: [...validatedOrder], results: Object.fromEntries(results), events });
   }
 
   return Object.freeze({
-    order: topologicalOrder,
+    order: () => [...validatedOrder],
     execute,
     tasks: () => [...nodes.values()].map((task) => ({ id: task.id, dependencies: [...task.dependencies] }))
   });
