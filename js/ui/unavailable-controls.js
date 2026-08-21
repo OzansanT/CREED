@@ -3,7 +3,6 @@ export function disableUnavailableControls() {
     ".navigation-controls__button",
     "#activityMenuBtn",
     "#activitySourceControlBtn",
-    "#activityRunBtn",
     "#activityExtensionsBtn",
     "#activityGitHubBtn",
     "#activityAccountBtn",

@@ -12,6 +12,7 @@ import { bindPanelResize } from "./components/panel-resize/panel-resize-input.js
 import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js";
 import { bindQuickOpen } from "./components/editor-panel/quick-open.js";
 import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
+import { bindRunDebug } from "./components/run-debug/run-debug-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 
 hydrateIcons();
@@ -84,16 +85,76 @@ function handlePanelVisibilityChange() {
   panelResize?.persist();
 }
 
+const bottomPanel = bindBottomPanel({
+  workbench: elements.workbench,
+  panel: elements.bottomPanel,
+  layoutButton: elements.toggleBottomPanelBtn,
+  tabs: elements.bottomPanelTabs,
+  views: elements.bottomPanelViews,
+  maximizeButton: elements.maximizeBottomPanelBtn,
+  closeButton: elements.closeBottomPanelBtn,
+  onLayoutChange: handlePanelVisibilityChange
+});
+
+function openFileAt(fileName, line = 1, column = 1) {
+  if (!editorPanel.openFile(fileName)) return false;
+  const targetLine = Math.max(1, Math.trunc(Number(line) || 1));
+  const targetColumn = Math.max(1, Math.trunc(Number(column) || 1));
+  let attempts = 0;
+
+  function revealLocation() {
+    attempts += 1;
+    if (editorPanel.getActiveFile() !== fileName) return;
+    const lineCount = Number(elements.sourceContent.dataset.lineCount || 0);
+    if (!lineCount) {
+      if (attempts < 120) requestAnimationFrame(revealLocation);
+      return;
+    }
+
+    const lineHeight = Number.parseFloat(getComputedStyle(elements.sourceContent).lineHeight) || 19;
+    const safeLine = Math.min(lineCount, targetLine);
+    elements.sourceScroller.scrollTop = Math.max(
+      0,
+      ((safeLine - 1) * lineHeight) - (elements.sourceScroller.clientHeight * 0.45)
+    );
+    elements.sourceScroller.scrollLeft = Math.max(0, ((targetColumn - 1) * 7.2) - 80);
+    elements.sourceContent.dataset.runtimeTargetLine = String(safeLine);
+    elements.sourceContent.dataset.runtimeTargetColumn = String(targetColumn);
+  }
+
+  requestAnimationFrame(revealLocation);
+  return true;
+}
+
+const runDebug = bindRunDebug({
+  sidebar: elements.primarySidebar,
+  editorViewport: elements.editorViewport,
+  workspace: editorPanel.workspace,
+  outputView: elements.outputView,
+  debugConsoleView: elements.debugConsoleView,
+  showBottomView: (viewName) => {
+    bottomPanel.setVisible(true);
+    bottomPanel.setActiveView(viewName);
+  },
+  openFileAt,
+  notify
+});
+
+elements.activityRunBtn?.setAttribute("aria-controls", runDebug.view.id);
+
 const primarySidebar = bindPrimarySidebar({
   app: elements.app,
   sidebar: elements.primarySidebar,
   layoutButton: elements.togglePrimarySidebarBtn,
   explorerButton: elements.activityExplorerBtn,
   searchButton: elements.activitySearchBtn,
+  runButton: elements.activityRunBtn,
   explorerView: elements.explorerView,
   searchView: workspaceSearch.view,
+  runView: runDebug.view,
   onViewChange: (viewName) => {
     if (viewName === "search") workspaceSearch.refreshOutline();
+    if (viewName === "run") runDebug.refreshConfiguration();
   },
   onLayoutChange: handlePanelVisibilityChange
 });
@@ -104,17 +165,6 @@ const secondarySidebar = bindSecondarySidebar({
   layoutButton: elements.toggleSecondarySidebarBtn,
   maximizeButton: elements.maximizeSecondarySidebarBtn,
   closeButton: elements.closeSecondarySidebarBtn,
-  onLayoutChange: handlePanelVisibilityChange
-});
-
-const bottomPanel = bindBottomPanel({
-  workbench: elements.workbench,
-  panel: elements.bottomPanel,
-  layoutButton: elements.toggleBottomPanelBtn,
-  tabs: elements.bottomPanelTabs,
-  views: elements.bottomPanelViews,
-  maximizeButton: elements.maximizeBottomPanelBtn,
-  closeButton: elements.closeBottomPanelBtn,
   onLayoutChange: handlePanelVisibilityChange
 });
 
@@ -149,6 +199,7 @@ panelResize = bindPanelResize({
 infiniteCanvas.bind({
   showCanvas: editorPanel.showCanvas,
   resetEditorWorkspace: () => {
+    runDebug.stop();
     splitEditor.close();
     return editorPanel.resetWorkspace();
   },
