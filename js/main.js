@@ -24,10 +24,14 @@ bindAccessibilityNavigation({
 });
 
 const infiniteCanvas = createInfiniteCanvasRuntime(elements);
+const notify = (message) => showToast(elements.toast, message);
 
 const editorPanel = bindEditorPanel({
   rootToggle: elements.workspaceDisclosureBtn,
   fileTree: elements.workspaceTree,
+  newFileButton: elements.newFileBtn,
+  newFolderButton: elements.newFolderBtn,
+  refreshExplorerButton: elements.refreshExplorerBtn,
   fileTabs: elements.fileTabs,
   canvasTab: elements.canvasTab,
   breadcrumbKind: elements.editorBreadcrumbKind,
@@ -41,12 +45,13 @@ const editorPanel = bindEditorPanel({
   chatContextName: elements.chatContextName,
   statusLanguage: elements.statusLanguage,
   onCanvasShow: infiniteCanvas.scheduleViewportCenterPreservation,
-  onError: (message) => showToast(elements.toast, message)
+  onError: notify,
+  onNotify: notify
 });
 
 bindQuickOpen({
   openFile: editorPanel.openFile,
-  notify: (message) => showToast(elements.toast, message)
+  notify
 });
 
 let panelResize = null;
@@ -94,7 +99,7 @@ bindTerminalSessions({
     bottomPanel.setVisible(true);
     bottomPanel.setActiveView(viewName);
   },
-  notify: (message) => showToast(elements.toast, message)
+  notify
 });
 
 panelResize = bindPanelResize({

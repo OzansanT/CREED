@@ -46,9 +46,7 @@ export function createEditorTabs({
     if (activeTab) {
       codeView.setAttribute("aria-labelledby", activeTab.id);
       if (focus) activeTab.focus();
-      if (fileName) {
-        activeTab.scrollIntoView({ block: "nearest", inline: "nearest" });
-      }
+      if (fileName) activeTab.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
 
     if (notify) onActivate?.(fileName);
@@ -99,10 +97,23 @@ export function createEditorTabs({
     activate(sequence[nextIndex], { focus: true });
   }
 
+  function updateTabAccessibleName(record, fileName) {
+    const label = record.tab.querySelector(".editor-tab__label");
+    const closeButton = record.tab.querySelector(".editor-tab__close");
+    const dirty = record.tab.classList.contains("is-dirty");
+    if (label) label.textContent = fileName;
+    if (closeButton) {
+      closeButton.title = (dirty ? "Discard unsaved changes and close " : "Close ") + fileName;
+      closeButton.setAttribute("aria-label", closeButton.title);
+    }
+    record.tab.title = dirty ? fileName + " — unsaved changes" : fileName;
+  }
+
   function createFileTab(fileName, kind) {
     const tab = document.createElement("div");
     const icon = document.createElement("span");
     const label = document.createElement("span");
+    const dirtyIndicator = document.createElement("span");
     const closeButton = document.createElement("button");
 
     tab.id = createTabId(fileName);
@@ -115,55 +126,59 @@ export function createEditorTabs({
 
     icon.className = "editor-tab__icon file-kind";
     icon.textContent = kind;
-
     label.className = "editor-tab__label";
     label.textContent = fileName;
+    dirtyIndicator.className = "editor-tab__dirty";
+    dirtyIndicator.textContent = "●";
+    dirtyIndicator.hidden = true;
+    dirtyIndicator.setAttribute("aria-hidden", "true");
 
     closeButton.className = "editor-tab__close";
     closeButton.type = "button";
-    closeButton.title = "Close " + fileName;
-    closeButton.setAttribute("aria-label", "Close " + fileName);
     closeButton.append(createIcon("close"));
 
-    tab.append(icon, label, closeButton);
+    tab.append(icon, label, dirtyIndicator, closeButton);
+    const currentFileName = () => tab.dataset.resource || "";
     tab.addEventListener("click", (event) => {
       if (event.target.closest(".editor-tab__close")) return;
-      activate(fileName);
+      activate(currentFileName());
     });
     tab.addEventListener("auxclick", (event) => {
       if (event.button !== 1) return;
       event.preventDefault();
-      close(fileName);
+      close(currentFileName());
     });
     tab.addEventListener("keydown", (event) => {
+      const current = currentFileName();
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        focusRelative(fileName, -1);
+        focusRelative(current, -1);
       } else if (event.key === "ArrowRight") {
         event.preventDefault();
-        focusRelative(fileName, 1);
+        focusRelative(current, 1);
       } else if (event.key === "Home") {
         event.preventDefault();
         activate("", { focus: true });
       } else if (event.key === "End") {
         event.preventDefault();
-        const lastFile = [...tabs.keys()].at(-1) || "";
-        activate(lastFile, { focus: true });
+        activate([...tabs.keys()].at(-1) || "", { focus: true });
       } else if (event.key === "Delete") {
         event.preventDefault();
-        close(fileName);
+        close(current);
       } else if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        activate(fileName);
+        activate(current);
       }
     });
     closeButton.addEventListener("click", (event) => {
       event.stopPropagation();
-      close(fileName);
+      close(currentFileName());
     });
 
     container.append(tab);
-    tabs.set(fileName, { tab, kind });
+    const record = { tab, kind };
+    tabs.set(fileName, record);
+    updateTabAccessibleName(record, fileName);
     return tab;
   }
 
@@ -171,6 +186,35 @@ export function createEditorTabs({
     if (!tabs.has(fileName)) createFileTab(fileName, kind);
     if (shouldActivate) activate(fileName);
     else synchronizeTabs();
+  }
+
+  function setDirty(fileName, dirty) {
+    const record = tabs.get(fileName);
+    if (!record) return false;
+    record.tab.classList.toggle("is-dirty", Boolean(dirty));
+    const indicator = record.tab.querySelector(".editor-tab__dirty");
+    if (indicator) indicator.hidden = !dirty;
+    updateTabAccessibleName(record, fileName);
+    return true;
+  }
+
+  function rename(oldName, newName, kind) {
+    const record = tabs.get(oldName);
+    if (!record || tabs.has(newName)) return false;
+    const entries = [...tabs.entries()];
+    tabs.clear();
+    for (const [fileName, item] of entries) {
+      tabs.set(fileName === oldName ? newName : fileName, item);
+    }
+    record.kind = kind || record.kind;
+    record.tab.id = createTabId(newName);
+    record.tab.dataset.resource = newName;
+    const icon = record.tab.querySelector(".editor-tab__icon");
+    if (icon && kind) icon.textContent = kind;
+    updateTabAccessibleName(record, newName);
+    if (activeFile === oldName) activeFile = newName;
+    synchronizeTabs();
+    return true;
   }
 
   canvasTab.addEventListener("click", () => activate(""));
@@ -187,6 +231,8 @@ export function createEditorTabs({
     close,
     clear,
     activate,
+    rename,
+    setDirty,
     showCanvas: () => activate(""),
     getActiveFile: () => activeFile,
     getOpenFiles: () => [...tabs.keys()]

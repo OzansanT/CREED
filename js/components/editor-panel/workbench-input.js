@@ -1,3 +1,5 @@
+import { createEditorBufferStore } from "./editor-buffer-store.js";
+import { bindEditorEditing } from "./editor-editing.js";
 import { createEditorSessionStore } from "./editor-session-state.js";
 import {
   clearEditorWorkspace,
@@ -6,17 +8,22 @@ import {
 } from "./editor-workspace-storage.js";
 import { createEditorTabs } from "./editor-tabs.js";
 import { createExplorerController } from "./explorer-controller.js";
+import { bindExplorerFileActions } from "./explorer-file-actions.js";
 import { getFileKind, getLanguageLabel } from "./file-metadata.js";
 import { createMinimapController } from "./minimap-controller.js";
 import { createSourceLoader } from "./source-loader.js";
 import { bindSourceNavigation } from "./source-navigation.js";
 import { createSourceViewport } from "./source-viewport.js";
+import { createWorkspaceFileSystem } from "./workspace-fs.js";
 
 const EDITOR_WORKSPACE_PERSIST_DELAY_MS = 180;
 
 export function bindWorkbenchFiles({
   rootToggle,
   fileTree,
+  newFileButton,
+  newFolderButton,
+  refreshExplorerButton,
   fileTabs,
   canvasTab,
   breadcrumbKind,
@@ -30,13 +37,17 @@ export function bindWorkbenchFiles({
   chatContextName,
   statusLanguage,
   onCanvasShow,
-  onError
+  onError,
+  onNotify
 }) {
   let activeFile = "";
   let baseStatusLanguage = "{ } Canvas";
   let tabs = null;
   let persistTimer = 0;
   let restoringWorkspace = true;
+
+  const workspace = createWorkspaceFileSystem();
+  const buffers = createEditorBufferStore();
 
   function setNavigationStatus(status) {
     statusLanguage.textContent = status ? baseStatusLanguage + " · " + status : baseStatusLanguage;
@@ -64,11 +75,13 @@ export function bindWorkbenchFiles({
   const explorer = createExplorerController({
     rootToggle,
     fileTree,
+    getFiles: workspace.listFiles,
+    getDirectories: workspace.listDirectories,
     onOpen: (fileName) => tabs?.open(fileName, getFileKind(fileName))
   });
 
   function captureActiveSession() {
-    if (!activeFile || !sourceViewport.isReady()) return null;
+    if (!activeFile) return null;
     return sessions.save(activeFile, {
       viewport: {
         scrollTop: sourceScroller.scrollTop,
@@ -76,6 +89,10 @@ export function bindWorkbenchFiles({
       },
       navigation: sourceNavigation.getSessionState()
     });
+  }
+
+  function persistenceOptions() {
+    return { validFiles: workspace.listFiles() };
   }
 
   function persistEditorWorkspace() {
@@ -90,12 +107,13 @@ export function bindWorkbenchFiles({
       openFiles,
       activeFile: tabs.getActiveFile(),
       sessions: sessionSnapshot
-    });
+    }, persistenceOptions());
   }
 
   function flushEditorWorkspace() {
     if (persistTimer) clearTimeout(persistTimer);
     persistTimer = 0;
+    editing.flush();
     if (restoringWorkspace) return false;
     return persistEditorWorkspace();
   }
@@ -127,6 +145,7 @@ export function bindWorkbenchFiles({
 
   function showCanvasPanel() {
     captureActiveSession();
+    editing.setActiveFile("");
     sourceNavigation.reset();
     activeFile = "";
     sourceViewport.clear();
@@ -146,8 +165,8 @@ export function bindWorkbenchFiles({
     sourceScroller.scrollTop = 0;
     sourceScroller.scrollLeft = 0;
     try {
-      const rendered = await sourceViewport.setSource({ source, fileName });
-      if (!rendered || activeFile !== fileName) return;
+      await editing.hydrate(fileName, source);
+      if (activeFile !== fileName) return;
       const restored = await restoreFileSession(fileName);
       if (!restored || activeFile !== fileName) return;
       codeContent.removeAttribute("aria-busy");
@@ -167,6 +186,7 @@ export function bindWorkbenchFiles({
   }
 
   const sourceLoader = createSourceLoader({
+    readFile: workspace.readFile,
     onLoading: (fileName) => {
       if (activeFile !== fileName) return;
       sourceNavigation.reset();
@@ -188,9 +208,30 @@ export function bindWorkbenchFiles({
     }
   });
 
+  const editing = bindEditorEditing({
+    sourceContent: codeContent,
+    sourceScroller,
+    sourceViewport,
+    workspace,
+    buffers,
+    onDirtyChange: (fileName, dirty) => tabs?.setDirty(fileName, dirty),
+    onSaved: (fileName, text) => {
+      sourceLoader.set(fileName, text);
+      scheduleEditorWorkspacePersist();
+      onNotify?.("Saved " + fileName);
+    },
+    onStatus: setNavigationStatus,
+    onError
+  });
+
   function showFilePanel(fileName) {
+    if (!workspace.hasFile(fileName)) {
+      onError?.("Workspace file not found: " + fileName);
+      return;
+    }
     if (activeFile === fileName && !codeView.hidden) return;
     captureActiveSession();
+    editing.setActiveFile(fileName);
     sourceNavigation.reset();
     activeFile = fileName;
     sourceViewport.clear();
@@ -198,7 +239,7 @@ export function bindWorkbenchFiles({
     sourceScroller.scrollLeft = 0;
     canvasView.hidden = true;
     codeView.hidden = false;
-    explorer.setSelected(fileName);
+    explorer.setSelected(fileName, "file");
     setFileContext(getFileKind(fileName), fileName, getLanguageLabel(fileName));
     if (sourceLoader.has(fileName)) renderLoadedFile(fileName, sourceLoader.get(fileName));
     else sourceLoader.load(fileName);
@@ -213,6 +254,7 @@ export function bindWorkbenchFiles({
     onClose: (fileName) => {
       if (activeFile === fileName) {
         sourceNavigation.reset();
+        editing.setActiveFile("");
         activeFile = "";
         sourceViewport.clear();
         codeContent.removeAttribute("aria-busy");
@@ -220,29 +262,85 @@ export function bindWorkbenchFiles({
       sessions.remove(fileName);
       sourceLoader.release(fileName);
       sourceViewport.release(fileName);
+      buffers.remove(fileName);
       scheduleEditorWorkspacePersist();
     }
   });
 
   function openFile(fileName) {
-    if (typeof fileName !== "string" || !fileName) return false;
+    if (typeof fileName !== "string" || !workspace.hasFile(fileName)) return false;
     tabs.open(fileName, getFileKind(fileName));
     return true;
   }
 
+  function renameSingleOpenFile(oldName, newName) {
+    const session = sessions.get(oldName);
+    if (session) {
+      sessions.remove(oldName);
+      sessions.save(newName, session);
+    }
+    buffers.rename(oldName, newName);
+    sourceLoader.rename(oldName, newName);
+    sourceViewport.release(oldName);
+    const renamed = tabs.rename(oldName, newName, getFileKind(newName));
+    if (activeFile === oldName) {
+      activeFile = newName;
+      editing.renameFile(oldName, newName);
+      setFileContext(getFileKind(newName), newName, getLanguageLabel(newName));
+      explorer.setSelected(newName, "file");
+    }
+    return renamed;
+  }
+
+  function renameOpenFile(oldPath, newPath, kind) {
+    if (kind === "file") return renameSingleOpenFile(oldPath, newPath);
+    const prefix = oldPath + "/";
+    const openFiles = tabs.getOpenFiles().filter((fileName) => fileName.startsWith(prefix));
+    for (const fileName of openFiles) {
+      renameSingleOpenFile(fileName, newPath + fileName.slice(oldPath.length));
+    }
+    scheduleEditorWorkspacePersist();
+    return openFiles.length > 0;
+  }
+
+  function closeDeletedFiles(path, kind) {
+    const files = kind === "directory"
+      ? tabs.getOpenFiles().filter((fileName) => fileName.startsWith(path + "/"))
+      : [path];
+    for (const fileName of files) {
+      tabs.close(fileName, { focus: false });
+      buffers.remove(fileName, { discardDirty: true });
+    }
+    scheduleEditorWorkspacePersist();
+  }
+
+  bindExplorerFileActions({
+    fileTree,
+    newFileButton,
+    newFolderButton,
+    refreshButton: refreshExplorerButton,
+    workspace,
+    explorer,
+    openFile,
+    renameOpenFile,
+    closeDeletedFiles,
+    notify: onNotify || onError
+  });
+
   function restorePersistedWorkspace() {
-    const workspace = loadEditorWorkspace();
-    if (!workspace) {
+    const workspaceState = loadEditorWorkspace(persistenceOptions());
+    if (!workspaceState) {
       showCanvasPanel();
       return;
     }
 
-    for (const fileName of workspace.openFiles) {
-      sessions.save(fileName, workspace.sessions[fileName]);
+    for (const fileName of workspaceState.openFiles) {
+      sessions.save(fileName, workspaceState.sessions[fileName]);
       tabs.open(fileName, getFileKind(fileName), { activate: false });
+      tabs.setDirty(fileName, buffers.isDirty(fileName));
     }
 
-    if (workspace.activeFile) tabs.activate(workspace.activeFile);
+    if (workspaceState.activeFile) tabs.activate(workspaceState.activeFile);
     else showCanvasPanel();
   }
 
@@ -252,6 +350,7 @@ export function bindWorkbenchFiles({
     restoringWorkspace = true;
     tabs.clear();
     sessions.clear();
+    buffers.clear();
     clearEditorWorkspace();
     restoringWorkspace = false;
     return true;
@@ -287,7 +386,11 @@ export function bindWorkbenchFiles({
       if (fileName) tabs.activate(fileName);
     },
     openFile,
+    saveFile: editing.saveActive,
+    saveAll: editing.saveAll,
+    revertFile: editing.revertActive,
     persistWorkspace: flushEditorWorkspace,
-    resetWorkspace: resetEditorWorkspace
+    resetWorkspace: resetEditorWorkspace,
+    workspace
   });
 }
