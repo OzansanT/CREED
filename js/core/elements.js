@@ -29,6 +29,9 @@ export function getElements() {
 
     workspaceDisclosureBtn: document.getElementById("workspaceDisclosureBtn"),
     workspaceTree: document.getElementById("workspaceTree"),
+    newFileBtn: document.getElementById("newFileBtn"),
+    newFolderBtn: document.getElementById("newFolderBtn"),
+    refreshExplorerBtn: document.getElementById("refreshExplorerBtn"),
     editorTabs: document.getElementById("editorTabs"),
     canvasTab: document.getElementById("canvasTab"),
     fileTabs: document.getElementById("fileTabs"),
