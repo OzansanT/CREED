@@ -43,6 +43,7 @@ export function bindSplitEditor({
   let activeFile = "";
   let visible = false;
   let loadingGeneration = 0;
+  let missingFileTimer = 0;
 
   host.id = "secondaryEditorGroup";
   host.setAttribute("aria-label", "Secondary editor group");
@@ -159,10 +160,6 @@ export function bindSplitEditor({
       fragment.append(option);
     }
     fileSelect.replaceChildren(fragment);
-    if (activeFile && !workspace.hasFile(activeFile)) {
-      activeFile = "";
-      editor.value = "";
-    }
     return files;
   }
 
@@ -226,6 +223,45 @@ export function bindSplitEditor({
     return setVisible(false);
   }
 
+  function renameSession(oldName, newName) {
+    if (sessions.has(oldName)) {
+      sessions.set(newName, sessions.get(oldName));
+      sessions.delete(oldName);
+    }
+    if (activeFile === oldName) activeFile = newName;
+  }
+
+  function renameDirectorySessions(oldPath, newPath) {
+    const prefix = oldPath + "/";
+    for (const fileName of [...sessions.keys()]) {
+      if (!fileName.startsWith(prefix)) continue;
+      renameSession(fileName, newPath + fileName.slice(oldPath.length));
+    }
+    if (activeFile.startsWith(prefix)) activeFile = newPath + activeFile.slice(oldPath.length);
+  }
+
+  function scheduleMissingFileReconcile() {
+    clearTimeout(missingFileTimer);
+    missingFileTimer = setTimeout(() => {
+      missingFileTimer = 0;
+      const files = refreshFiles();
+      if (activeFile && !workspace.hasFile(activeFile)) {
+        const session = sessions.get(activeFile);
+        if (session?.dirty) {
+          notify?.(`Workspace removed ${activeFile}; unsaved split buffer was kept.`);
+          updateStatus();
+          persist();
+          return;
+        }
+        sessions.delete(activeFile);
+        activeFile = "";
+        if (visible && files[0]) openFile(files[0]).catch(() => {});
+      }
+      updateStatus();
+      persist();
+    }, 0);
+  }
+
   editor.addEventListener("input", () => {
     if (!activeFile) return;
     const session = sessions.get(activeFile) || createSession();
@@ -272,17 +308,31 @@ export function bindSplitEditor({
 
   workspace.subscribe(async (change) => {
     refreshFiles();
-    if (!activeFile) return;
-    if (!workspace.hasFile(activeFile)) {
-      sessions.delete(activeFile);
-      const files = workspace.listFiles();
-      activeFile = "";
-      if (visible && files[0]) await openFile(files[0]);
+    if (change.type === "file-renamed") {
+      renameSession(change.path, change.target);
+      fileSelect.value = activeFile;
+      updateStatus();
       persist();
       return;
     }
+    if (change.type === "directory-renamed") {
+      renameDirectorySessions(change.path, change.target);
+      fileSelect.value = activeFile;
+      updateStatus();
+      persist();
+      return;
+    }
+    if (change.type === "file-deleted" || change.type === "directory-deleted" || change.type === "workspace-reset") {
+      scheduleMissingFileReconcile();
+      return;
+    }
+    if (!activeFile) return;
+    if (!workspace.hasFile(activeFile)) {
+      scheduleMissingFileReconcile();
+      return;
+    }
     const session = sessions.get(activeFile);
-    if (change.path === activeFile && change.type === "file-written" && session && !session.dirty && document.activeElement !== editor) {
+    if (change.path === activeFile && (change.type === "file-written" || change.type === "file-reset") && session && !session.dirty && document.activeElement !== editor) {
       const source = await workspace.readFile(activeFile);
       session.text = source;
       session.savedText = source;

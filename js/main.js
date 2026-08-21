@@ -219,6 +219,11 @@ const diagnostics = bindDiagnostics({
   notify
 });
 
+const diagnosticGraphObserver = new MutationObserver(() => {
+  diagnosticGraph.setDiagnostics(diagnostics.model.list());
+});
+diagnosticGraphObserver.observe(systemGraph.layer, { childList: true, subtree: true });
+
 const aiWorkbench = bindAIWorkbench({
   elements,
   editorPanel,
@@ -275,6 +280,14 @@ bindTerminalSessions({
   notify
 });
 
+function synchronizeTerminalBranch() {
+  const branch = sourceControl.provider.getCurrentBranch();
+  const branchLabel = elements.terminalView.querySelector(".terminal-prompt__branch");
+  if (branchLabel) branchLabel.textContent = `(${branch})`;
+}
+sourceControl.provider.subscribe(synchronizeTerminalBranch);
+synchronizeTerminalBranch();
+
 bindDiagnosticsTerminalCommand({
   terminalView: elements.terminalView,
   runChecks: diagnostics.runChecks,
@@ -301,9 +314,13 @@ infiniteCanvas.bind({
   resetEditorWorkspace: () => {
     runDebug.stop();
     splitEditor.close();
+    const reset = editorPanel.resetWorkspace();
+    secondarySidebar.setMaximized(false, false);
+    bottomPanel.setMaximized(false, false);
     systemGraph.refresh();
     aiWorkbench.refreshIndex();
-    return editorPanel.resetWorkspace();
+    diagnostics.runChecks({ reveal: false }).catch(() => {});
+    return reset;
   },
   primarySidebar,
   secondarySidebar,
