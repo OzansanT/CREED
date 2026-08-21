@@ -20,6 +20,13 @@ export function renderMergeConflictEditor({ container, conflicts, provider, onRe
 
   async function resolve(path, content) {
     try {
+      const conflict = pending.get(path);
+      const currentContent = conflict?.currentDeleted ? null : conflict?.current;
+      if (conflict && content === currentContent) {
+        removeResolved(path);
+        notify?.("Resolved merge conflict by keeping current: " + path);
+        return true;
+      }
       await provider.resolveConflict(path, content);
       removeResolved(path);
       notify?.("Resolved merge conflict: " + path);
