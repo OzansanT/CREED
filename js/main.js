@@ -174,6 +174,7 @@ bindTerminalSessions({
   splitButton: elements.splitTerminalBtn,
   killButton: elements.killTerminalBtn,
   openFile: editorPanel.openFile,
+  workspace: editorPanel.workspace,
   showView: (viewName) => {
     bottomPanel.setVisible(true);
     bottomPanel.setActiveView(viewName);
