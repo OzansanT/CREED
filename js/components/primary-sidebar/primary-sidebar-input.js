@@ -4,8 +4,10 @@ export function bindPrimarySidebar({
   layoutButton,
   explorerButton,
   searchButton,
+  runButton,
   explorerView,
   searchView,
+  runView,
   onLayoutChange,
   onViewChange
 }) {
@@ -26,8 +28,14 @@ export function bindPrimarySidebar({
       searchButton.setAttribute("aria-expanded", String(searchActive));
       searchButton.classList.toggle("is-active", searchActive);
     }
+    if (runButton) {
+      const runActive = visible && activeView === "run";
+      runButton.setAttribute("aria-expanded", String(runActive));
+      runButton.classList.toggle("is-active", runActive);
+    }
     if (explorerView) explorerView.hidden = activeView !== "explorer";
     if (searchView) searchView.hidden = activeView !== "search";
+    if (runView) runView.hidden = activeView !== "run";
   }
 
   function setVisible(nextVisible, notify = true) {
@@ -37,7 +45,7 @@ export function bindPrimarySidebar({
   }
 
   function setActiveView(viewName, { ensureVisible = true, notify = true } = {}) {
-    if (!["explorer", "search"].includes(viewName)) return false;
+    if (!["explorer", "search", "run"].includes(viewName)) return false;
     const changed = activeView !== viewName;
     activeView = viewName;
     if (ensureVisible) visible = true;
@@ -62,6 +70,7 @@ export function bindPrimarySidebar({
   layoutButton.addEventListener("click", toggle);
   explorerButton.addEventListener("click", () => activateFromButton("explorer"));
   searchButton?.addEventListener("click", () => activateFromButton("search"));
+  runButton?.addEventListener("click", () => activateFromButton("run"));
   synchronize();
 
   return Object.freeze({
