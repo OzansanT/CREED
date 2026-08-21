@@ -16,7 +16,7 @@ const read = (path) => readFileSync(resolve(root, path), "utf8");
 const sample = "alpha\nbeta\ngamma";
 assert.deepEqual(offsetToPosition(sample, 7), { line: 1, column: 1 });
 assert.equal(positionToOffset(sample, 2, 2), 13);
-assert.deepEqual(findMatchingDelimiter("function x() { return '(ok)'; }", 13)?.matchOffset, 29);
+assert.equal(findMatchingDelimiter("function x() { return '(ok)'; }", 13)?.matchOffset, 30);
 assert.equal(findMatchingDelimiter('const x = "hello";', 10)?.character, '"');
 
 const indentModel = createEditorTextModel("if (ready) {");
