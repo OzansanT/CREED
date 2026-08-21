@@ -9,7 +9,6 @@ export function disableUnavailableControls() {
     "#activityAccountBtn",
     "#activitySettingsBtn",
     "button[aria-label='More Explorer actions']",
-    "#splitEditorBtn",
     "#editorActionsBtn",
     "button[aria-label='More terminal actions']",
     "#newChatBtn",
