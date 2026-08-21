@@ -11,6 +11,7 @@ import { bindTerminalSessions } from "./components/bottom-panel/terminal-session
 import { bindPanelResize } from "./components/panel-resize/panel-resize-input.js";
 import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js";
 import { bindQuickOpen } from "./components/editor-panel/quick-open.js";
+import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 
 hydrateIcons();
@@ -52,6 +53,16 @@ const editorPanel = bindEditorPanel({
 
 bindQuickOpen({
   openFile: editorPanel.openFile,
+  notify
+});
+
+const splitEditor = bindSplitEditor({
+  editorViewport: elements.editorViewport,
+  canvasView: elements.canvasView,
+  sourceView: elements.sourceEditorView,
+  splitButton: elements.splitEditorBtn,
+  workspace: editorPanel.workspace,
+  getPrimaryActiveFile: editorPanel.getActiveFile,
   notify
 });
 
@@ -137,7 +148,10 @@ panelResize = bindPanelResize({
 
 infiniteCanvas.bind({
   showCanvas: editorPanel.showCanvas,
-  resetEditorWorkspace: editorPanel.resetWorkspace,
+  resetEditorWorkspace: () => {
+    splitEditor.close();
+    return editorPanel.resetWorkspace();
+  },
   primarySidebar,
   secondarySidebar,
   bottomPanel,
