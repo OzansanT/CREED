@@ -1,4 +1,14 @@
-export function createSourceLoader({ onLoading, onLoaded, onError, onSettled }) {
+async function defaultReadFile(fileName, { signal } = {}) {
+  const filePath = fileName.split("/").map(encodeURIComponent).join("/");
+  const response = await fetch("./" + filePath, {
+    cache: "no-store",
+    signal
+  });
+  if (!response.ok) throw new Error("Unable to load " + fileName + " (" + response.status + ")");
+  return response.text();
+}
+
+export function createSourceLoader({ readFile = defaultReadFile, onLoading, onLoaded, onError, onSettled }) {
   const sourceCache = new Map();
   const requestControllers = new Map();
 
@@ -18,14 +28,7 @@ export function createSourceLoader({ onLoading, onLoaded, onError, onSettled }) 
     onLoading?.(fileName);
 
     try {
-      const filePath = fileName.split("/").map(encodeURIComponent).join("/");
-      const response = await fetch("./" + filePath, {
-        cache: "no-store",
-        signal: requestController.signal
-      });
-      if (!response.ok) throw new Error("Unable to load " + fileName + " (" + response.status + ")");
-
-      const source = await response.text();
+      const source = await readFile(fileName, { signal: requestController.signal });
       if (requestControllers.get(fileName) !== requestController) return;
       sourceCache.set(fileName, source);
       onLoaded?.(fileName, source);
@@ -48,9 +51,27 @@ export function createSourceLoader({ onLoading, onLoaded, onError, onSettled }) 
     sourceCache.delete(fileName);
   }
 
+  function set(fileName, source) {
+    if (typeof source !== "string") throw new TypeError("Source cache value must be text.");
+    requestControllers.get(fileName)?.abort();
+    requestControllers.delete(fileName);
+    sourceCache.set(fileName, source);
+  }
+
+  function rename(oldName, newName) {
+    if (!sourceCache.has(oldName)) return false;
+    sourceCache.set(newName, sourceCache.get(oldName));
+    sourceCache.delete(oldName);
+    requestControllers.get(oldName)?.abort();
+    requestControllers.delete(oldName);
+    return true;
+  }
+
   return Object.freeze({
     load,
     release,
+    set,
+    rename,
     has: (fileName) => sourceCache.has(fileName),
     get: (fileName) => sourceCache.get(fileName)
   });
