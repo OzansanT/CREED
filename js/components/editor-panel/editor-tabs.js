@@ -1,14 +1,9 @@
 import { createIcon } from "../../ui/icons.js";
 
-export function createEditorTabs({
-  container,
-  canvasTab,
-  codeView,
-  onActivate,
-  onClose
-}) {
+export function createEditorTabs({ container, canvasTab, codeView, onActivate, onClose, onOrderChange }) {
   const tabs = new Map();
   let activeFile = "";
+  let draggedFile = "";
 
   function createTabId(fileName) {
     let hash = 2166136261;
@@ -38,17 +33,14 @@ export function createEditorTabs({
 
   function activate(fileName, { focus = false, notify = true } = {}) {
     if (fileName && !tabs.has(fileName)) return false;
-
     activeFile = fileName;
     synchronizeTabs();
-
     const activeTab = fileName ? tabs.get(fileName)?.tab : canvasTab;
     if (activeTab) {
       codeView.setAttribute("aria-labelledby", activeTab.id);
       if (focus) activeTab.focus();
       if (fileName) activeTab.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
-
     if (notify) onActivate?.(fileName);
     return true;
   }
@@ -56,15 +48,12 @@ export function createEditorTabs({
   function close(fileName, { focus = true } = {}) {
     const record = tabs.get(fileName);
     if (!record) return false;
-
     const openFiles = [...tabs.keys()];
     const closedIndex = openFiles.indexOf(fileName);
     const wasActive = activeFile === fileName;
-
     tabs.delete(fileName);
     record.tab.remove();
     onClose?.(fileName);
-
     if (wasActive) {
       const remainingFiles = [...tabs.keys()];
       const nextFile = remainingFiles[Math.min(closedIndex, remainingFiles.length - 1)] || "";
@@ -72,6 +61,7 @@ export function createEditorTabs({
     } else {
       synchronizeTabs();
     }
+    onOrderChange?.([...tabs.keys()]);
     return true;
   }
 
@@ -87,6 +77,7 @@ export function createEditorTabs({
     synchronizeTabs();
     codeView.setAttribute("aria-labelledby", canvasTab.id);
     if (notify) onActivate?.("");
+    onOrderChange?.([]);
     return openFiles;
   }
 
@@ -109,13 +100,34 @@ export function createEditorTabs({
     record.tab.title = dirty ? fileName + " — unsaved changes" : fileName;
   }
 
+  function rebuildMap(order) {
+    const next = new Map();
+    for (const fileName of order) {
+      const record = tabs.get(fileName);
+      if (record) next.set(fileName, record);
+    }
+    tabs.clear();
+    next.forEach((record, fileName) => tabs.set(fileName, record));
+  }
+
+  function reorder(sourceFile, targetFile, { after = false } = {}) {
+    if (!tabs.has(sourceFile) || !tabs.has(targetFile) || sourceFile === targetFile) return false;
+    const order = [...tabs.keys()].filter((fileName) => fileName !== sourceFile);
+    const targetIndex = order.indexOf(targetFile);
+    order.splice(targetIndex + (after ? 1 : 0), 0, sourceFile);
+    rebuildMap(order);
+    for (const fileName of order) container.append(tabs.get(fileName).tab);
+    synchronizeTabs();
+    onOrderChange?.(order);
+    return true;
+  }
+
   function createFileTab(fileName, kind) {
     const tab = document.createElement("div");
     const icon = document.createElement("span");
     const label = document.createElement("span");
     const dirtyIndicator = document.createElement("span");
     const closeButton = document.createElement("button");
-
     tab.id = createTabId(fileName);
     tab.className = "editor-tab editor-tab--file";
     tab.dataset.resource = fileName;
@@ -123,7 +135,7 @@ export function createEditorTabs({
     tab.setAttribute("aria-selected", "false");
     tab.setAttribute("aria-controls", codeView.id);
     tab.tabIndex = -1;
-
+    tab.draggable = true;
     icon.className = "editor-tab__icon file-kind";
     icon.textContent = kind;
     label.className = "editor-tab__label";
@@ -132,11 +144,9 @@ export function createEditorTabs({
     dirtyIndicator.textContent = "●";
     dirtyIndicator.hidden = true;
     dirtyIndicator.setAttribute("aria-hidden", "true");
-
     closeButton.className = "editor-tab__close";
     closeButton.type = "button";
     closeButton.append(createIcon("close"));
-
     tab.append(icon, label, dirtyIndicator, closeButton);
     const currentFileName = () => tab.dataset.resource || "";
     tab.addEventListener("click", (event) => {
@@ -170,11 +180,32 @@ export function createEditorTabs({
         activate(current);
       }
     });
+    tab.addEventListener("dragstart", (event) => {
+      draggedFile = currentFileName();
+      event.dataTransfer?.setData("text/plain", draggedFile);
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+      tab.classList.add("is-dragging");
+    });
+    tab.addEventListener("dragend", () => {
+      draggedFile = "";
+      tab.classList.remove("is-dragging");
+    });
+    tab.addEventListener("dragover", (event) => {
+      if (!draggedFile || draggedFile === currentFileName()) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    });
+    tab.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const source = draggedFile || event.dataTransfer?.getData("text/plain") || "";
+      const rect = tab.getBoundingClientRect();
+      reorder(source, currentFileName(), { after: event.clientX > rect.left + rect.width / 2 });
+      draggedFile = "";
+    });
     closeButton.addEventListener("click", (event) => {
       event.stopPropagation();
       close(currentFileName());
     });
-
     container.append(tab);
     const record = { tab, kind };
     tabs.set(fileName, record);
@@ -183,7 +214,10 @@ export function createEditorTabs({
   }
 
   function open(fileName, kind, { activate: shouldActivate = true } = {}) {
-    if (!tabs.has(fileName)) createFileTab(fileName, kind);
+    if (!tabs.has(fileName)) {
+      createFileTab(fileName, kind);
+      onOrderChange?.([...tabs.keys()]);
+    }
     if (shouldActivate) activate(fileName);
     else synchronizeTabs();
   }
@@ -203,9 +237,7 @@ export function createEditorTabs({
     if (!record || tabs.has(newName)) return false;
     const entries = [...tabs.entries()];
     tabs.clear();
-    for (const [fileName, item] of entries) {
-      tabs.set(fileName === oldName ? newName : fileName, item);
-    }
+    for (const [fileName, item] of entries) tabs.set(fileName === oldName ? newName : fileName, item);
     record.kind = kind || record.kind;
     record.tab.id = createTabId(newName);
     record.tab.dataset.resource = newName;
@@ -214,6 +246,7 @@ export function createEditorTabs({
     updateTabAccessibleName(record, newName);
     if (activeFile === oldName) activeFile = newName;
     synchronizeTabs();
+    onOrderChange?.([...tabs.keys()]);
     return true;
   }
 
@@ -223,7 +256,6 @@ export function createEditorTabs({
     event.preventDefault();
     activate(tabs.keys().next().value, { focus: true });
   });
-
   activate("", { notify: false });
 
   return Object.freeze({
@@ -232,6 +264,7 @@ export function createEditorTabs({
     clear,
     activate,
     rename,
+    reorder,
     setDirty,
     showCanvas: () => activate(""),
     getActiveFile: () => activeFile,
