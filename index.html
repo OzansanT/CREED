@@ -5,6 +5,70 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CREED — Infinite Canvas Workbench</title>
 
+  <!-- Optional Windows launcher bridge. Remove with optional/windows-local-launcher/. -->
+  <style>
+    html[data-creed-file-launch="true"] #app { display: none !important; }
+    .creed-file-launch {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      box-sizing: border-box;
+      background: #f4f4f8;
+      color: #1f1f24;
+      font: 14px/1.5 "Segoe UI", sans-serif;
+    }
+    .creed-file-launch__card {
+      width: min(620px, 100%);
+      padding: 24px;
+      border: 1px solid #d6d6de;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 12px 36px rgb(0 0 0 / 10%);
+    }
+    .creed-file-launch__card h1 { margin: 0 0 10px; font-size: 20px; }
+    .creed-file-launch__card p { margin: 8px 0; }
+    .creed-file-launch__card code { font-family: Consolas, monospace; }
+    .creed-file-launch__card button {
+      margin-top: 12px;
+      padding: 8px 14px;
+      border: 1px solid #b8b8c2;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+  </style>
+  <script>
+    (() => {
+      if (window.location.protocol !== "file:") return;
+
+      document.documentElement.dataset.creedFileLaunch = "true";
+      const launcherUrl = "creed://start";
+      const openLauncher = () => { window.location.href = launcherUrl; };
+      const renderFallback = () => {
+        const shell = document.createElement("main");
+        shell.className = "creed-file-launch";
+        shell.innerHTML = `
+          <section class="creed-file-launch__card">
+            <h1>Starting CREED locally</h1>
+            <p>CREED JavaScript modules cannot run directly from <code>file://</code>. CREED is handing off to the Windows local launcher.</p>
+            <p>If this is the first run on this Windows account, run <code>optional/windows-local-launcher/Start-CREED.cmd</code> once. It registers the <code>creed://</code> launcher and opens CREED through <code>http://localhost:8000/</code>.</p>
+            <button type="button">Start CREED</button>
+          </section>`;
+        shell.querySelector("button").addEventListener("click", openLauncher);
+        document.body.prepend(shell);
+      };
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", renderFallback, { once: true });
+      } else {
+        renderFallback();
+      }
+
+      window.setTimeout(openLauncher, 50);
+    })();
+  </script>
+
   <!-- Generated from the controllable CSS colonies under ./css/. -->
   <link data-creed-styles rel="stylesheet" href="./css/generated/creed.css" />
 </head>
@@ -344,6 +408,13 @@
     </footer>
   </div>
 
-  <script type="module" src="./main.js"></script>
+  <script>
+    if (window.location.protocol !== "file:") {
+      const creedAppModule = document.createElement("script");
+      creedAppModule.type = "module";
+      creedAppModule.src = "./main.js";
+      document.body.appendChild(creedAppModule);
+    }
+  </script>
 </body>
 </html>
