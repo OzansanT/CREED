@@ -4,6 +4,7 @@ import { showToast } from "./ui/toast.js";
 import { hydrateIcons } from "./ui/icons.js";
 import { disableUnavailableControls } from "./ui/unavailable-controls.js";
 import { bindPrimarySidebar } from "./components/primary-sidebar/primary-sidebar-main.js";
+import { bindWorkspaceSearchView } from "./components/primary-sidebar/workspace-search-view.js";
 import { bindSecondarySidebar } from "./components/secondary-sidebar/secondary-sidebar-main.js";
 import { bindBottomPanel } from "./components/bottom-panel/bottom-panel-main.js";
 import { bindTerminalSessions } from "./components/bottom-panel/terminal-session.js";
@@ -54,6 +55,17 @@ bindQuickOpen({
   notify
 });
 
+const workspaceSearch = bindWorkspaceSearchView({
+  sidebar: elements.primarySidebar,
+  explorerView: elements.explorerView,
+  workspace: editorPanel.workspace,
+  openFile: editorPanel.openFile,
+  breadcrumbName: elements.editorBreadcrumbName,
+  sourceContent: elements.sourceContent,
+  sourceScroller: elements.sourceScroller,
+  notify
+});
+
 let panelResize = null;
 
 function handlePanelVisibilityChange() {
@@ -66,6 +78,12 @@ const primarySidebar = bindPrimarySidebar({
   sidebar: elements.primarySidebar,
   layoutButton: elements.togglePrimarySidebarBtn,
   explorerButton: elements.activityExplorerBtn,
+  searchButton: elements.activitySearchBtn,
+  explorerView: elements.explorerView,
+  searchView: workspaceSearch.view,
+  onViewChange: (viewName) => {
+    if (viewName === "search") workspaceSearch.refreshOutline();
+  },
   onLayoutChange: handlePanelVisibilityChange
 });
 
