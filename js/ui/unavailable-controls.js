@@ -9,11 +9,7 @@ export function disableUnavailableControls() {
     "button[aria-label='More Explorer actions']",
     "#editorActionsBtn",
     "button[aria-label='More terminal actions']",
-    "#newChatBtn",
-    "#chatSettingsBtn",
-    "button[aria-label='More chat actions']",
-    "#chatPromptInput",
-    "#sendChatMessageBtn"
+    "button[aria-label='More chat actions']"
   ];
 
   document.querySelectorAll(selectors.join(",")).forEach((control) => {

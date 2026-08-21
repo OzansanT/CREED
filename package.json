@@ -27,6 +27,7 @@
     "check:source-control": "node scripts/check-source-control.mjs",
     "check:system-graph": "node scripts/check-system-graph.mjs",
     "check:diagnostics": "node scripts/check-diagnostics.mjs",
-    "check": "node scripts/build-main-frame.mjs --check && node scripts/build-css.mjs --check && node scripts/check-architecture.mjs && node scripts/check-editor-workspace.mjs && npm run check:workspace-fs && npm run check:buffers && npm run check:explorer && npm run check:editor-engine && npm run check:intelligence && npm run check:split-editor && npm run check:run-debug && npm run check:source-control && npm run check:system-graph && npm run check:diagnostics && npm run check:history && npm run check:render && npm run check:terminal && npm run check:snapping && npm run check:quick-open && npm run check:navigation && npm run check:accessibility"
+    "check:ai": "node scripts/check-ai-workbench.mjs",
+    "check": "node scripts/build-main-frame.mjs --check && node scripts/build-css.mjs --check && node scripts/check-architecture.mjs && node scripts/check-editor-workspace.mjs && npm run check:workspace-fs && npm run check:buffers && npm run check:explorer && npm run check:editor-engine && npm run check:intelligence && npm run check:split-editor && npm run check:run-debug && npm run check:source-control && npm run check:system-graph && npm run check:diagnostics && npm run check:ai && npm run check:history && npm run check:render && npm run check:terminal && npm run check:snapping && npm run check:quick-open && npm run check:navigation && npm run check:accessibility"
   }
 }
