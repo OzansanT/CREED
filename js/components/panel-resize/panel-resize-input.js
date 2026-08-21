@@ -15,6 +15,12 @@ const MIN_EDITOR_WIDTH = 320;
 const MIN_EDITOR_HEIGHT = 160;
 const KEYBOARD_STEP = 10;
 const LARGE_KEYBOARD_STEP = 40;
+const COMPACT_LAYOUT_WIDTH = 1500;
+const NARROW_LAYOUT_WIDTH = 820;
+const HIDDEN_SECONDARY_WIDTH = 1180;
+const COMPACT_PRIMARY_MAX = 270;
+const NARROW_PRIMARY_MAX = 230;
+const COMPACT_SECONDARY_MAX = 250;
 
 function getActivityWidth(app) {
   const value = Number.parseFloat(getComputedStyle(app).getPropertyValue("--activity-w"));
@@ -30,6 +36,20 @@ function setSeparatorValue(handle, value, min, max) {
   handle.setAttribute("aria-valuemin", String(Math.round(min)));
   handle.setAttribute("aria-valuemax", String(Math.round(max)));
   handle.setAttribute("aria-valuenow", String(Math.round(value)));
+}
+
+function getResponsiveMaximum(storageKey) {
+  if (storageKey === "primaryWidth") {
+    if (window.innerWidth <= NARROW_LAYOUT_WIDTH) return NARROW_PRIMARY_MAX;
+    if (window.innerWidth <= COMPACT_LAYOUT_WIDTH) return COMPACT_PRIMARY_MAX;
+  }
+
+  if (storageKey === "secondaryWidth") {
+    if (window.innerWidth <= HIDDEN_SECONDARY_WIDTH) return 0;
+    if (window.innerWidth <= COMPACT_LAYOUT_WIDTH) return COMPACT_SECONDARY_MAX;
+  }
+
+  return Number.POSITIVE_INFINITY;
 }
 
 export function bindPanelResize({
@@ -112,17 +132,20 @@ export function bindPanelResize({
 
   function applySize(configuration, requestedSize, notify = true) {
     const maximum = configuration.maximum();
-    const size = Math.round(clamp(requestedSize, configuration.minimum, maximum));
-    layoutState[configuration.storageKey] = size;
-    root.style.setProperty(configuration.variable, size + "px");
+    const preferredSize = Math.round(clamp(requestedSize, configuration.minimum, maximum));
+    const responsiveMaximum = getResponsiveMaximum(configuration.storageKey);
+    const renderedSize = Math.min(preferredSize, responsiveMaximum);
+
+    layoutState[configuration.storageKey] = preferredSize;
+    root.style.setProperty(configuration.variable, renderedSize + "px");
     setSeparatorValue(
       configuration.handle,
-      size,
-      configuration.minimum,
-      maximum
+      renderedSize,
+      responsiveMaximum === 0 ? 0 : Math.min(configuration.minimum, responsiveMaximum),
+      Math.min(maximum, responsiveMaximum)
     );
     if (notify) onLayoutChange?.();
-    return size;
+    return renderedSize;
   }
 
   function persistLayout() {
@@ -134,16 +157,16 @@ export function bindPanelResize({
 
   function synchronize(configuration) {
     const maximum = configuration.maximum();
-    const current = clamp(
-      configuration.current(),
-      configuration.minimum,
-      maximum
+    const responsiveMaximum = getResponsiveMaximum(configuration.storageKey);
+    const current = Math.min(
+      clamp(configuration.current(), 0, maximum),
+      responsiveMaximum
     );
     setSeparatorValue(
       configuration.handle,
       current,
-      configuration.minimum,
-      maximum
+      responsiveMaximum === 0 ? 0 : Math.min(configuration.minimum, responsiveMaximum),
+      Math.min(maximum, responsiveMaximum)
     );
   }
 
@@ -174,7 +197,7 @@ export function bindPanelResize({
       event.preventDefault();
       activePointerId = event.pointerId;
       startCoordinate = coordinateFrom(event);
-      startSize = configuration.current();
+      startSize = layoutState[configuration.storageKey];
       handle.setPointerCapture?.(activePointerId);
       handle.classList.add("is-resizing");
       document.body.classList.add("panel-resizing");
@@ -199,7 +222,7 @@ export function bindPanelResize({
       const step = event.shiftKey ? LARGE_KEYBOARD_STEP : KEYBOARD_STEP;
       applySize(
         configuration,
-        configuration.current() + coordinateDelta * direction * step
+        layoutState[configuration.storageKey] + coordinateDelta * direction * step
       );
       persistLayout();
     });
@@ -214,9 +237,7 @@ export function bindPanelResize({
 
   window.addEventListener("resize", () => {
     configurations.forEach((configuration) => {
-      if (configuration.current() > 0) {
-        applySize(configuration, layoutState[configuration.storageKey], false);
-      }
+      applySize(configuration, layoutState[configuration.storageKey], false);
     });
     persistLayout();
     configurations.forEach(synchronize);
@@ -233,6 +254,9 @@ export function bindPanelResize({
       secondaryVisible: secondaryController.isVisible(),
       bottomPanelVisible: bottomController.isVisible()
     };
+    configurations.forEach((configuration) => {
+      applySize(configuration, layoutState[configuration.storageKey], false);
+    });
     configurations.forEach(synchronize);
     if (notify) onLayoutChange?.();
   }
