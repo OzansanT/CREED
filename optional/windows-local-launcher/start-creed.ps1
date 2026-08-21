@@ -1,15 +1,43 @@
 param(
   [ValidateRange(1, 65535)]
-  [int]$Port = 8000
+  [int]$Port = 8000,
+
+  [string]$ProtocolUrl = "",
+
+  [switch]$Unregister
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$launcherDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptPath = [System.IO.Path]::GetFullPath($MyInvocation.MyCommand.Path)
+$launcherDirectory = Split-Path -Parent $scriptPath
 $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $launcherDirectory "..\.."))
 $indexPath = Join-Path $repositoryRoot "index.html"
 $url = "http://localhost:$Port/"
+$protocolRoot = "Registry::HKEY_CURRENT_USER\Software\Classes\creed"
+
+function Register-CreedProtocol {
+  $commandKey = Join-Path $protocolRoot "shell\open\command"
+  $powerShellPath = (Get-Command powershell.exe -ErrorAction Stop).Source
+  $command = '"{0}" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "{1}" -ProtocolUrl "%1"' -f $powerShellPath, $scriptPath
+
+  New-Item -Path $protocolRoot -Force | Out-Null
+  Set-Item -Path $protocolRoot -Value "URL:CREED Local Launcher"
+  New-ItemProperty -Path $protocolRoot -Name "URL Protocol" -PropertyType String -Value "" -Force | Out-Null
+  New-Item -Path $commandKey -Force | Out-Null
+  Set-Item -Path $commandKey -Value $command
+}
+
+function Unregister-CreedProtocol {
+  if (Test-Path -LiteralPath $protocolRoot) {
+    Remove-Item -LiteralPath $protocolRoot -Recurse -Force
+    Write-Host "Removed the creed:// launcher registration for the current Windows user."
+  }
+  else {
+    Write-Host "The creed:// launcher is not registered for the current Windows user."
+  }
+}
 
 function Test-CreedEndpoint {
   param([string]$Uri)
@@ -42,8 +70,24 @@ function Test-LocalPortInUse {
   }
 }
 
+if ($Unregister) {
+  Unregister-CreedProtocol
+  exit 0
+}
+
+if ($ProtocolUrl -and -not $ProtocolUrl.StartsWith("creed://", [System.StringComparison]::OrdinalIgnoreCase)) {
+  throw "Unsupported CREED protocol URL: $ProtocolUrl"
+}
+
 if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) {
   throw "CREED index.html was not found at: $indexPath"
+}
+
+try {
+  Register-CreedProtocol
+}
+catch {
+  Write-Warning "CREED could not register the creed:// launcher for this Windows user. Manual launching still works. $($_.Exception.Message)"
 }
 
 if (Test-CreedEndpoint -Uri $url) {
