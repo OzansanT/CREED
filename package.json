@@ -24,6 +24,7 @@
     "check:intelligence": "node scripts/check-workspace-intelligence.mjs",
     "check:split-editor": "node scripts/check-split-editor.mjs",
     "check:run-debug": "node scripts/check-run-debug.mjs",
-    "check": "node scripts/build-main-frame.mjs --check && node scripts/build-css.mjs --check && node scripts/check-architecture.mjs && node scripts/check-editor-workspace.mjs && npm run check:workspace-fs && npm run check:buffers && npm run check:explorer && npm run check:editor-engine && npm run check:intelligence && npm run check:split-editor && npm run check:run-debug && npm run check:history && npm run check:render && npm run check:terminal && npm run check:snapping && npm run check:quick-open && npm run check:navigation && npm run check:accessibility"
+    "check:source-control": "node scripts/check-source-control.mjs",
+    "check": "node scripts/build-main-frame.mjs --check && node scripts/build-css.mjs --check && node scripts/check-architecture.mjs && node scripts/check-editor-workspace.mjs && npm run check:workspace-fs && npm run check:buffers && npm run check:explorer && npm run check:editor-engine && npm run check:intelligence && npm run check:split-editor && npm run check:run-debug && npm run check:source-control && npm run check:history && npm run check:render && npm run check:terminal && npm run check:snapping && npm run check:quick-open && npm run check:navigation && npm run check:accessibility"
   }
 }

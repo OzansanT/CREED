@@ -13,6 +13,7 @@ import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js"
 import { bindQuickOpen } from "./components/editor-panel/quick-open.js";
 import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
 import { bindRunDebug } from "./components/run-debug/run-debug-main.js";
+import { bindSourceControl } from "./components/source-control/source-control-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 
 hydrateIcons();
@@ -110,13 +111,9 @@ function openFileAt(fileName, line = 1, column = 1) {
       if (attempts < 120) requestAnimationFrame(revealLocation);
       return;
     }
-
     const lineHeight = Number.parseFloat(getComputedStyle(elements.sourceContent).lineHeight) || 19;
     const safeLine = Math.min(lineCount, targetLine);
-    elements.sourceScroller.scrollTop = Math.max(
-      0,
-      ((safeLine - 1) * lineHeight) - (elements.sourceScroller.clientHeight * 0.45)
-    );
+    elements.sourceScroller.scrollTop = Math.max(0, ((safeLine - 1) * lineHeight) - (elements.sourceScroller.clientHeight * 0.45));
     elements.sourceScroller.scrollLeft = Math.max(0, ((targetColumn - 1) * 7.2) - 80);
     elements.sourceContent.dataset.runtimeTargetLine = String(safeLine);
     elements.sourceContent.dataset.runtimeTargetColumn = String(targetColumn);
@@ -142,18 +139,30 @@ const runDebug = bindRunDebug({
 
 elements.activityRunBtn?.setAttribute("aria-controls", runDebug.view.id);
 
+const sourceControl = bindSourceControl({
+  sidebar: elements.primarySidebar,
+  workspace: editorPanel.workspace,
+  openFile: editorPanel.openFile,
+  notify
+});
+
+elements.activitySourceControlBtn?.setAttribute("aria-controls", sourceControl.view.id);
+
 const primarySidebar = bindPrimarySidebar({
   app: elements.app,
   sidebar: elements.primarySidebar,
   layoutButton: elements.togglePrimarySidebarBtn,
   explorerButton: elements.activityExplorerBtn,
   searchButton: elements.activitySearchBtn,
+  sourceControlButton: elements.activitySourceControlBtn,
   runButton: elements.activityRunBtn,
   explorerView: elements.explorerView,
   searchView: workspaceSearch.view,
+  sourceControlView: sourceControl.view,
   runView: runDebug.view,
   onViewChange: (viewName) => {
     if (viewName === "search") workspaceSearch.refreshOutline();
+    if (viewName === "sourceControl") sourceControl.refresh();
     if (viewName === "run") runDebug.refreshConfiguration();
   },
   onLayoutChange: handlePanelVisibilityChange

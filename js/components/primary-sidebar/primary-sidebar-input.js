@@ -4,9 +4,11 @@ export function bindPrimarySidebar({
   layoutButton,
   explorerButton,
   searchButton,
+  sourceControlButton,
   runButton,
   explorerView,
   searchView,
+  sourceControlView,
   runView,
   onLayoutChange,
   onViewChange
@@ -20,22 +22,20 @@ export function bindPrimarySidebar({
     app.classList.toggle("is-primary-sidebar-collapsed", !visible);
     layoutButton.setAttribute("aria-expanded", String(visible));
 
-    const explorerActive = visible && activeView === "explorer";
-    explorerButton.setAttribute("aria-expanded", String(explorerActive));
-    explorerButton.classList.toggle("is-active", explorerActive);
-    if (searchButton) {
-      const searchActive = visible && activeView === "search";
-      searchButton.setAttribute("aria-expanded", String(searchActive));
-      searchButton.classList.toggle("is-active", searchActive);
+    const controls = [
+      ["explorer", explorerButton, explorerView],
+      ["search", searchButton, searchView],
+      ["sourceControl", sourceControlButton, sourceControlView],
+      ["run", runButton, runView]
+    ];
+    for (const [viewName, button, view] of controls) {
+      if (button) {
+        const active = visible && activeView === viewName;
+        button.setAttribute("aria-expanded", String(active));
+        button.classList.toggle("is-active", active);
+      }
+      if (view) view.hidden = activeView !== viewName;
     }
-    if (runButton) {
-      const runActive = visible && activeView === "run";
-      runButton.setAttribute("aria-expanded", String(runActive));
-      runButton.classList.toggle("is-active", runActive);
-    }
-    if (explorerView) explorerView.hidden = activeView !== "explorer";
-    if (searchView) searchView.hidden = activeView !== "search";
-    if (runView) runView.hidden = activeView !== "run";
   }
 
   function setVisible(nextVisible, notify = true) {
@@ -45,7 +45,7 @@ export function bindPrimarySidebar({
   }
 
   function setActiveView(viewName, { ensureVisible = true, notify = true } = {}) {
-    if (!["explorer", "search", "run"].includes(viewName)) return false;
+    if (!["explorer", "search", "sourceControl", "run"].includes(viewName)) return false;
     const changed = activeView !== viewName;
     activeView = viewName;
     if (ensureVisible) visible = true;
@@ -70,6 +70,7 @@ export function bindPrimarySidebar({
   layoutButton.addEventListener("click", toggle);
   explorerButton.addEventListener("click", () => activateFromButton("explorer"));
   searchButton?.addEventListener("click", () => activateFromButton("search"));
+  sourceControlButton?.addEventListener("click", () => activateFromButton("sourceControl"));
   runButton?.addEventListener("click", () => activateFromButton("run"));
   synchronize();
 
