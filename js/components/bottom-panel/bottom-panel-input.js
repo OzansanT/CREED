@@ -12,14 +12,20 @@ export function bindBottomPanel({
   let maximized = false;
   let activeView = "terminal";
 
+  function setMaximized(nextMaximized, notify = true) {
+    const next = Boolean(nextMaximized) && visible;
+    if (maximized === next) return false;
+    maximized = next;
+    panel.classList.toggle("is-maximized", maximized);
+    workbench.classList.toggle("is-bottom-panel-maximized", maximized);
+    maximizeButton?.setAttribute("aria-pressed", String(maximized));
+    if (notify) onLayoutChange?.(visible);
+    return true;
+  }
+
   function setVisible(nextVisible, notify = true) {
     visible = Boolean(nextVisible);
-    if (!visible && maximized) {
-      maximized = false;
-      panel.classList.remove("is-maximized");
-      workbench.classList.remove("is-bottom-panel-maximized");
-      maximizeButton?.setAttribute("aria-pressed", "false");
-    }
+    if (!visible && maximized) setMaximized(false, false);
     panel.hidden = !visible;
     panel.classList.toggle("is-collapsed", !visible);
     workbench.classList.toggle("is-bottom-panel-collapsed", !visible);
@@ -71,13 +77,7 @@ export function bindBottomPanel({
 
   layoutButton.addEventListener("click", () => setVisible(!visible));
   closeButton?.addEventListener("click", () => setVisible(false));
-  maximizeButton?.addEventListener("click", () => {
-    maximized = !maximized;
-    panel.classList.toggle("is-maximized", maximized);
-    workbench.classList.toggle("is-bottom-panel-maximized", maximized);
-    maximizeButton.setAttribute("aria-pressed", String(maximized));
-    onLayoutChange?.(visible);
-  });
+  maximizeButton?.addEventListener("click", () => setMaximized(!maximized));
 
   setActiveView(activeView);
   setVisible(visible, false);
@@ -88,6 +88,7 @@ export function bindBottomPanel({
     getActiveView: () => activeView,
     setActiveView,
     setVisible,
+    setMaximized,
     toggle: () => setVisible(!visible)
   });
 }
