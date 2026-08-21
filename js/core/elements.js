@@ -40,6 +40,7 @@ export function getElements() {
     splitEditorBtn: document.getElementById("splitEditorBtn"),
     editorBreadcrumbKind: document.getElementById("editorBreadcrumbKind"),
     editorBreadcrumbName: document.getElementById("editorBreadcrumbName"),
+    editorViewport: document.getElementById("editorViewport"),
     canvasView: document.getElementById("canvasView"),
     sourceEditorView: document.getElementById("sourceEditorView"),
     sourceScroller: document.getElementById("sourceScroller"),
