@@ -251,6 +251,7 @@ export function bindWorkbenchFiles({
     canvasTab,
     codeView,
     onActivate: (fileName) => fileName ? showFilePanel(fileName) : showCanvasPanel(),
+    onOrderChange: scheduleEditorWorkspacePersist,
     onClose: (fileName) => {
       if (activeFile === fileName) {
         sourceNavigation.reset();
@@ -389,6 +390,8 @@ export function bindWorkbenchFiles({
     saveFile: editing.saveActive,
     saveAll: editing.saveAll,
     revertFile: editing.revertActive,
+    getActiveFile: () => activeFile,
+    getOpenFiles: tabs.getOpenFiles,
     persistWorkspace: flushEditorWorkspace,
     resetWorkspace: resetEditorWorkspace,
     workspace
