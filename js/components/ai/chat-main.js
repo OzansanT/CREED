@@ -45,6 +45,7 @@ export function bindAIChat({
 
   function clear() {
     generation += 1;
+    running = false;
     messages.replaceChildren();
     promptInput.value = "";
     synchronize();
@@ -108,12 +109,15 @@ export function bindAIChat({
     synchronize();
     try {
       const context = await contextEngine.build(prompt);
+      if (token !== generation) return false;
       let response = await providerRegistry.complete({
         prompt,
         context,
         tools: toolSandbox?.listTools?.() || []
       });
+      if (token !== generation) return false;
       const toolResults = await executeToolCalls(response.toolCalls);
+      if (token !== generation) return false;
       if (toolResults.length && response.continueWithTools) {
         response = await providerRegistry.complete({
           prompt,
