@@ -28,6 +28,7 @@ import { bindSourceControl } from "./components/source-control/source-control-ma
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 import { bindSystemGraph } from "./components/infinite-canvas/system-graph-view.js";
 import { bindDiagnostics } from "./components/diagnostics/diagnostics-main.js";
+import { bindDiagnosticsTerminalCommand } from "./components/diagnostics/diagnostics-terminal.js";
 
 const unifiedWorkspaceState = createUnifiedWorkspaceState({
   keys: [
@@ -254,6 +255,12 @@ bindTerminalSessions({
   openFile: editorPanel.openFile,
   workspace: editorPanel.workspace,
   showView: showBottomView,
+  notify
+});
+
+bindDiagnosticsTerminalCommand({
+  terminalView: elements.terminalView,
+  runChecks: diagnostics.runChecks,
   notify
 });
 
