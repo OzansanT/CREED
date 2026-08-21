@@ -2,7 +2,6 @@ export function disableUnavailableControls() {
   const selectors = [
     ".navigation-controls__button",
     "#activityMenuBtn",
-    "#activitySearchBtn",
     "#activitySourceControlBtn",
     "#activityRunBtn",
     "#activityExtensionsBtn",
