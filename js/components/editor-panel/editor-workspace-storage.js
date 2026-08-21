@@ -3,15 +3,17 @@ import { normalizeEditorSessionState } from "./editor-session-state.js";
 import { WORKSPACE_FILES } from "./source-files.js";
 
 export const EDITOR_WORKSPACE_SCHEMA_VERSION = 1;
-const validWorkspaceFiles = new Set(WORKSPACE_FILES);
 
-function normalizeFileList(value) {
+function normalizeValidFiles(validFiles) {
+  return validFiles instanceof Set ? validFiles : new Set(Array.isArray(validFiles) ? validFiles : WORKSPACE_FILES);
+}
+
+function normalizeFileList(value, validFiles) {
   if (!Array.isArray(value)) return [];
+  const allowed = normalizeValidFiles(validFiles);
   const seen = new Set();
   return value.filter((fileName) => {
-    if (typeof fileName !== "string" || !validWorkspaceFiles.has(fileName) || seen.has(fileName)) {
-      return false;
-    }
+    if (typeof fileName !== "string" || !allowed.has(fileName) || seen.has(fileName)) return false;
     seen.add(fileName);
     return true;
   });
@@ -25,8 +27,8 @@ function normalizeSessions(value, openFiles) {
   ]));
 }
 
-export function normalizeEditorWorkspaceState(value = {}) {
-  const openFiles = normalizeFileList(value.openFiles);
+export function normalizeEditorWorkspaceState(value = {}, { validFiles = WORKSPACE_FILES } = {}) {
+  const openFiles = normalizeFileList(value.openFiles, validFiles);
   const requestedActiveFile = typeof value.activeFile === "string" ? value.activeFile : "";
   const activeFile = openFiles.includes(requestedActiveFile) ? requestedActiveFile : "";
   return {
@@ -37,23 +39,15 @@ export function normalizeEditorWorkspaceState(value = {}) {
   };
 }
 
-export function migrateEditorWorkspaceState(value) {
+export function migrateEditorWorkspaceState(value, options = {}) {
   if (!value || typeof value !== "object") return null;
-
-  if (value.version === EDITOR_WORKSPACE_SCHEMA_VERSION) {
-    return normalizeEditorWorkspaceState(value);
-  }
-
-  // Migration path for early unversioned workspace snapshots used during development.
-  if (value.version == null && Array.isArray(value.openFiles)) {
-    return normalizeEditorWorkspaceState(value);
-  }
-
+  if (value.version === EDITOR_WORKSPACE_SCHEMA_VERSION) return normalizeEditorWorkspaceState(value, options);
+  if (value.version == null && Array.isArray(value.openFiles)) return normalizeEditorWorkspaceState(value, options);
   return null;
 }
 
-export function saveEditorWorkspace(value) {
-  const workspace = normalizeEditorWorkspaceState(value);
+export function saveEditorWorkspace(value, options = {}) {
+  const workspace = normalizeEditorWorkspaceState(value, options);
   try {
     localStorage.setItem(EDITOR_WORKSPACE_STORAGE_KEY, JSON.stringify(workspace));
     return true;
@@ -62,12 +56,12 @@ export function saveEditorWorkspace(value) {
   }
 }
 
-export function loadEditorWorkspace() {
+export function loadEditorWorkspace(options = {}) {
   try {
     const saved = JSON.parse(localStorage.getItem(EDITOR_WORKSPACE_STORAGE_KEY));
-    const migrated = migrateEditorWorkspaceState(saved);
+    const migrated = migrateEditorWorkspaceState(saved, options);
     if (!migrated) return null;
-    if (saved?.version !== EDITOR_WORKSPACE_SCHEMA_VERSION) saveEditorWorkspace(migrated);
+    if (saved?.version !== EDITOR_WORKSPACE_SCHEMA_VERSION) saveEditorWorkspace(migrated, options);
     return migrated;
   } catch {
     return null;
