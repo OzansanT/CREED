@@ -29,6 +29,7 @@ import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infini
 import { bindSystemGraph } from "./components/infinite-canvas/system-graph-view.js";
 import { bindDiagnostics } from "./components/diagnostics/diagnostics-main.js";
 import { bindDiagnosticsTerminalCommand } from "./components/diagnostics/diagnostics-terminal.js";
+import { bindAIWorkbench } from "./components/ai/ai-main.js";
 
 const unifiedWorkspaceState = createUnifiedWorkspaceState({
   keys: [
@@ -218,6 +219,22 @@ const diagnostics = bindDiagnostics({
   notify
 });
 
+const aiWorkbench = bindAIWorkbench({
+  elements,
+  editorPanel,
+  diagnostics,
+  systemGraph,
+  sourceControl,
+  notify
+});
+
+globalThis.CREED_AI = Object.freeze({
+  registerProvider: aiWorkbench.providers.register,
+  setProvider: aiWorkbench.providers.setActive,
+  listProviders: aiWorkbench.providers.list,
+  refreshIndex: aiWorkbench.refreshIndex
+});
+
 const primarySidebar = bindPrimarySidebar({
   app: elements.app,
   sidebar: elements.primarySidebar,
@@ -285,6 +302,7 @@ infiniteCanvas.bind({
     runDebug.stop();
     splitEditor.close();
     systemGraph.refresh();
+    aiWorkbench.refreshIndex();
     return editorPanel.resetWorkspace();
   },
   primarySidebar,
