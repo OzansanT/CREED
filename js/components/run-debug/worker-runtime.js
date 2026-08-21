@@ -32,12 +32,16 @@ export function createWorkerRuntime({ workspace, onConsole, onError, onComplete 
   let objectUrl = "";
   let entryFile = "";
 
-  function stop() {
+  function releaseWorker({ clearEntry = true } = {}) {
     worker?.terminate();
     worker = null;
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     objectUrl = "";
-    entryFile = "";
+    if (clearEntry) entryFile = "";
+  }
+
+  function stop() {
+    releaseWorker();
     return true;
   }
 
@@ -51,13 +55,25 @@ export function createWorkerRuntime({ workspace, onConsole, onError, onComplete 
     worker = new Worker(objectUrl, { name: "CREED: " + entry });
     worker.addEventListener("message", (event) => {
       if (event.data?.source !== "creed-worker") return;
-      if (event.data.type === "console") onConsole?.(event.data.payload);
-      else if (event.data.type === "runtime-error") onError?.(event.data.payload, parseWorkerRuntimeLocation(event.data.payload));
-      else if (event.data.type === "complete") onComplete?.(event.data.payload);
+      if (event.data.type === "console") {
+        onConsole?.(event.data.payload);
+        return;
+      }
+      if (event.data.type === "runtime-error") {
+        onError?.(event.data.payload, parseWorkerRuntimeLocation(event.data.payload));
+        releaseWorker({ clearEntry: false });
+        return;
+      }
+      if (event.data.type === "complete") {
+        const payload = event.data.payload;
+        releaseWorker({ clearEntry: false });
+        onComplete?.(payload);
+      }
     });
     worker.addEventListener("error", (event) => {
       const payload = { message: event.message, stack: "", line: event.lineno, column: event.colno };
       onError?.(payload, { fileName: entry, line: event.lineno || 1, column: event.colno || 1 });
+      releaseWorker({ clearEntry: false });
     });
     return true;
   }
