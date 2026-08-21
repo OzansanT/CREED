@@ -53,7 +53,7 @@ const view = read("js/components/infinite-canvas/system-graph-view.js");
 assert(view.includes("openFile?.(node.fileName)"), "Canvas file nodes must open workspace files.");
 assert(view.includes("function focusSymbol"), "System graph must support symbol-to-canvas navigation.");
 assert(view.includes("SYSTEM_GRAPH_VIEWS_STORAGE_KEY"), "Named graph views must be persisted.");
-assert(view.includes("data-graph-category"), "System graph must expose category filters.");
+assert(view.includes("dataset.graphCategory"), "System graph must expose category filters.");
 const canvasRuntime = read("js/components/infinite-canvas/infinitecanvas-main.js");
 assert(canvasRuntime.includes("focusWorldPoint"), "Canvas runtime must expose world-point focusing.");
 assert(canvasRuntime.includes("captureView") && canvasRuntime.includes("restoreView"), "Canvas runtime must support named-view camera persistence.");
