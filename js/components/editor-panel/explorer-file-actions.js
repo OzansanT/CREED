@@ -139,7 +139,17 @@ export function bindExplorerFileActions({
     if (!deleted) return false;
     closeDeletedFiles?.(path, kind);
     explorer.refresh();
-    notify?.("Deleted " + path);
+    notify?.("Deleted " + path + " · Ctrl/Cmd+Z in Explorer to undo");
+    return true;
+  }
+
+  function undoDelete() {
+    const restored = workspace.undoLastDelete();
+    if (!restored) return false;
+    explorer.refresh();
+    if (restored.kind === "file") explorer.reveal(restored.path);
+    explorer.setSelected(restored.path, restored.kind);
+    notify?.("Restored " + restored.path);
     return true;
   }
 
@@ -159,9 +169,9 @@ export function bindExplorerFileActions({
     try { createDirectory(); } catch (error) { reportError(error); }
   });
   refreshButton?.addEventListener("click", () => {
-    explorer.refresh();
+    const stats = explorer.refresh();
     workspace.refresh();
-    notify?.("Explorer refreshed");
+    notify?.(`Explorer refreshed · ${stats?.reused ?? 0} nodes reused`);
   });
 
   fileTree.addEventListener("contextmenu", (event) => {
@@ -176,12 +186,18 @@ export function bindExplorerFileActions({
       actions: [
         { label: "Rename", run: () => renamePath(path, kind), onError: reportError },
         kind === "file" ? { label: "Duplicate", run: () => duplicatePath(path), onError: reportError } : null,
-        { label: "Delete", run: () => deletePath(path, kind), onError: reportError }
+        { label: "Delete", run: () => deletePath(path, kind), onError: reportError },
+        workspace.canUndoDelete() ? { label: "Undo Last Delete", run: undoDelete, onError: reportError } : null
       ]
     });
   });
 
   fileTree.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "z" && workspace.canUndoDelete()) {
+      event.preventDefault();
+      undoDelete();
+      return;
+    }
     const row = event.target.closest(".file-row[data-resource], .file-row[data-directory]");
     if (!row) return;
     const path = row.dataset.resource || row.dataset.directory;
@@ -218,5 +234,5 @@ export function bindExplorerFileActions({
     moveFileToDirectory(source, folder.dataset.directory).catch(reportError);
   });
 
-  return Object.freeze({ createFile, createDirectory, renamePath, duplicatePath, deletePath, moveFileToDirectory });
+  return Object.freeze({ createFile, createDirectory, renamePath, duplicatePath, deletePath, undoDelete, moveFileToDirectory });
 }
