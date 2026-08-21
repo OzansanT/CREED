@@ -82,8 +82,14 @@ export function createSideBySideDiff(before, after) {
       output.push({ left: row, right: row });
       continue;
     }
-    if (row.type === "delete" && rows[index + 1]?.type === "insert") {
-      output.push({ left: row, right: rows[index + 1] });
+    const next = rows[index + 1];
+    if (row.type === "delete" && next?.type === "insert") {
+      output.push({ left: row, right: next });
+      index += 1;
+      continue;
+    }
+    if (row.type === "insert" && next?.type === "delete") {
+      output.push({ left: next, right: row });
       index += 1;
       continue;
     }
