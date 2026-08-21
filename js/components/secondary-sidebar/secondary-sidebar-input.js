@@ -17,14 +17,20 @@ export function bindSecondarySidebar({
     return preferredVisible && !responsiveHidden;
   }
 
+  function setMaximized(nextMaximized, notify = true) {
+    const next = Boolean(nextMaximized) && isRenderedVisible();
+    if (maximized === next) return false;
+    maximized = next;
+    panel.classList.toggle("is-maximized", maximized);
+    maximizeButton?.setAttribute("aria-pressed", String(maximized));
+    if (notify) onLayoutChange?.(isRenderedVisible());
+    return true;
+  }
+
   function render(notify = true) {
     const visible = isRenderedVisible();
 
-    if (!visible && maximized) {
-      maximized = false;
-      panel.classList.remove("is-maximized");
-      maximizeButton?.setAttribute("aria-pressed", "false");
-    }
+    if (!visible && maximized) setMaximized(false, false);
 
     panel.hidden = !visible;
     panel.classList.toggle("is-collapsed", !visible);
@@ -52,10 +58,7 @@ export function bindSecondarySidebar({
   closeButton?.addEventListener("click", () => setVisible(false));
   maximizeButton?.addEventListener("click", () => {
     if (responsiveHidden || !isRenderedVisible()) return;
-    maximized = !maximized;
-    panel.classList.toggle("is-maximized", maximized);
-    maximizeButton.setAttribute("aria-pressed", String(maximized));
-    onLayoutChange?.(true);
+    setMaximized(!maximized);
   });
 
   const handleResponsiveChange = (event) => {
@@ -71,6 +74,7 @@ export function bindSecondarySidebar({
     isRenderedVisible,
     isMaximized: () => maximized,
     setVisible,
+    setMaximized,
     toggle
   });
 }
