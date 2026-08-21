@@ -15,6 +15,7 @@ import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
 import { bindRunDebug } from "./components/run-debug/run-debug-main.js";
 import { bindSourceControl } from "./components/source-control/source-control-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
+import { bindSystemGraph } from "./components/infinite-canvas/system-graph-view.js";
 
 hydrateIcons();
 disableUnavailableControls();
@@ -148,6 +149,18 @@ const sourceControl = bindSourceControl({
 
 elements.activitySourceControlBtn?.setAttribute("aria-controls", sourceControl.view.id);
 
+const systemGraph = bindSystemGraph({
+  canvas: elements.canvas,
+  world: elements.world,
+  workspace: editorPanel.workspace,
+  openFile: editorPanel.openFile,
+  showCanvas: editorPanel.showCanvas,
+  focusWorldPoint: infiniteCanvas.focusWorldPoint,
+  captureViewport: infiniteCanvas.captureView,
+  restoreViewport: infiniteCanvas.restoreView,
+  notify
+});
+
 const primarySidebar = bindPrimarySidebar({
   app: elements.app,
   sidebar: elements.primarySidebar,
@@ -211,6 +224,7 @@ infiniteCanvas.bind({
   resetEditorWorkspace: () => {
     runDebug.stop();
     splitEditor.close();
+    systemGraph.refresh();
     return editorPanel.resetWorkspace();
   },
   primarySidebar,
