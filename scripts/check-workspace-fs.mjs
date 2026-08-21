@@ -31,6 +31,17 @@ await workspace.duplicateFile("docs/guides/intro.md", "docs/guides/copy.md");
 assert.equal(await workspace.readFile("docs/guides/copy.md"), "start");
 workspace.deleteFile("docs/guides/copy.md");
 assert.equal(workspace.hasFile("docs/guides/copy.md"), false);
+assert.equal(workspace.canUndoDelete(), true);
+assert.equal(workspace.undoLastDelete()?.path, "docs/guides/copy.md");
+assert.equal(await workspace.readFile("docs/guides/copy.md"), "start");
+
+workspace.deleteDirectory("docs/guides");
+assert.equal(workspace.hasDirectory("docs/guides"), false);
+assert.equal(workspace.hasFile("docs/guides/intro.md"), false);
+const restoredDirectory = workspace.undoLastDelete();
+assert.equal(restoredDirectory?.kind, "directory");
+assert.equal(workspace.hasDirectory("docs/guides"), true);
+assert.equal(await workspace.readFile("docs/guides/intro.md"), "start");
 
 let rejectedTraversal = false;
 try { normalizeWorkspacePath("../escape.js"); } catch { rejectedTraversal = true; }
