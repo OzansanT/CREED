@@ -1,4 +1,15 @@
+import {
+  STORAGE_KEY,
+  PANEL_LAYOUT_STORAGE_KEY,
+  LEGACY_PANEL_LAYOUT_STORAGE_KEY,
+  EDITOR_WORKSPACE_STORAGE_KEY,
+  WORKSPACE_FS_STORAGE_KEY,
+  EDITOR_BUFFER_STORAGE_KEY,
+  TERMINAL_SESSIONS_STORAGE_KEY,
+  GIT_WORKSPACE_STORAGE_KEY
+} from "./core/config.js";
 import { getElements } from "./core/elements.js";
+import { createUnifiedWorkspaceState } from "./core/workspace-state.js";
 import { bindAccessibilityNavigation } from "./ui/accessibility.js";
 import { showToast } from "./ui/toast.js";
 import { hydrateIcons } from "./ui/icons.js";
@@ -16,6 +27,22 @@ import { bindRunDebug } from "./components/run-debug/run-debug-main.js";
 import { bindSourceControl } from "./components/source-control/source-control-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 import { bindSystemGraph } from "./components/infinite-canvas/system-graph-view.js";
+import { bindDiagnostics } from "./components/diagnostics/diagnostics-main.js";
+
+const unifiedWorkspaceState = createUnifiedWorkspaceState({
+  keys: [
+    STORAGE_KEY,
+    PANEL_LAYOUT_STORAGE_KEY,
+    LEGACY_PANEL_LAYOUT_STORAGE_KEY,
+    EDITOR_WORKSPACE_STORAGE_KEY,
+    WORKSPACE_FS_STORAGE_KEY,
+    EDITOR_BUFFER_STORAGE_KEY,
+    TERMINAL_SESSIONS_STORAGE_KEY,
+    GIT_WORKSPACE_STORAGE_KEY,
+    "creedSystemGraphViews.v1"
+  ]
+});
+unifiedWorkspaceState.restoreMissing();
 
 hydrateIcons();
 disableUnavailableControls();
@@ -98,6 +125,11 @@ const bottomPanel = bindBottomPanel({
   onLayoutChange: handlePanelVisibilityChange
 });
 
+function showBottomView(viewName) {
+  bottomPanel.setVisible(true);
+  return bottomPanel.setActiveView(viewName);
+}
+
 function openFileAt(fileName, line = 1, column = 1) {
   if (!editorPanel.openFile(fileName)) return false;
   const targetLine = Math.max(1, Math.trunc(Number(line) || 1));
@@ -130,10 +162,7 @@ const runDebug = bindRunDebug({
   workspace: editorPanel.workspace,
   outputView: elements.outputView,
   debugConsoleView: elements.debugConsoleView,
-  showBottomView: (viewName) => {
-    bottomPanel.setVisible(true);
-    bottomPanel.setActiveView(viewName);
-  },
+  showBottomView,
   openFileAt,
   notify
 });
@@ -158,6 +187,33 @@ const systemGraph = bindSystemGraph({
   focusWorldPoint: infiniteCanvas.focusWorldPoint,
   captureViewport: infiniteCanvas.captureView,
   restoreViewport: infiniteCanvas.restoreView,
+  notify
+});
+
+const diagnosticGraph = Object.freeze({
+  getGraph: systemGraph.getGraph,
+  layer: systemGraph.layer,
+  setDiagnostics(problems = []) {
+    const counts = new Map();
+    for (const problem of problems) {
+      if (!problem.fileName) continue;
+      counts.set(problem.fileName, (counts.get(problem.fileName) || 0) + 1);
+    }
+    systemGraph.layer.querySelectorAll(".system-graph-node").forEach((node) => {
+      const count = counts.get(node.dataset.fileName) || 0;
+      node.style.outline = count ? "2px solid #dc2626" : "";
+      node.style.outlineOffset = count ? "2px" : "";
+      if (count) node.title = `${count} diagnostic problem(s) · ${node.dataset.fileName}`;
+    });
+  }
+});
+
+const diagnostics = bindDiagnostics({
+  problemsView: elements.problemsView,
+  workspace: editorPanel.workspace,
+  systemGraph: diagnosticGraph,
+  openFile: editorPanel.openFile,
+  showBottomView,
   notify
 });
 
@@ -197,10 +253,7 @@ bindTerminalSessions({
   killButton: elements.killTerminalBtn,
   openFile: editorPanel.openFile,
   workspace: editorPanel.workspace,
-  showView: (viewName) => {
-    bottomPanel.setVisible(true);
-    bottomPanel.setActiveView(viewName);
-  },
+  showView: showBottomView,
   notify
 });
 
@@ -232,3 +285,9 @@ infiniteCanvas.bind({
   bottomPanel,
   panelResize
 });
+
+systemGraph.refresh()
+  .then(() => diagnostics.runChecks({ reveal: false }))
+  .catch(() => {});
+unifiedWorkspaceState.bindLifecycle();
+unifiedWorkspaceState.snapshot();
