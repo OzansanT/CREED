@@ -6,7 +6,6 @@ function baseName(path) {
 
 function buildWorkspaceTree(files, directories) {
   const root = { name: "", path: "", directories: new Map(), files: [] };
-
   function ensureDirectory(path) {
     let node = root;
     let current = "";
@@ -19,7 +18,6 @@ function buildWorkspaceTree(files, directories) {
     }
     return node;
   }
-
   for (const directory of directories || []) ensureDirectory(directory);
   for (const fileName of files || []) {
     const parent = fileName.includes("/") ? fileName.slice(0, fileName.lastIndexOf("/")) : "";
@@ -28,93 +26,157 @@ function buildWorkspaceTree(files, directories) {
   return root;
 }
 
-function createFileButton(fileName, depth) {
-  const button = document.createElement("button");
-  const icon = document.createElement("span");
-  const label = document.createElement("span");
+function updateFileButton(button, fileName, depth) {
   const extension = getFileExtension(fileName);
-
   button.className = "file-row";
   button.type = "button";
   button.dataset.resource = fileName;
   button.dataset.kind = "file";
   button.setAttribute("role", "treeitem");
-  button.setAttribute("aria-selected", "false");
+  if (!button.hasAttribute("aria-selected")) button.setAttribute("aria-selected", "false");
   button.draggable = true;
   button.style.paddingInlineStart = `${8 + (depth * 14)}px`;
   button.title = fileName;
-
+  let icon = button.querySelector(":scope > .file-row__icon");
+  let label = button.querySelector(":scope > .file-row__name");
+  if (!icon) {
+    icon = document.createElement("span");
+    button.prepend(icon);
+  }
+  if (!label) {
+    label = document.createElement("span");
+    button.append(label);
+  }
   icon.className = "file-row__icon file-row__icon--" + (extension || "file");
   icon.textContent = getFileKind(fileName);
   label.className = "file-row__name";
   label.textContent = baseName(fileName);
-  button.append(icon, label);
   return button;
 }
 
-function createDirectoryGroup(node, depth, collapsedFolders) {
-  const container = document.createElement("div");
-  const button = document.createElement("button");
-  const icon = document.createElement("span");
-  const label = document.createElement("span");
-  const children = document.createElement("div");
-  const collapsed = collapsedFolders.has(node.path);
+function createFileButton(fileName, depth) {
+  return updateFileButton(document.createElement("button"), fileName, depth);
+}
 
+function updateDirectoryGroup(container, node, depth, collapsedFolders) {
   container.className = "workspace-tree__directory";
   container.dataset.directoryGroup = node.path;
+  let button = container.querySelector(":scope > .file-row--folder");
+  let children = container.querySelector(":scope > .workspace-tree__children");
+  if (!button) {
+    button = document.createElement("button");
+    container.prepend(button);
+  }
+  if (!children) {
+    children = document.createElement("div");
+    container.append(children);
+  }
+  const collapsed = collapsedFolders.has(node.path);
   button.className = "file-row file-row--folder";
   button.type = "button";
   button.dataset.directory = node.path;
   button.dataset.kind = "directory";
   button.setAttribute("role", "treeitem");
   button.setAttribute("aria-expanded", String(!collapsed));
-  button.setAttribute("aria-selected", "false");
+  if (!button.hasAttribute("aria-selected")) button.setAttribute("aria-selected", "false");
   button.style.paddingInlineStart = `${8 + (depth * 14)}px`;
   button.title = node.path;
-
+  let icon = button.querySelector(":scope > .file-row__icon");
+  let label = button.querySelector(":scope > .file-row__name");
+  if (!icon) {
+    icon = document.createElement("span");
+    button.prepend(icon);
+  }
+  if (!label) {
+    label = document.createElement("span");
+    button.append(label);
+  }
   icon.className = "file-row__icon file-row__icon--folder";
   icon.textContent = collapsed ? "›" : "⌄";
   label.className = "file-row__name";
   label.textContent = node.name;
-  button.append(icon, label);
-
   children.className = "workspace-tree__children";
   children.dataset.directoryChildren = node.path;
   children.setAttribute("role", "group");
   children.hidden = collapsed;
+  return { container, children };
+}
 
-  const directories = [...node.directories.values()].sort((left, right) => left.name.localeCompare(right.name));
-  for (const directory of directories) {
-    children.append(createDirectoryGroup(directory, depth + 1, collapsedFolders));
-  }
-  for (const fileName of [...node.files].sort((left, right) => baseName(left).localeCompare(baseName(right)))) {
-    children.append(createFileButton(fileName, depth + 1));
-  }
-
-  container.append(button, children);
+function createDirectoryGroup(node, depth, collapsedFolders) {
+  const container = document.createElement("div");
+  updateDirectoryGroup(container, node, depth, collapsedFolders);
   return container;
+}
+
+function directChildMap(container) {
+  const map = new Map();
+  for (const child of container.children) {
+    if (child.matches(".workspace-tree__directory[data-directory-group]")) {
+      map.set("d:" + child.dataset.directoryGroup, child);
+    } else if (child.matches(".file-row[data-resource]")) {
+      map.set("f:" + child.dataset.resource, child);
+    }
+  }
+  return map;
 }
 
 export function createExplorerController({ rootToggle, fileTree, getFiles, getDirectories, onOpen }) {
   const collapsedFolders = new Set();
   let selectedPath = "";
   let selectedKind = "";
+  let reconciliationStats = { reused: 0, created: 0, removed: 0 };
 
   fileTree.setAttribute("role", "tree");
   fileTree.removeAttribute("aria-multiselectable");
 
+  function reconcileContainer(container, node, depth) {
+    const existing = directChildMap(container);
+    const desired = [];
+    const directories = [...node.directories.values()].sort((a, b) => a.name.localeCompare(b.name));
+    const files = [...node.files].sort((left, right) => baseName(left).localeCompare(baseName(right)));
+
+    for (const directory of directories) {
+      const key = "d:" + directory.path;
+      let group = existing.get(key);
+      if (group) {
+        reconciliationStats.reused += 1;
+        existing.delete(key);
+      } else {
+        group = createDirectoryGroup(directory, depth, collapsedFolders);
+        reconciliationStats.created += 1;
+      }
+      const { children } = updateDirectoryGroup(group, directory, depth, collapsedFolders);
+      reconcileContainer(children, directory, depth + 1);
+      desired.push(group);
+    }
+
+    for (const fileName of files) {
+      const key = "f:" + fileName;
+      let button = existing.get(key);
+      if (button) {
+        reconciliationStats.reused += 1;
+        existing.delete(key);
+        updateFileButton(button, fileName, depth);
+      } else {
+        button = createFileButton(fileName, depth);
+        reconciliationStats.created += 1;
+      }
+      desired.push(button);
+    }
+
+    for (const stale of existing.values()) {
+      stale.remove();
+      reconciliationStats.removed += 1;
+    }
+    for (const element of desired) container.append(element);
+  }
+
   function render() {
+    reconciliationStats = { reused: 0, created: 0, removed: 0 };
     const tree = buildWorkspaceTree(getFiles?.() || [], getDirectories?.() || []);
-    const fragment = document.createDocumentFragment();
-    for (const directory of [...tree.directories.values()].sort((a, b) => a.name.localeCompare(b.name))) {
-      fragment.append(createDirectoryGroup(directory, 0, collapsedFolders));
-    }
-    for (const fileName of [...tree.files].sort((left, right) => left.localeCompare(right))) {
-      fragment.append(createFileButton(fileName, 0));
-    }
-    fileTree.replaceChildren(fragment);
+    reconcileContainer(fileTree, tree, 0);
     setSelected(selectedPath, selectedKind);
-    return true;
+    return { ...reconciliationStats };
   }
 
   function setExpanded(expanded) {
@@ -142,7 +204,7 @@ export function createExplorerController({ rootToggle, fileTree, getFiles, getDi
     const collapsed = !children.hidden;
     children.hidden = collapsed;
     button.setAttribute("aria-expanded", String(!collapsed));
-    const icon = button.querySelector(".file-row__icon");
+    const icon = button.querySelector(":scope > .file-row__icon");
     if (icon) icon.textContent = collapsed ? "›" : "⌄";
     if (collapsed) collapsedFolders.add(path);
     else collapsedFolders.delete(path);
@@ -188,6 +250,7 @@ export function createExplorerController({ rootToggle, fileTree, getFiles, getDi
     setSelected,
     refresh: render,
     reveal,
-    getSelection: () => ({ path: selectedPath, kind: selectedKind })
+    getSelection: () => ({ path: selectedPath, kind: selectedKind }),
+    getReconciliationStats: () => ({ ...reconciliationStats })
   });
 }

@@ -3,6 +3,7 @@ import { WORKSPACE_FILES } from "./source-files.js";
 
 export const WORKSPACE_FS_SCHEMA_VERSION = 1;
 const DEFAULT_MAX_PATH_LENGTH = 240;
+const MAX_DELETE_HISTORY = 20;
 
 function createMemoryStorage() {
   const values = new Map();
@@ -27,9 +28,7 @@ export function normalizeWorkspacePath(value, { allowEmpty = false } = {}) {
   if (path.startsWith("/") || /^[A-Za-z]:\//.test(path)) {
     throw new Error("Workspace paths must be repository-relative.");
   }
-  if (path.length > DEFAULT_MAX_PATH_LENGTH) {
-    throw new Error("Workspace path is too long.");
-  }
+  if (path.length > DEFAULT_MAX_PATH_LENGTH) throw new Error("Workspace path is too long.");
   const segments = path.split("/");
   if (segments.some((segment) => !segment || segment === "." || segment === ".." || segment.includes("\0"))) {
     throw new Error("Workspace path contains an invalid segment.");
@@ -61,27 +60,21 @@ function normalizeStoredState(value) {
     try {
       const path = normalizeWorkspacePath(rawPath);
       if (typeof rawContent === "string") overlays[path] = rawContent;
-    } catch {
-      // Ignore invalid persisted entries.
-    }
+    } catch { /* ignore invalid persisted entries */ }
   }
   const deleted = [];
   for (const rawPath of Array.isArray(value.deleted) ? value.deleted : []) {
     try {
       const path = normalizeWorkspacePath(rawPath);
       if (!deleted.includes(path)) deleted.push(path);
-    } catch {
-      // Ignore invalid persisted entries.
-    }
+    } catch { /* ignore invalid persisted entries */ }
   }
   const directories = [];
   for (const rawPath of Array.isArray(value.directories) ? value.directories : []) {
     try {
       const path = normalizeWorkspacePath(rawPath);
       if (!directories.includes(path)) directories.push(path);
-    } catch {
-      // Ignore invalid persisted entries.
-    }
+    } catch { /* ignore invalid persisted entries */ }
   }
   return { version: WORKSPACE_FS_SCHEMA_VERSION, overlays, deleted, directories };
 }
@@ -100,6 +93,7 @@ export function createWorkspaceFileSystem({
 } = {}) {
   const baseSet = new Set(baseFiles.map((fileName) => normalizeWorkspacePath(fileName)));
   const listeners = new Set();
+  const deleteHistory = [];
   let stored;
   try {
     stored = normalizeStoredState(JSON.parse(storage.getItem(WORKSPACE_FS_STORAGE_KEY)));
@@ -178,6 +172,11 @@ export function createWorkspaceFileSystem({
     for (const directory of collectParentDirectories(path)) explicitDirectories.add(directory);
   }
 
+  function rememberDelete(snapshot) {
+    deleteHistory.push(snapshot);
+    if (deleteHistory.length > MAX_DELETE_HISTORY) deleteHistory.shift();
+  }
+
   function createDirectory(rawPath) {
     const path = validateAvailablePath(rawPath);
     explicitDirectories.add(path);
@@ -211,23 +210,45 @@ export function createWorkspaceFileSystem({
     return path;
   }
 
-  function deleteFile(rawPath) {
+  function deleteFile(rawPath, { recordHistory = true } = {}) {
     const path = normalizeWorkspacePath(rawPath);
     if (!hasFile(path)) return false;
+    if (recordHistory) {
+      rememberDelete({
+        kind: "file",
+        path,
+        overlayPresent: overlays.has(path),
+        overlayValue: overlays.get(path) ?? "",
+        base: baseSet.has(path)
+      });
+    }
     overlays.delete(path);
     if (baseSet.has(path)) deleted.add(path);
     else deleted.delete(path);
     persist();
-    emit({ type: "file-deleted", path });
+    emit({ type: "file-deleted", path, undoAvailable: deleteHistory.length > 0 });
     return true;
   }
 
-  function deleteDirectory(rawPath) {
+  function deleteDirectory(rawPath, { recordHistory = true } = {}) {
     const path = normalizeWorkspacePath(rawPath);
     const prefix = path + "/";
     const files = listFiles().filter((fileName) => fileName.startsWith(prefix));
     const directories = listDirectories().filter((directory) => directory === path || directory.startsWith(prefix));
     if (!files.length && !directories.length) return false;
+    if (recordHistory) {
+      rememberDelete({
+        kind: "directory",
+        path,
+        files: files.map((fileName) => ({
+          path: fileName,
+          overlayPresent: overlays.has(fileName),
+          overlayValue: overlays.get(fileName) ?? "",
+          base: baseSet.has(fileName)
+        })),
+        explicitDirectories: directories.filter((directory) => explicitDirectories.has(directory))
+      });
+    }
     for (const fileName of files) {
       overlays.delete(fileName);
       if (baseSet.has(fileName)) deleted.add(fileName);
@@ -235,8 +256,36 @@ export function createWorkspaceFileSystem({
     }
     directories.forEach((directory) => explicitDirectories.delete(directory));
     persist();
-    emit({ type: "directory-deleted", path, files });
+    emit({ type: "directory-deleted", path, files, undoAvailable: deleteHistory.length > 0 });
     return true;
+  }
+
+  function undoLastDelete() {
+    const snapshot = deleteHistory.pop();
+    if (!snapshot) return null;
+    if (snapshot.kind === "file") {
+      deleted.delete(snapshot.path);
+      if (snapshot.overlayPresent) overlays.set(snapshot.path, snapshot.overlayValue);
+      else overlays.delete(snapshot.path);
+      ensureParentDirectories(snapshot.path);
+      persist();
+      emit({ type: "delete-undone", path: snapshot.path, kind: "file" });
+      return { path: snapshot.path, kind: "file", files: [snapshot.path] };
+    }
+
+    const restoredFiles = [];
+    for (const entry of snapshot.files) {
+      deleted.delete(entry.path);
+      if (entry.overlayPresent) overlays.set(entry.path, entry.overlayValue);
+      else overlays.delete(entry.path);
+      ensureParentDirectories(entry.path);
+      restoredFiles.push(entry.path);
+    }
+    snapshot.explicitDirectories.forEach((directory) => explicitDirectories.add(directory));
+    explicitDirectories.add(snapshot.path);
+    persist();
+    emit({ type: "delete-undone", path: snapshot.path, kind: "directory", files: restoredFiles });
+    return { path: snapshot.path, kind: "directory", files: restoredFiles };
   }
 
   async function rename(rawSource, rawTarget) {
@@ -245,7 +294,7 @@ export function createWorkspaceFileSystem({
     if (hasFile(source)) {
       const content = await readFile(source);
       createFile(target, content);
-      deleteFile(source);
+      deleteFile(source, { recordHistory: false });
       emit({ type: "file-renamed", path: source, target });
       return target;
     }
@@ -259,14 +308,12 @@ export function createWorkspaceFileSystem({
       content: await readFile(fileName)
     })));
     for (const entry of entries) {
-      if (hasFile(entry.target) || hasDirectory(entry.target)) {
-        throw new Error("Workspace path already exists: " + entry.target);
-      }
+      if (hasFile(entry.target) || hasDirectory(entry.target)) throw new Error("Workspace path already exists: " + entry.target);
     }
     explicitDirectories.add(target);
     for (const entry of entries) {
       createFile(entry.target, entry.content);
-      deleteFile(entry.source);
+      deleteFile(entry.source, { recordHistory: false });
     }
     for (const directory of [...explicitDirectories]) {
       if (directory === source || directory.startsWith(prefix)) explicitDirectories.delete(directory);
@@ -317,6 +364,7 @@ export function createWorkspaceFileSystem({
     overlays.clear();
     deleted.clear();
     explicitDirectories.clear();
+    deleteHistory.length = 0;
     try { storage.removeItem(WORKSPACE_FS_STORAGE_KEY); } catch { /* ignore */ }
     emit({ type: "workspace-reset" });
   }
@@ -328,6 +376,8 @@ export function createWorkspaceFileSystem({
     createDirectory,
     deleteFile,
     deleteDirectory,
+    undoLastDelete,
+    canUndoDelete: () => deleteHistory.length > 0,
     rename,
     duplicateFile,
     resetFile,
