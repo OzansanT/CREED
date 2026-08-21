@@ -35,6 +35,7 @@ export function bindDiagnostics({
   if (!problemsView || !workspace) throw new TypeError("Diagnostics require the Problems view and workspace.");
   const model = createProblemsModel();
   const profiler = createPerformanceProfiler();
+  let workspaceDiagnosticsTimer = 0;
 
   const root = style(document.createElement("div"), { display: "grid", gap: "10px", height: "100%", overflow: "auto" });
   const toolbar = style(document.createElement("div"), { display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" });
@@ -114,13 +115,12 @@ export function bindDiagnostics({
   }
 
   async function currentGraph() {
-    const existing = systemGraph?.getGraph?.();
-    if (existing?.nodes?.length) return existing;
     return buildSystemGraph({ workspace });
   }
 
   async function runChecks({ output = "", reveal = true } = {}) {
-    const result = await profiler.measure("workspace diagnostics", () => runWorkspaceDiagnostics({ workspace, graph: systemGraph?.getGraph?.() }));
+    const graph = await currentGraph();
+    const result = await profiler.measure("workspace diagnostics", () => runWorkspaceDiagnostics({ workspace, graph }));
     model.setSource("architecture", result.architecture);
     model.setSource("dependency-cycles", result.cycles);
     model.setSource("orphan-modules", result.orphans);
@@ -131,6 +131,14 @@ export function bindDiagnostics({
     }
     renderProfiler();
     return { problems: model.list(), counts: model.counts() };
+  }
+
+  function scheduleWorkspaceDiagnostics() {
+    clearTimeout(workspaceDiagnosticsTimer);
+    workspaceDiagnosticsTimer = setTimeout(() => {
+      workspaceDiagnosticsTimer = 0;
+      runChecks({ reveal: false }).catch((error) => notify?.(error instanceof Error ? error.message : String(error)));
+    }, 240);
   }
 
   const tests = [
@@ -215,6 +223,7 @@ export function bindDiagnostics({
 
   model.subscribe(renderProblems);
   profiler.subscribe(() => renderProfiler());
+  workspace.subscribe?.(scheduleWorkspaceDiagnostics);
   runChecksButton.addEventListener("click", () => runChecks().catch((error) => notify?.(error instanceof Error ? error.message : String(error))));
   actionsButton.addEventListener("click", () => refreshActionsStatus().catch((error) => {
     actionsStatus.textContent = "Actions: unavailable";
