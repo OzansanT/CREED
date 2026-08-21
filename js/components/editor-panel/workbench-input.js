@@ -17,6 +17,7 @@ import { createSourceViewport } from "./source-viewport.js";
 import { createWorkspaceFileSystem } from "./workspace-fs.js";
 
 const EDITOR_WORKSPACE_PERSIST_DELAY_MS = 180;
+const EXTERNAL_WORKSPACE_RECONCILE_DELAY_MS = 40;
 
 export function bindWorkbenchFiles({
   rootToggle,
@@ -44,7 +45,10 @@ export function bindWorkbenchFiles({
   let baseStatusLanguage = "{ } Canvas";
   let tabs = null;
   let persistTimer = 0;
+  let workspaceReconcileTimer = 0;
   let restoringWorkspace = true;
+  let pendingWorkspaceReset = false;
+  const pendingWorkspacePaths = new Set();
 
   const workspace = createWorkspaceFileSystem();
   const buffers = createEditorBufferStore();
@@ -328,6 +332,50 @@ export function bindWorkbenchFiles({
     notify: onNotify || onError
   });
 
+  async function reconcileExternalWorkspace() {
+    workspaceReconcileTimer = 0;
+    const resetAll = pendingWorkspaceReset;
+    pendingWorkspaceReset = false;
+    const changedPaths = new Set(pendingWorkspacePaths);
+    pendingWorkspacePaths.clear();
+    explorer.refresh();
+
+    const openFiles = tabs.getOpenFiles();
+    for (const fileName of openFiles) {
+      if (!workspace.hasFile(fileName)) {
+        if (buffers.isDirty(fileName)) {
+          onNotify?.(`Workspace removed ${fileName}; unsaved editor buffer was kept.`);
+          continue;
+        }
+        tabs.close(fileName, { focus: false });
+        continue;
+      }
+      if (!resetAll && !changedPaths.has(fileName)) continue;
+      if (buffers.isDirty(fileName)) continue;
+      sourceLoader.release(fileName);
+      sourceViewport.release(fileName);
+      buffers.remove(fileName, { discardDirty: true });
+      if (activeFile === fileName) sourceLoader.load(fileName);
+    }
+    scheduleEditorWorkspacePersist();
+  }
+
+  function scheduleExternalWorkspaceReconcile(change = {}) {
+    if (change.type === "workspace-reset") pendingWorkspaceReset = true;
+    if (change.path) pendingWorkspacePaths.add(change.path);
+    if (change.target) pendingWorkspacePaths.add(change.target);
+    if (workspaceReconcileTimer) clearTimeout(workspaceReconcileTimer);
+    workspaceReconcileTimer = window.setTimeout(() => {
+      reconcileExternalWorkspace().catch((error) => onError?.(error instanceof Error ? error.message : String(error)));
+    }, EXTERNAL_WORKSPACE_RECONCILE_DELAY_MS);
+  }
+
+  workspace.subscribe((change) => {
+    if (change.type === "file-renamed") renameOpenFile(change.path, change.target, "file");
+    else if (change.type === "directory-renamed") renameOpenFile(change.path, change.target, "directory");
+    scheduleExternalWorkspaceReconcile(change);
+  });
+
   function restorePersistedWorkspace() {
     const workspaceState = loadEditorWorkspace(persistenceOptions());
     if (!workspaceState) {
@@ -347,7 +395,11 @@ export function bindWorkbenchFiles({
 
   function resetEditorWorkspace() {
     if (persistTimer) clearTimeout(persistTimer);
+    if (workspaceReconcileTimer) clearTimeout(workspaceReconcileTimer);
     persistTimer = 0;
+    workspaceReconcileTimer = 0;
+    pendingWorkspaceReset = false;
+    pendingWorkspacePaths.clear();
     restoringWorkspace = true;
     tabs.clear();
     sessions.clear();
