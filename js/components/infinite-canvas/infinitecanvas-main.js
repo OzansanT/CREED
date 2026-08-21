@@ -1,5 +1,7 @@
 import { createCommandEngine } from "../../core/command-engine.js";
-import { state } from "../../core/state.js";
+import { MIN_ZOOM, MAX_ZOOM } from "../../core/config.js";
+import { getViewportWorldCenter } from "../../core/coordinates.js";
+import { state, clamp } from "../../core/state.js";
 import { loadState, saveState } from "../../core/storage.js";
 import { createRenderScheduler } from "../../ui/render-scheduler.js";
 import { updateUI } from "../../ui/ui.js";
@@ -60,6 +62,33 @@ export function createInfiniteCanvasRuntime(elements) {
 
   function redo() {
     if (history.redo()) notify("Redo");
+  }
+
+  function captureView() {
+    const center = getViewportWorldCenter(elements.canvas, state);
+    return { center: { x: center.x, y: center.y }, zoom: state.zoom };
+  }
+
+  function restoreView(view) {
+    const center = view?.center;
+    if (!center || !Number.isFinite(Number(center.x)) || !Number.isFinite(Number(center.y))) return false;
+    state.zoom = clamp(Number(view.zoom) || state.zoom, MIN_ZOOM, MAX_ZOOM);
+    state.x = (elements.canvas.clientWidth / 2) - (Number(center.x) * state.zoom);
+    state.y = (elements.canvas.clientHeight / 2) - (Number(center.y) * state.zoom);
+    update();
+    persist();
+    return true;
+  }
+
+  function focusWorldPoint(worldX, worldY) {
+    const x = Number(worldX);
+    const y = Number(worldY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    state.x = (elements.canvas.clientWidth / 2) - (x * state.zoom);
+    state.y = (elements.canvas.clientHeight / 2) - (y * state.zoom);
+    update();
+    persist();
+    return true;
   }
 
   function initializePosition() {
@@ -218,6 +247,9 @@ export function createInfiniteCanvasRuntime(elements) {
     history,
     renderScheduler,
     fitContent,
+    captureView,
+    restoreView,
+    focusWorldPoint,
     scheduleViewportCenterPreservation
   });
 }
