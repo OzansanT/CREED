@@ -7,3 +7,5 @@ export const STORAGE_KEY = "infiniteCanvasLODState.v3";
 export const PANEL_LAYOUT_STORAGE_KEY = "creedPanelLayout.v2";
 export const LEGACY_PANEL_LAYOUT_STORAGE_KEY = "creedPanelLayout.v1";
 export const EDITOR_WORKSPACE_STORAGE_KEY = "creedEditorWorkspace.v1";
+export const WORKSPACE_FS_STORAGE_KEY = "creedWorkspaceFs.v1";
+export const EDITOR_BUFFER_STORAGE_KEY = "creedEditorBuffers.v1";
