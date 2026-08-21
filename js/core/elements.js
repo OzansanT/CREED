@@ -12,6 +12,7 @@ export function getElements() {
     togglePrimarySidebarBtn: document.getElementById("togglePrimarySidebarBtn"),
     activityExplorerBtn: document.getElementById("activityExplorerBtn"),
     activitySearchBtn: document.getElementById("activitySearchBtn"),
+    activitySourceControlBtn: document.getElementById("activitySourceControlBtn"),
     activityRunBtn: document.getElementById("activityRunBtn"),
     toggleSecondarySidebarBtn: document.getElementById("toggleSecondarySidebarBtn"),
     secondarySidebar: document.getElementById("secondarySidebar"),
