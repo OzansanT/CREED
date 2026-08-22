@@ -110,6 +110,7 @@ assert(terminalBridge.includes("runChecks({ reveal: true })"), "Terminal npm che
 const main = read("js/main.js");
 assert(main.includes("problemsView: elements.problemsView"), "Application must bind diagnostics to the real Problems panel.");
 assert(main.includes("setDiagnostics(problems"), "Diagnostics must project architecture problems onto canvas nodes.");
+assert(main.includes('else node.removeAttribute("title")'), "Cleared diagnostics must remove stale System Graph problem titles.");
 assert(main.includes("createUnifiedWorkspaceState"), "Application must use the unified workspace-state envelope.");
 assert(main.includes("bindDiagnosticsTerminalCommand"), "Application must route terminal npm check into diagnostics.");
 
