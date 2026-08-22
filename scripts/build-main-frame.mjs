@@ -6,6 +6,12 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const framePath = resolve(repositoryRoot, "ui/main-frame.html");
 const registryPath = resolve(repositoryRoot, "ui/bars/bar-registry.json");
 const outputPath = resolve(repositoryRoot, "index.html");
+const optionalPartials = Object.freeze([
+  {
+    slot: "windows-local-launcher",
+    template: "optional/windows-local-launcher/launcher-bridge.html"
+  }
+]);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -54,9 +60,28 @@ function indentPartial(source, indentation) {
   return source.trim().split("\n").map((line) => line ? indentation + line : "").join("\n");
 }
 
+function renderOptionalPartials(frame) {
+  let output = frame;
+
+  for (const optional of optionalPartials) {
+    const marker = new RegExp("^([ \\t]*)<!-- @optional " + optional.slot + " -->[ \\t]*$", "m");
+    const matches = [...output.matchAll(new RegExp(marker.source, "gm"))];
+    assert(matches.length === 1, "Expected exactly one optional main-frame slot for " + optional.slot + ".");
+
+    const templatePath = resolve(repositoryRoot, optional.template);
+    output = output.replace(marker, (_, indentation) => {
+      if (!existsSync(templatePath)) return "";
+      return indentPartial(readFileSync(templatePath, "utf8"), indentation);
+    });
+  }
+
+  assert(!/<!-- @optional /.test(output), "Unresolved optional main-frame slot remains.");
+  return output;
+}
+
 export function renderMainFrame() {
   const bars = readRegistry();
-  let frame = readFileSync(framePath, "utf8");
+  let frame = renderOptionalPartials(readFileSync(framePath, "utf8"));
 
   for (const bar of bars) {
     const marker = new RegExp("^([ \\t]*)<!-- @bar " + bar.slot + " -->[ \\t]*$", "m");
@@ -90,7 +115,7 @@ export function checkMainFrame() {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv.includes("--check")) {
     checkMainFrame();
-    console.log("Main frame is synchronized with registered bar partials.");
+    console.log("Main frame is synchronized with registered bar and optional partials.");
   } else {
     const output = buildMainFrame();
     console.log("Built index.html from ui/main-frame.html and " + readRegistry().length + " registered bar partials (" + output.length + " bytes).");
