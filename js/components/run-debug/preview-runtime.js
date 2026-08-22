@@ -1,11 +1,52 @@
-function relativeWorkspacePath(value) {
-  const raw = String(value || "").trim();
-  if (!raw || /^(?:[a-z]+:|\/\/|#)/i.test(raw)) return null;
-  return raw.replace(/^\.\//, "").split(/[?#]/)[0];
+import { buildWorkspaceModuleGraph } from "./worker-runtime.js";
+
+const WORKSPACE_MODULE_PREFIX = "creed-workspace/";
+
+function normalizeWorkspacePath(value) {
+  const raw = String(value || "").trim().replace(/\\/g, "/").split(/[?#]/)[0];
+  if (!raw || /^(?:[a-z]+:|\/\/|#)/i.test(raw) || raw.startsWith("/")) return null;
+  const parts = [];
+  for (const part of raw.split("/")) {
+    if (!part || part === ".") continue;
+    if (part === "..") {
+      if (!parts.length) return null;
+      parts.pop();
+      continue;
+    }
+    parts.push(part);
+  }
+  return parts.join("/") || null;
+}
+
+function dirname(path) {
+  const index = path.lastIndexOf("/");
+  return index < 0 ? "" : path.slice(0, index);
+}
+
+function resolveWorkspacePath(ownerFile, reference) {
+  const value = String(reference || "").trim().replace(/\\/g, "/").split(/[?#]/)[0];
+  if (!value || /^(?:[a-z]+:|\/\/|#)/i.test(value) || value.startsWith("/")) return null;
+  const owner = normalizeWorkspacePath(ownerFile);
+  if (!owner) return null;
+  const base = dirname(owner);
+  return normalizeWorkspacePath(base ? `${base}/${value}` : value);
 }
 
 function escapeClosingScript(source) {
   return String(source).replace(/<\/script/gi, "<\\/script");
+}
+
+function escapeAttribute(value) {
+  return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function moduleAlias(path) {
+  return WORKSPACE_MODULE_PREFIX + path;
+}
+
+function moduleDataUrl(path, source) {
+  const withSourceUrl = `${source}\n//# sourceURL=workspace/${path}`;
+  return `data:text/javascript;charset=utf-8,${encodeURIComponent(withSourceUrl)}`;
 }
 
 export function createPreviewBridgeSource() {
@@ -48,43 +89,101 @@ function applyReplacements(source, replacements) {
   return output;
 }
 
-async function inlineStyles(html, workspace) {
+async function inlineStyleSheet(path, workspace, ancestors = new Set()) {
+  if (!workspace.hasFile(path)) throw new Error("Stylesheet not found: " + path);
+  if (ancestors.has(path)) throw new Error("Circular stylesheet import: " + [...ancestors, path].join(" -> "));
+  const lineage = new Set(ancestors);
+  lineage.add(path);
+  const css = String(await workspace.readFile(path));
+  const pattern = /@import\s+(?:url\(\s*)?["']([^"']+)["']\s*\)?\s*([^;]*);/gi;
+  const replacements = [];
+  for (const match of css.matchAll(pattern)) {
+    const importedPath = resolveWorkspacePath(path, match[1]);
+    if (!importedPath || !workspace.hasFile(importedPath)) continue;
+    const imported = await inlineStyleSheet(importedPath, workspace, lineage);
+    const media = String(match[2] || "").trim();
+    replacements.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      value: media ? `@media ${media} {\n${imported}\n}` : imported
+    });
+  }
+  return applyReplacements(css, replacements);
+}
+
+async function inlineStyles(html, workspace, entryFile) {
   const pattern = /<link\b([^>]*?)href=["']([^"']+)["']([^>]*)>/gi;
   const replacements = [];
   for (const match of html.matchAll(pattern)) {
     const attrs = (match[1] + " " + match[3]).toLowerCase();
     if (!/rel=["']?stylesheet/.test(attrs)) continue;
-    const path = relativeWorkspacePath(match[2]);
+    const path = resolveWorkspacePath(entryFile, match[2]);
     if (!path || !workspace.hasFile(path)) continue;
-    const css = await workspace.readFile(path);
-    replacements.push({ start: match.index, end: match.index + match[0].length, value: `<style data-creed-preview-source="${path}">\n${css}\n</style>` });
-  }
-  return applyReplacements(html, replacements);
-}
-
-async function inlineScripts(html, workspace) {
-  const pattern = /<script\b([^>]*?)src=["']([^"']+)["']([^>]*)><\/script>/gi;
-  const replacements = [];
-  for (const match of html.matchAll(pattern)) {
-    const path = relativeWorkspacePath(match[2]);
-    if (!path || !workspace.hasFile(path)) continue;
-    const source = await workspace.readFile(path);
-    const typeMatch = (match[1] + " " + match[3]).match(/type=["']([^"']+)["']/i);
-    const type = typeMatch?.[1] || "text/javascript";
+    const css = await inlineStyleSheet(path, workspace);
     replacements.push({
       start: match.index,
       end: match.index + match[0].length,
-      value: `<script type="${type}" data-creed-preview-source="${path}">\n${escapeClosingScript(source)}\n//# sourceURL=workspace/${path}\n</script>`
+      value: `<style data-creed-preview-source="${escapeAttribute(path)}">\n${css}\n</style>`
     });
   }
   return applyReplacements(html, replacements);
 }
 
+function injectImportMap(html, imports) {
+  const entries = Object.keys(imports);
+  if (!entries.length) return html;
+  const importMap = `<script type="importmap" data-creed-preview-importmap>\n${JSON.stringify({ imports }).replace(/</g, "\\u003c")}\n</script>`;
+  const headMatch = html.match(/<head\b[^>]*>/i);
+  if (headMatch) {
+    const insertion = headMatch.index + headMatch[0].length;
+    return html.slice(0, insertion) + "\n" + importMap + html.slice(insertion);
+  }
+  const doctypeMatch = html.match(/^\s*<!doctype\s+html[^>]*>/i);
+  if (doctypeMatch) {
+    const insertion = doctypeMatch.index + doctypeMatch[0].length;
+    return html.slice(0, insertion) + "\n" + importMap + html.slice(insertion);
+  }
+  return importMap + "\n" + html;
+}
+
+async function inlineScripts(html, workspace, entryFile) {
+  const pattern = /<script\b([^>]*?)src=["']([^"']+)["']([^>]*)><\/script>/gi;
+  const replacements = [];
+  const moduleImports = {};
+  for (const match of html.matchAll(pattern)) {
+    const path = resolveWorkspacePath(entryFile, match[2]);
+    if (!path || !workspace.hasFile(path)) continue;
+    const attrs = match[1] + " " + match[3];
+    const typeMatch = attrs.match(/type=["']([^"']+)["']/i);
+    const type = typeMatch?.[1] || "text/javascript";
+    if (type.trim().toLowerCase() === "module") {
+      const graph = await buildWorkspaceModuleGraph(path, workspace);
+      for (const [modulePath, source] of graph.modules) {
+        moduleImports[moduleAlias(modulePath)] = moduleDataUrl(modulePath, source);
+      }
+      replacements.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        value: `<script type="module" data-creed-preview-source="${escapeAttribute(path)}">\nimport ${JSON.stringify(moduleAlias(graph.entry))};\n</script>`
+      });
+      continue;
+    }
+    const source = await workspace.readFile(path);
+    replacements.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      value: `<script type="${escapeAttribute(type)}" data-creed-preview-source="${escapeAttribute(path)}">\n${escapeClosingScript(source)}\n//# sourceURL=workspace/${path}\n</script>`
+    });
+  }
+  return injectImportMap(applyReplacements(html, replacements), moduleImports);
+}
+
 export async function buildPreviewDocument(entry, workspace) {
-  if (!workspace.hasFile(entry)) throw new Error("Preview entry not found: " + entry);
-  let html = await workspace.readFile(entry);
-  html = await inlineStyles(html, workspace);
-  html = await inlineScripts(html, workspace);
+  const normalizedEntry = normalizeWorkspacePath(entry);
+  if (!normalizedEntry || !workspace.hasFile(normalizedEntry)) throw new Error("Preview entry not found: " + entry);
+  let html = await workspace.readFile(normalizedEntry);
+  html = await inlineStyles(html, workspace, normalizedEntry);
+  html = await inlineScripts(html, workspace, normalizedEntry);
   const bridge = `<script data-creed-preview-bridge>\n${escapeClosingScript(createPreviewBridgeSource())}\n</script>`;
   if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, bridge + "\n</body>");
   return html + "\n" + bridge;
@@ -114,7 +213,7 @@ export function createPreviewRuntime({ host, workspace, onConsole, onError, onRe
 
   async function run(entry) {
     stop();
-    entryFile = entry;
+    entryFile = normalizeWorkspacePath(entry) || String(entry || "");
     const frame = document.createElement("iframe");
     frame.id = "creedPreviewFrame";
     frame.title = "CREED sandbox preview";
@@ -122,7 +221,7 @@ export function createPreviewRuntime({ host, workspace, onConsole, onError, onRe
     Object.assign(frame.style, { width: "100%", height: "100%", border: "0", background: "white" });
     host.replaceChildren(frame);
     iframe = frame;
-    frame.srcdoc = await buildPreviewDocument(entry, workspace);
+    frame.srcdoc = await buildPreviewDocument(entryFile, workspace);
     return frame;
   }
 
