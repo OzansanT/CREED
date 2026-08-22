@@ -1,4 +1,4 @@
-import { loadRunConfig, loadTasks } from "./run-config.js";
+import { ACTIVE_JAVASCRIPT_ENTRY, loadRunConfig, loadTasks } from "./run-config.js";
 import { bindRunOutputConsoles } from "./output-console.js";
 import { createPreviewRuntime } from "./preview-runtime.js";
 import { createWorkerRuntime } from "./worker-runtime.js";
@@ -58,7 +58,7 @@ export function bindRunDebug({
   status.id = "runDebugStatus";
   status.className = "label";
   const help = document.createElement("p");
-  help.textContent = "Run index.html in a sandboxed preview or execute a JavaScript workspace file in an isolated Worker.";
+  help.textContent = "Run index.html in a sandboxed preview or execute JavaScript ES modules from the virtual workspace in an isolated module sandbox.";
   runView.append(heading, configLabel, taskSelect, controls, status, help);
   sidebar.append(runView);
 
@@ -112,7 +112,7 @@ export function bindRunDebug({
       status.textContent = "Runtime error";
     },
     onComplete: (payload) => {
-      consoles.writeOutput(`Worker completed: ${payload.fileName}`);
+      consoles.writeOutput(`Module completed: ${payload.fileName}`);
       status.textContent = "Completed";
       synchronizeControls();
     }
@@ -142,18 +142,30 @@ export function bindRunDebug({
     return true;
   }
 
+  function resolveTaskEntry(task) {
+    if (task.type !== "javascript" || task.entry !== ACTIVE_JAVASCRIPT_ENTRY) return task.entry;
+    const activeTab = document.querySelector('#fileTabs [role="tab"][aria-selected="true"][data-resource]');
+    const activeFile = String(activeTab?.dataset.resource || "");
+    if (!activeFile) throw new Error("Open a JavaScript file before running the active-file task.");
+    if (!/\.m?js$/i.test(activeFile)) throw new Error("Active file is not a JavaScript ES module: " + activeFile);
+    if (!workspace.hasFile(activeFile)) throw new Error("Active JavaScript file is not in the workspace: " + activeFile);
+    return activeFile;
+  }
+
   async function executeTask(task, { restart = false } = {}) {
     if (!task) throw new Error("No run task selected.");
+    const entry = resolveTaskEntry(task);
+    const executableTask = { ...task, entry, configuredEntry: task.entry };
     const generation = ++runGeneration;
     preview.stop();
     worker.stop();
     previewHost.hidden = task.type !== "preview";
-    runningTask = { ...task };
+    runningTask = executableTask;
     status.textContent = `${restart ? "Restarting" : "Starting"} ${task.name}…`;
-    consoles.writeOutput(`${restart ? "Restart" : "Run"}: ${task.name} (${task.type}) → ${task.entry}`, "output", { reveal: true });
+    consoles.writeOutput(`${restart ? "Restart" : "Run"}: ${task.name} (${task.type}) → ${entry}`, "output", { reveal: true });
     try {
-      if (task.type === "preview") await preview.run(task.entry);
-      else if (task.type === "javascript") await worker.run(task.entry);
+      if (task.type === "preview") await preview.run(entry);
+      else if (task.type === "javascript") await worker.run(entry);
       else throw new Error("Unsupported run task type: " + task.type);
       if (generation !== runGeneration) return false;
       status.textContent = `Running ${task.name}`;
@@ -176,7 +188,8 @@ export function bindRunDebug({
 
   async function restart() {
     if (!runningTask) return runSelected();
-    return executeTask({ ...runningTask }, { restart: true });
+    const task = { ...runningTask, entry: runningTask.configuredEntry || runningTask.entry };
+    return executeTask(task, { restart: true });
   }
 
   async function refreshConfiguration() {
@@ -188,7 +201,7 @@ export function bindRunDebug({
     for (const task of tasks) {
       const option = document.createElement("option");
       option.value = task.name;
-      option.textContent = `${task.name} — ${task.entry}`;
+      option.textContent = `${task.name} — ${task.entry === ACTIVE_JAVASCRIPT_ENTRY ? "active JavaScript" : task.entry}`;
       fragment.append(option);
     }
     taskSelect.replaceChildren(fragment);
