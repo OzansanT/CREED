@@ -206,6 +206,7 @@ const diagnosticGraph = Object.freeze({
       node.style.outline = count ? "2px solid #dc2626" : "";
       node.style.outlineOffset = count ? "2px" : "";
       if (count) node.title = `${count} diagnostic problem(s) · ${node.dataset.fileName}`;
+      else node.removeAttribute("title");
     });
   }
 });
