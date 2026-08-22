@@ -186,6 +186,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "js/ui/ui.js",
   "js/ui/unavailable-controls.js",
   "main.js",
+  "optional/windows-local-launcher/launcher-bridge.html",
   "optional/windows-local-launcher/Start-CREED.cmd",
   "optional/windows-local-launcher/start-creed.ps1",
   "package.json",
