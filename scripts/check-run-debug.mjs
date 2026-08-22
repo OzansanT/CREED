@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  ACTIVE_JAVASCRIPT_ENTRY,
   DEFAULT_RUN_CONFIG,
   RUN_CONFIG_PATH,
   TASK_CONFIG_PATH,
@@ -15,7 +16,11 @@ import {
   createPreviewBridgeSource,
   parsePreviewRuntimeLocation
 } from "../js/components/run-debug/preview-runtime.js";
-import { parseWorkerRuntimeLocation } from "../js/components/run-debug/worker-runtime.js";
+import {
+  buildModuleExecutionDocument,
+  buildWorkspaceModuleGraph,
+  parseWorkerRuntimeLocation
+} from "../js/components/run-debug/worker-runtime.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
@@ -42,6 +47,10 @@ assert.deepEqual(normalizeRunConfig({ name: "Worker", type: "javascript", entry:
   autoReload: false
 });
 
+const defaultTasks = await loadTasks(createWorkspace([]));
+assert.equal(defaultTasks[1].type, "javascript");
+assert.equal(defaultTasks[1].entry, ACTIVE_JAVASCRIPT_ENTRY, "Default JavaScript task must resolve the active editor file instead of hard-coding js/main.js.");
+
 const configWorkspace = createWorkspace([
   [RUN_CONFIG_PATH, JSON.stringify({ name: "App", type: "preview", entry: "app.html", autoReload: true })],
   [TASK_CONFIG_PATH, JSON.stringify({ tasks: [
@@ -66,6 +75,25 @@ assert(preview.includes("workspace/task.js"), "Preview scripts must retain works
 assert(preview.includes("creed-preview"), "Preview must inject the console/runtime bridge.");
 assert(createPreviewBridgeSource().includes("unhandledrejection"), "Preview bridge must capture promise failures.");
 
+const moduleWorkspace = createWorkspace([
+  ["tasks/main.js", 'import { answer } from "./lib/value.js"; console.log(answer);'],
+  ["tasks/lib/value.js", 'export { answer } from "./answer.js";'],
+  ["tasks/lib/answer.js", "export const answer = 42;"]
+]);
+const moduleGraph = await buildWorkspaceModuleGraph("tasks/main.js", moduleWorkspace);
+assert.equal(moduleGraph.modules.size, 3, "JavaScript runtime must include the complete relative ES-module dependency graph.");
+assert(moduleGraph.modules.get("tasks/main.js").includes("creed-workspace/tasks/lib/value.js"), "Entry imports must be remapped into the virtual workspace.");
+assert(moduleGraph.modules.get("tasks/lib/value.js").includes("creed-workspace/tasks/lib/answer.js"), "Nested module imports must be remapped into the virtual workspace.");
+const moduleDocument = await buildModuleExecutionDocument("tasks/main.js", moduleWorkspace);
+assert(moduleDocument.includes('type="importmap"'), "JavaScript module runtime must provide an import map.");
+assert(moduleDocument.includes("creed-workspace/tasks/main.js"), "Module runtime must map the entry module.");
+assert(moduleDocument.includes("creed-workspace/tasks/lib/value.js"), "Module runtime must map dependencies.");
+await assert.rejects(
+  () => buildWorkspaceModuleGraph("tasks/missing.js", moduleWorkspace),
+  /JavaScript entry not found/,
+  "Missing JavaScript entries must fail before runtime launch."
+);
+
 assert.deepEqual(
   parsePreviewRuntimeLocation({ fileName: "workspace/js/app.js:12:4", line: 12, column: 4 }),
   { fileName: "js/app.js", line: 12, column: 4 }
@@ -82,6 +110,8 @@ assert(controller.includes('stopButton.id = "stopTaskBtn"'), "Stop control is mi
 assert(controller.includes('restartButton.id = "restartTaskBtn"'), "Restart control is missing.");
 assert(controller.includes("workspace.subscribe"), "Live reload must react to workspace writes.");
 assert(controller.includes("openFileAt"), "Runtime errors must route back to source navigation.");
+assert(controller.includes("ACTIVE_JAVASCRIPT_ENTRY"), "Run controller must support the active JavaScript task sentinel.");
+assert(controller.includes('[aria-selected="true"][data-resource]'), "Active JavaScript task must resolve the selected editor tab.");
 
 const main = read("js/main.js");
 assert(main.includes('bindRunDebug'), "Application orchestration must bind Run and Debug.");
