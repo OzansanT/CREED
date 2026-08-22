@@ -75,6 +75,29 @@ assert(preview.includes("workspace/task.js"), "Preview scripts must retain works
 assert(preview.includes("creed-preview"), "Preview must inject the console/runtime bridge.");
 assert(createPreviewBridgeSource().includes("unhandledrejection"), "Preview bridge must capture promise failures.");
 
+const nestedPreviewWorkspace = createWorkspace([
+  ["pages/demo/index.html", '<!doctype html><html><head><link rel="stylesheet" href="./styles/page.css?theme=1"></head><body><main>Nested preview</main><script type="module" src="./scripts/app.js"></script></body></html>'],
+  ["pages/demo/styles/page.css", '@import "./tokens.css"; main { color: var(--accent); }'],
+  ["pages/demo/styles/tokens.css", ":root { --accent: rebeccapurple; }"],
+  ["pages/demo/scripts/app.js", 'import { boot } from "./lib/boot.js"; boot();'],
+  ["pages/demo/scripts/lib/boot.js", 'export { value } from "./value.js"; export function boot() { console.log(value); }'],
+  ["pages/demo/scripts/lib/value.js", 'export const value = "preview-ok";']
+]);
+const nestedPreview = await buildPreviewDocument("pages/demo/index.html", nestedPreviewWorkspace);
+assert(nestedPreview.includes('data-creed-preview-source="pages/demo/styles/page.css"'), "Preview styles must resolve relative to the HTML entry directory.");
+assert(nestedPreview.includes(":root { --accent: rebeccapurple; }"), "Nested CSS @import dependencies must resolve relative to their owning stylesheet.");
+assert(!nestedPreview.includes('@import "./tokens.css"'), "Resolved workspace CSS imports must be inlined into the preview document.");
+assert(nestedPreview.includes('data-creed-preview-source="pages/demo/scripts/app.js"'), "Preview module scripts must resolve relative to the HTML entry directory.");
+assert(nestedPreview.includes('type="importmap" data-creed-preview-importmap'), "Preview ES modules must provide a virtual-workspace import map.");
+assert(nestedPreview.includes("creed-workspace/pages/demo/scripts/app.js"), "Preview import map must include the entry module.");
+assert(nestedPreview.includes("creed-workspace/pages/demo/scripts/lib/boot.js"), "Preview import map must include nested module dependencies.");
+assert(nestedPreview.includes("creed-workspace/pages/demo/scripts/lib/value.js"), "Preview import map must include transitive module dependencies.");
+await assert.rejects(
+  () => buildPreviewDocument("pages/demo/missing.html", nestedPreviewWorkspace),
+  /Preview entry not found/,
+  "Missing nested preview entries must fail before iframe launch."
+);
+
 const moduleWorkspace = createWorkspace([
   ["tasks/main.js", 'import { answer } from "./lib/value.js"; console.log(answer);'],
   ["tasks/lib/value.js", 'export { answer } from "./answer.js";'],
