@@ -8,6 +8,7 @@ export const DEFAULT_RUN_CONFIG = Object.freeze({
 
 export const RUN_CONFIG_PATH = ".creed/run.json";
 export const TASK_CONFIG_PATH = ".creed/tasks.json";
+export const ACTIVE_JAVASCRIPT_ENTRY = "$active";
 
 function normalizeTask(task, index) {
   if (!task || typeof task !== "object") return null;
@@ -47,7 +48,7 @@ export async function loadRunConfig(workspace) {
 export async function loadTasks(workspace) {
   const defaults = [
     { name: "Preview", type: "preview", entry: "index.html", autoReload: true },
-    { name: "Run active JavaScript", type: "javascript", entry: "js/main.js", autoReload: false }
+    { name: "Run active JavaScript", type: "javascript", entry: ACTIVE_JAVASCRIPT_ENTRY, autoReload: false }
   ];
   if (!workspace?.hasFile?.(TASK_CONFIG_PATH)) return defaults;
   try {
