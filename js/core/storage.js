@@ -22,6 +22,21 @@ function normalizeAnchor(value) {
   };
 }
 
+function normalizeCanvasComponent(value) {
+  if (!value || typeof value !== "object" || typeof value.type !== "string" || !value.type.trim()) return null;
+  const point = normalizeWorldPoint(value);
+  if (!point) return null;
+  return {
+    id: typeof value.id === "string" && value.id ? value.id : `cmp-${value.type}-${Math.random().toString(36).slice(2)}`,
+    type: value.type.trim(),
+    worldX: point.worldX,
+    worldY: point.worldY,
+    width: Math.max(220, Number(value.width) || 360),
+    height: Math.max(140, Number(value.height) || 240),
+    data: value.data && typeof value.data === "object" ? { ...value.data } : {}
+  };
+}
+
 export function saveState(canvas) {
   try {
     const camera = canvas
@@ -61,18 +76,31 @@ export function loadState(canvas) {
     state.sidebarView = ["canvas", "infiniteCanvas", "components"].includes(saved.sidebarView)
       ? saved.sidebarView
       : "canvas";
+    state.secondarySidebarView = ["chat", "components"].includes(saved.secondarySidebarView)
+      ? saved.secondarySidebarView
+      : "chat";
 
     const originCard = normalizeWorldPoint(saved.originCard);
     state.originCard = originCard || { worldX: 0, worldY: 0 };
 
-    const jsonCard = normalizeWorldPoint(saved.jsonCard);
-    state.jsonCard = jsonCard
-      ? {
-          visible: saved.jsonCard.visible === true,
-          worldX: jsonCard.worldX,
-          worldY: jsonCard.worldY
-        }
-      : { visible: false, worldX: 0, worldY: 0 };
+    const components = Array.isArray(saved.canvasComponents)
+      ? saved.canvasComponents.map(normalizeCanvasComponent).filter(Boolean)
+      : [];
+
+    const legacyJsonCard = normalizeWorldPoint(saved.jsonCard);
+    if (saved.jsonCard?.visible === true && legacyJsonCard && !components.some((item) => item.type === "json-file")) {
+      components.push({
+        id: "cmp-json-file-legacy",
+        type: "json-file",
+        worldX: legacyJsonCard.worldX,
+        worldY: legacyJsonCard.worldY,
+        width: 320,
+        height: 180,
+        data: {}
+      });
+    }
+    state.canvasComponents = components;
+    state.jsonCard = { visible: false, worldX: 0, worldY: 0 };
 
     return true;
   } catch {
