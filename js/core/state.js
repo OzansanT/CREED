@@ -4,7 +4,9 @@ export const state = {
   zoom: 1,
   anchor: null,
   sidebarView: "canvas",
+  secondarySidebarView: "chat",
   originCard: { worldX: 0, worldY: 0 },
-  jsonCard: { visible: false, worldX: 0, worldY: 0 }
+  jsonCard: { visible: false, worldX: 0, worldY: 0 },
+  canvasComponents: []
 };
 export function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
