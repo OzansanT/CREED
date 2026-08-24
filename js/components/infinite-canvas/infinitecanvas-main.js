@@ -16,7 +16,7 @@ import { bindSidebarMenu } from "./sidebar-input.js";
 import { bindResetControls } from "./reset-input.js";
 import { bindCardDrag } from "./card-input.js";
 
-export function createInfiniteCanvasRuntime(elements, { stateAlreadyLoaded = false } = {}) {
+export function createInfiniteCanvasRuntime(elements, { stateAlreadyLoaded = state.canvasComponents.length > 0 } = {}) {
   const renderScheduler = createRenderScheduler(() => updateUI(elements, state));
   const update = renderScheduler.schedule;
   const persist = () => saveState(elements.canvas);
