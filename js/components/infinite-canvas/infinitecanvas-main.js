@@ -15,7 +15,6 @@ import { bindKeyboard } from "./keyboard.js";
 import { bindSidebarMenu } from "./sidebar-input.js";
 import { bindResetControls } from "./reset-input.js";
 import { bindCardDrag } from "./card-input.js";
-import { bindJsonFileButton } from "./json-file.js";
 
 export function createInfiniteCanvasRuntime(elements) {
   const renderScheduler = createRenderScheduler(() => updateUI(elements, state));
@@ -23,6 +22,7 @@ export function createInfiniteCanvasRuntime(elements) {
   const persist = () => saveState(elements.canvas);
   const notify = (message) => showToast(elements.toast, message);
   const history = createCommandEngine({ update, persist });
+  let getCanvasComponentItems = () => [];
 
   function home() {
     returnToOrigin({ state, canvas: elements.canvas, update, persist });
@@ -35,6 +35,7 @@ export function createInfiniteCanvasRuntime(elements) {
       canvas: elements.canvas,
       originCard: elements.originCard,
       jsonCard: elements.jsonComponentCard,
+      componentItems: getCanvasComponentItems(),
       update,
       persist
     });
@@ -143,10 +144,15 @@ export function createInfiniteCanvasRuntime(elements) {
     primarySidebar,
     secondarySidebar,
     bottomPanel,
-    panelResize
+    panelResize,
+    onAddJsonCard,
+    onCanvasReset,
+    onInfiniteReset,
+    componentItemsProvider
   }) {
     if (bound) return;
     bound = true;
+    if (typeof componentItemsProvider === "function") getCanvasComponentItems = componentItemsProvider;
 
     elements.zoomRange.addEventListener("input", () => setZoomFromCenter({
       state,
@@ -188,7 +194,8 @@ export function createInfiniteCanvasRuntime(elements) {
       state,
       update,
       persist,
-      history
+      history,
+      onAddJsonCard
     });
     bindCardDrag({
       card: elements.originCard,
@@ -197,18 +204,8 @@ export function createInfiniteCanvasRuntime(elements) {
       update,
       persist,
       history,
-      getSnapPoints: () => state.jsonCard.visible ? [state.jsonCard] : []
+      getSnapPoints: () => state.canvasComponents
     });
-    bindCardDrag({
-      card: elements.jsonComponentCard,
-      state,
-      positionKey: "jsonCard",
-      update,
-      persist,
-      history,
-      getSnapPoints: () => [state.originCard]
-    });
-    bindJsonFileButton({ button: elements.openJsonFileBtn });
     bindKeyboard({
       onHome: home,
       onSetAnchor: saveAnchor,
@@ -226,9 +223,13 @@ export function createInfiniteCanvasRuntime(elements) {
       update,
       persist,
       notify,
-      onCanvasReset: () => history.clear(),
+      onCanvasReset: () => {
+        history.clear();
+        onCanvasReset?.();
+      },
       onInfiniteReset: () => {
         history.clear();
+        onInfiniteReset?.();
         resetEditorWorkspace?.();
         primarySidebar.setVisible(true, false);
         secondarySidebar.setVisible(true, false);
@@ -243,6 +244,7 @@ export function createInfiniteCanvasRuntime(elements) {
 
   return Object.freeze({
     update,
+    persist,
     bind,
     history,
     renderScheduler,
