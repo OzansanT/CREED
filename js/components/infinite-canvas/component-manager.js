@@ -34,6 +34,11 @@ export function bindCanvasComponentManager({
   if (!Array.isArray(state.canvasComponents)) state.canvasComponents = [];
 
   const mounted = new Map();
+  let api = null;
+
+  function snapshot() {
+    return state.canvasComponents.map((item) => ({ ...item, data: { ...(item.data || {}) } }));
+  }
 
   function setPosition(element, record) {
     element.style.left = `${record.worldX}px`;
@@ -42,15 +47,19 @@ export function bindCanvasComponentManager({
     element.style.height = `${record.height}px`;
   }
 
-  function applySnapshot(snapshot) {
-    state.canvasComponents = snapshot.map((item) => ({ ...item, data: { ...(item.data || {}) } }));
+  function unmountRecord(id) {
+    const entry = mounted.get(id);
+    if (!entry) return;
+    try { entry.dispose?.(); } catch {}
+    entry.shell.remove();
+    mounted.delete(id);
+  }
+
+  function applySnapshot(nextSnapshot) {
+    state.canvasComponents = nextSnapshot.map((item) => ({ ...item, data: { ...(item.data || {}) } }));
     renderAll();
     update?.();
     persist?.();
-  }
-
-  function snapshot() {
-    return state.canvasComponents.map((item) => ({ ...item, data: { ...(item.data || {}) } }));
   }
 
   function bindInstanceDrag(shell, handle, record) {
@@ -95,8 +104,8 @@ export function bindCanvasComponentManager({
     });
 
     function finish(event) {
-      if (event.pointerId !== pointerId) return;
-      event.stopPropagation();
+      if (pointerId === null || event.pointerId !== pointerId) return;
+      event.stopPropagation?.();
       const active = pointerId;
       pointerId = null;
       shell.classList.remove("is-dragging");
@@ -115,8 +124,22 @@ export function bindCanvasComponentManager({
 
     handle.addEventListener("pointerup", finish);
     handle.addEventListener("pointercancel", finish);
-    handle.addEventListener("lostpointercapture", (event) => {
-      if (pointerId !== null) finish({ ...event, pointerId, stopPropagation() {} });
+    handle.addEventListener("lostpointercapture", () => {
+      if (pointerId === null) return;
+      const active = pointerId;
+      pointerId = null;
+      shell.classList.remove("is-dragging");
+      if (!moved) return;
+      const afterX = record.worldX;
+      const afterY = record.worldY;
+      persist?.();
+      history?.record(createCommand({
+        label: `Move ${record.type} component`,
+        redo: () => { record.worldX = afterX; record.worldY = afterY; setPosition(shell, record); persist?.(); },
+        undo: () => { record.worldX = originalX; record.worldY = originalY; setPosition(shell, record); persist?.(); },
+        isNoop: () => originalX === afterX && originalY === afterY
+      }));
+      void active;
     });
   }
 
@@ -129,28 +152,23 @@ export function bindCanvasComponentManager({
     shell.dataset.componentId = record.id;
     shell.dataset.componentType = record.type;
     shell.tabIndex = 0;
-    shell.style.position = "absolute";
-    shell.style.display = "flex";
-    shell.style.flexDirection = "column";
-    shell.style.padding = "0";
-    shell.style.overflow = "hidden";
-    shell.style.minWidth = "220px";
-    shell.style.minHeight = "140px";
+    Object.assign(shell.style, {
+      position: "absolute", display: "flex", flexDirection: "column", padding: "0", overflow: "hidden",
+      minWidth: "220px", minHeight: "140px", cursor: "default", touchAction: "auto"
+    });
     setPosition(shell, record);
 
     const header = document.createElement("header");
     header.className = "canvas-component__header";
     Object.assign(header.style, {
       display: "flex", alignItems: "center", gap: "8px", minHeight: "34px", padding: "5px 7px 5px 10px",
-      borderBottom: "1px solid var(--border, #d0d0d0)", cursor: "grab", userSelect: "none", background: "var(--panel-bg, #f7f7fa)"
+      borderBottom: "1px solid var(--border, #d0d0d0)", cursor: "grab", userSelect: "none", touchAction: "none",
+      background: "var(--panel-bg, #f7f7fa)"
     });
 
     const title = document.createElement("strong");
     title.textContent = definition.title;
-    title.style.flex = "1";
-    title.style.overflow = "hidden";
-    title.style.textOverflow = "ellipsis";
-    title.style.whiteSpace = "nowrap";
+    Object.assign(title.style, { flex: "1", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 
     const close = document.createElement("button");
     close.type = "button";
@@ -158,12 +176,13 @@ export function bindCanvasComponentManager({
     close.textContent = "×";
     close.title = `Remove ${definition.title}`;
     close.setAttribute("aria-label", `Remove ${definition.title}`);
+    Object.assign(close.style, { width: "28px", minWidth: "28px" });
     close.addEventListener("pointerdown", (event) => event.stopPropagation());
     close.addEventListener("click", (event) => { event.stopPropagation(); remove(record.id); });
 
     const content = document.createElement("div");
     content.className = "canvas-component__content";
-    Object.assign(content.style, { position: "relative", flex: "1", minHeight: "0", overflow: "hidden" });
+    Object.assign(content.style, { position: "relative", flex: "1", minHeight: "0", overflow: "hidden", userSelect: "text" });
 
     header.append(title, close);
     shell.append(header, content);
@@ -173,14 +192,6 @@ export function bindCanvasComponentManager({
     mounted.set(record.id, { shell, dispose });
     bindInstanceDrag(shell, header, record);
     return shell;
-  }
-
-  function unmountRecord(id) {
-    const entry = mounted.get(id);
-    if (!entry) return;
-    try { entry.dispose?.(); } catch {}
-    entry.shell.remove();
-    mounted.delete(id);
   }
 
   function renderAll() {
@@ -208,8 +219,8 @@ export function bindCanvasComponentManager({
     const before = snapshot();
     const record = normalizeRecord(suppliedRecord || {
       type,
-      worldX: center.x - (definition.defaultWidth || 360) / 2,
-      worldY: center.y - (definition.defaultHeight || 240) / 2,
+      worldX: center.x,
+      worldY: center.y,
       width: definition.defaultWidth,
       height: definition.defaultHeight
     }, definition);
@@ -281,7 +292,7 @@ export function bindCanvasComponentManager({
     add(type, point);
   });
 
-  const api = Object.freeze({
+  api = Object.freeze({
     add,
     remove,
     clear,
