@@ -22,10 +22,26 @@ function normalizeAnchor(value) {
   };
 }
 
+function normalizeComponentBounds(value) {
+  const point = normalizeWorldPoint(value);
+  if (!point) return null;
+  const width = Number(value.width);
+  const height = Number(value.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+  return {
+    ...point,
+    width: Math.max(220, width),
+    height: Math.max(140, height)
+  };
+}
+
 function normalizeCanvasComponent(value) {
   if (!value || typeof value !== "object" || typeof value.type !== "string" || !value.type.trim()) return null;
   const point = normalizeWorldPoint(value);
   if (!point) return null;
+  const windowState = ["normal", "minimized", "maximized"].includes(value.windowState)
+    ? value.windowState
+    : "normal";
   return {
     id: typeof value.id === "string" && value.id ? value.id : `cmp-${value.type}-${Math.random().toString(36).slice(2)}`,
     type: value.type.trim(),
@@ -33,6 +49,8 @@ function normalizeCanvasComponent(value) {
     worldY: point.worldY,
     width: Math.max(220, Number(value.width) || 360),
     height: Math.max(140, Number(value.height) || 240),
+    windowState,
+    restoreBounds: windowState === "maximized" ? normalizeComponentBounds(value.restoreBounds) : null,
     data: value.data && typeof value.data === "object" ? { ...value.data } : {}
   };
 }
@@ -96,6 +114,8 @@ export function loadState(canvas) {
         worldY: legacyJsonCard.worldY,
         width: 320,
         height: 180,
+        windowState: "normal",
+        restoreBounds: null,
         data: {}
       });
     }
