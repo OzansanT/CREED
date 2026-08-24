@@ -34,10 +34,14 @@ function measureWorldItem(element, position, zoom) {
   };
 }
 
-export function fitCurrentCanvasContent({ state, canvas, originCard, jsonCard, update, persist }) {
+export function fitCurrentCanvasContent({ state, canvas, originCard, jsonCard, componentItems = [], update, persist }) {
   const items = [measureWorldItem(originCard, state.originCard, state.zoom)];
-  if (state.jsonCard.visible && !jsonCard.hidden) {
+  if (state.jsonCard.visible && jsonCard && !jsonCard.hidden) {
     items.push(measureWorldItem(jsonCard, state.jsonCard, state.zoom));
+  }
+  for (const item of componentItems || []) {
+    if (![item?.worldX, item?.worldY, item?.width, item?.height].every(Number.isFinite)) continue;
+    items.push({ worldX: item.worldX, worldY: item.worldY, width: item.width, height: item.height });
   }
 
   const view = calculateFitView({

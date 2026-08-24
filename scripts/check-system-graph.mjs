@@ -50,15 +50,29 @@ assert(jsOnly.nodes.length >= 2 && jsOnly.nodes.every((node) => node.category ==
 assert(jsOnly.edges.every((edge) => jsOnly.nodes.some((node) => node.id === edge.from) && jsOnly.nodes.some((node) => node.id === edge.to)), "Filtered edges must reference visible nodes only.");
 
 const view = read("js/components/infinite-canvas/system-graph-view.js");
-assert(view.includes("openFile?.(node.fileName)"), "Canvas file nodes must open workspace files.");
-assert(view.includes("function focusSymbol"), "System graph must support symbol-to-canvas navigation.");
+assert(view.includes("openFile?.(node.fileName)"), "Graph file nodes must open workspace files.");
+assert(view.includes("function focusSymbol"), "System graph must support symbol navigation.");
 assert(view.includes("SYSTEM_GRAPH_VIEWS_STORAGE_KEY"), "Named graph views must be persisted.");
 assert(view.includes("dataset.graphCategory"), "System graph must expose category filters.");
-const canvasRuntime = read("js/components/infinite-canvas/infinitecanvas-main.js");
-assert(canvasRuntime.includes("focusWorldPoint"), "Canvas runtime must expose world-point focusing.");
-assert(canvasRuntime.includes("captureView") && canvasRuntime.includes("restoreView"), "Canvas runtime must support named-view camera persistence.");
-const main = read("js/main.js");
-assert(main.includes("bindSystemGraph"), "Application orchestration must bind the system graph.");
-assert(main.includes("workspace: editorPanel.workspace"), "System graph must use the live writable workspace.");
+assert(view.includes("Embedded System Graph requires a host and graph service"), "System graph view must mount inside a component host.");
 
-console.log("System graph checks passed.");
+const service = read("js/components/infinite-canvas/system-graph-service.js");
+assert(service.includes("createSystemGraphService"), "Headless graph service is missing.");
+assert(service.includes("workspace.subscribe?.(scheduleRefresh)"), "Headless graph service must follow workspace changes.");
+
+const definitions = read("js/components/infinite-canvas/component-definitions.js");
+assert(definitions.includes('type: "system-graph"'), "System Graph component definition is missing.");
+assert(definitions.includes("bindSystemGraph"), "System Graph component must own the visual graph lifecycle.");
+assert(definitions.includes("singleton: true"), "System Graph must remain a singleton canvas component.");
+
+const manager = read("js/components/infinite-canvas/component-manager.js");
+assert(manager.includes("application/x-creed-canvas-component"), "Canvas components must support palette drag/drop.");
+assert(manager.includes("remove(record.id)"), "Canvas component close control must remove the instance.");
+
+const main = read("js/main.js");
+assert(main.includes("createSystemGraphService"), "Application orchestration must create the headless System Graph service.");
+assert(main.includes("registerDefaultCanvasComponents"), "Application orchestration must register canvas components.");
+assert(!main.includes("const systemGraph = bindSystemGraph"), "System Graph must not be mounted globally at startup.");
+assert(main.includes("systemGraphService: systemGraph"), "System Graph component must receive the headless service.");
+
+console.log("System graph component checks passed.");

@@ -1,4 +1,4 @@
-import { buildSystemGraph, filterSystemGraph, layoutSystemGraph } from "./system-graph-model.js";
+import { filterSystemGraph, layoutSystemGraph } from "./system-graph-model.js";
 
 export const SYSTEM_GRAPH_VIEWS_STORAGE_KEY = "creedSystemGraphViews.v1";
 const CATEGORY_LABELS = Object.freeze({ html: "HTML", css: "CSS", js: "JavaScript", component: "Components", dom: "DOM IDs" });
@@ -19,52 +19,55 @@ function button(label, title = label) {
   return element;
 }
 
+function style(element, values) {
+  Object.assign(element.style, values);
+  return element;
+}
+
 function loadViews(storage) {
   try {
     const parsed = JSON.parse(storage.getItem(SYSTEM_GRAPH_VIEWS_STORAGE_KEY));
-    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.views)) return [];
-    return parsed.views.filter((view) => view && typeof view.name === "string" && view.viewport);
+    if (!parsed || parsed.version !== 2 || !Array.isArray(parsed.views)) return [];
+    return parsed.views.filter((view) => view && typeof view.name === "string");
   } catch {
     return [];
   }
 }
 
 function persistViews(storage, views) {
-  storage.setItem(SYSTEM_GRAPH_VIEWS_STORAGE_KEY, JSON.stringify({ version: 1, views }));
+  storage.setItem(SYSTEM_GRAPH_VIEWS_STORAGE_KEY, JSON.stringify({ version: 2, views }));
 }
 
-function style(element, values) {
-  Object.assign(element.style, values);
-  return element;
+function normalizePositions(graph) {
+  const raw = layoutSystemGraph(graph);
+  if (!raw.size) return { positions: raw, width: 640, height: 420 };
+  const values = [...raw.values()];
+  const minX = Math.min(...values.map((point) => point.x));
+  const minY = Math.min(...values.map((point) => point.y));
+  const maxX = Math.max(...values.map((point) => point.x));
+  const maxY = Math.max(...values.map((point) => point.y));
+  const positions = new Map();
+  for (const [id, point] of raw) positions.set(id, { x: point.x - minX + 40, y: point.y - minY + 40 });
+  return {
+    positions,
+    width: Math.max(640, maxX - minX + NODE_WIDTH + 80),
+    height: Math.max(420, maxY - minY + NODE_HEIGHT + 80)
+  };
 }
 
 export function bindSystemGraph({
-  canvas,
-  world,
-  workspace,
+  host,
+  service,
   openFile,
-  showCanvas,
-  focusWorldPoint,
-  captureViewport,
-  restoreViewport,
   notify,
   storage = safeStorage()
 } = {}) {
-  if (!canvas || !world || !workspace) throw new TypeError("System graph requires canvas, world, and workspace.");
+  if (!host || !service?.getGraph || !service?.refresh) throw new TypeError("Embedded System Graph requires a host and graph service.");
 
-  const layer = style(document.createElement("section"), { position: "absolute", inset: "0", overflow: "visible", pointerEvents: "none" });
-  layer.id = "systemGraphLayer";
-  layer.setAttribute("aria-label", "CREED system graph");
-  const edgesSvg = style(document.createElementNS("http://www.w3.org/2000/svg", "svg"), { position: "absolute", left: "0", top: "0", width: "1px", height: "1px", overflow: "visible", pointerEvents: "none" });
-  edgesSvg.setAttribute("aria-hidden", "true");
-  const nodeHost = style(document.createElement("div"), { position: "absolute", inset: "0", overflow: "visible", pointerEvents: "none" });
-  layer.append(edgesSvg, nodeHost);
-  world.append(layer);
-
+  style(host, { display: "flex", flexDirection: "column", minHeight: "0", overflow: "hidden" });
   const toolbar = style(document.createElement("section"), {
-    position: "absolute", left: "12px", top: "12px", zIndex: "8", width: "min(520px, calc(100% - 24px))",
-    padding: "8px", border: "1px solid var(--border, #c8c8c8)", background: "var(--panel-bg, rgba(248,248,252,.96))",
-    boxShadow: "0 3px 12px rgba(0,0,0,.10)", fontSize: "12px", display: "grid", gap: "6px"
+    flex: "0 0 auto", padding: "8px", borderBottom: "1px solid var(--border, #c8c8c8)",
+    background: "var(--panel-bg, rgba(248,248,252,.98))", fontSize: "12px", display: "grid", gap: "6px"
   });
   toolbar.id = "systemGraphToolbar";
   toolbar.setAttribute("aria-label", "System graph controls");
@@ -96,8 +99,8 @@ export function bindSystemGraph({
   const symbolInput = document.createElement("input");
   symbolInput.id = "systemGraphSymbolInput";
   symbolInput.type = "search";
-  symbolInput.placeholder = "Find symbol on canvas";
-  symbolInput.setAttribute("aria-label", "Find symbol on canvas");
+  symbolInput.placeholder = "Find symbol";
+  symbolInput.setAttribute("aria-label", "Find symbol in system graph");
   style(symbolInput, { flex: "1 1 180px", minWidth: "100px" });
   const symbolButton = button("Locate Symbol");
   symbolButton.id = "locateSystemGraphSymbolBtn";
@@ -107,29 +110,32 @@ export function bindSystemGraph({
   const viewName = document.createElement("input");
   viewName.id = "systemGraphViewName";
   viewName.placeholder = "Named view";
-  viewName.setAttribute("aria-label", "Named graph view");
   const saveViewButton = button("Save View");
   const viewSelect = document.createElement("select");
   viewSelect.id = "systemGraphSavedViews";
-  viewSelect.setAttribute("aria-label", "Saved graph views");
   const loadViewButton = button("Load View");
   const deleteViewButton = button("Delete View");
   viewRow.append(viewName, saveViewButton, viewSelect, loadViewButton, deleteViewButton);
   toolbar.append(topRow, filterRow, symbolRow, viewRow);
-  canvas.append(toolbar);
 
-  let graph = { nodes: [], edges: [], symbols: [] };
+  const scroller = style(document.createElement("div"), { position: "relative", flex: "1", minHeight: "0", overflow: "auto", background: "#f3f4f6" });
+  scroller.className = "system-graph-scroller";
+  const stage = style(document.createElement("section"), { position: "relative", minWidth: "640px", minHeight: "420px" });
+  stage.id = "systemGraphLayer";
+  stage.setAttribute("aria-label", "CREED system graph");
+  const edgesSvg = style(document.createElementNS("http://www.w3.org/2000/svg", "svg"), { position: "absolute", inset: "0", pointerEvents: "none", overflow: "visible" });
+  edgesSvg.setAttribute("aria-hidden", "true");
+  const nodeHost = style(document.createElement("div"), { position: "absolute", inset: "0" });
+  stage.append(edgesSvg, nodeHost);
+  scroller.append(stage);
+  host.append(toolbar, scroller);
+
+  let graph = service.getGraph() || { nodes: [], edges: [], symbols: [] };
   let positions = new Map();
   let views = loadViews(storage);
-  let refreshTimer = 0;
-  let generation = 0;
 
   function activeCategories() {
     return [...categoryInputs].filter(([, input]) => input.checked).map(([category]) => category);
-  }
-
-  function nodeById(nodeId) {
-    return graph.nodes.find((node) => node.id === nodeId) || null;
   }
 
   function renderViews() {
@@ -176,7 +182,7 @@ export function bindSystemGraph({
       if (!position) continue;
       const nodeButton = style(button(""), {
         position: "absolute", left: `${position.x}px`, top: `${position.y}px`, width: `${NODE_WIDTH}px`, minHeight: `${NODE_HEIGHT}px`,
-        padding: "7px 9px", textAlign: "left", pointerEvents: "auto", border: "1px solid #9ca3af", borderRadius: "6px",
+        padding: "7px 9px", textAlign: "left", border: "1px solid #9ca3af", borderRadius: "6px",
         background: node.type === "dom" ? "#f8fafc" : "#ffffff", color: "#111827", boxShadow: "0 2px 7px rgba(0,0,0,.10)"
       });
       nodeButton.className = "system-graph-node";
@@ -191,7 +197,7 @@ export function bindSystemGraph({
       style(label, { display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
       nodeButton.append(kind, label);
       nodeButton.addEventListener("click", () => {
-        focusNode(node.id, { revealCanvas: false });
+        nodeButton.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
         if (node.fileName) openFile?.(node.fileName);
       });
       fragment.append(nodeButton);
@@ -201,25 +207,20 @@ export function bindSystemGraph({
 
   function render() {
     const filtered = filterSystemGraph(graph, activeCategories());
+    const layout = normalizePositions(filtered);
+    positions = layout.positions;
+    stage.style.width = `${layout.width}px`;
+    stage.style.height = `${layout.height}px`;
+    edgesSvg.setAttribute("width", String(layout.width));
+    edgesSvg.setAttribute("height", String(layout.height));
     drawEdges(filtered);
     renderNodes(filtered);
     status.textContent = `${filtered.nodes.length} nodes · ${filtered.edges.length} edges`;
   }
 
   function autoLayout() {
-    positions = layoutSystemGraph(graph);
     render();
     return positions;
-  }
-
-  function focusNode(nodeId, { revealCanvas = true } = {}) {
-    const position = positions.get(nodeId);
-    if (!position) return false;
-    if (revealCanvas) showCanvas?.();
-    focusWorldPoint?.(position.x + NODE_WIDTH / 2, position.y + NODE_HEIGHT / 2);
-    const target = nodeHost.querySelector(`[data-node-id="${CSS.escape(nodeId)}"]`);
-    target?.focus({ preventScroll: true });
-    return true;
   }
 
   function focusSymbol(symbolName) {
@@ -231,33 +232,25 @@ export function bindSystemGraph({
       notify?.(`Symbol not found: ${symbolName}`);
       return false;
     }
-    const focused = focusNode(symbol.nodeId);
-    if (focused) notify?.(`Located ${symbol.name} in ${symbol.fileName}`);
-    return focused;
+    const target = nodeHost.querySelector(`[data-node-id="${CSS.escape(symbol.nodeId)}"]`);
+    target?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+    target?.focus({ preventScroll: true });
+    if (symbol.fileName) openFile?.(symbol.fileName);
+    notify?.(`Located ${symbol.name} in ${symbol.fileName}`);
+    return Boolean(target);
   }
 
   async function refresh() {
-    const token = ++generation;
     status.textContent = "Indexing system graph…";
-    const next = await buildSystemGraph({ workspace });
-    if (token !== generation) return false;
-    graph = next;
-    autoLayout();
+    graph = await service.refresh();
+    render();
     return true;
-  }
-
-  function scheduleRefresh() {
-    clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => refresh().catch((error) => notify?.(error instanceof Error ? error.message : String(error))), 160);
   }
 
   function saveNamedView(rawName = viewName.value) {
     const name = String(rawName || "").trim();
-    if (!name) {
-      notify?.("Enter a graph view name.");
-      return false;
-    }
-    const record = { name, categories: activeCategories(), viewport: captureViewport?.() || null };
+    if (!name) return false;
+    const record = { name, categories: activeCategories(), scrollLeft: scroller.scrollLeft, scrollTop: scroller.scrollTop };
     const existing = views.findIndex((item) => item.name === name);
     if (existing >= 0) views[existing] = record;
     else views.push(record);
@@ -274,8 +267,7 @@ export function bindSystemGraph({
     if (!record) return false;
     for (const [category, input] of categoryInputs) input.checked = record.categories?.includes(category) ?? true;
     render();
-    showCanvas?.();
-    if (record.viewport) restoreViewport?.(record.viewport);
+    scroller.scrollTo({ left: Number(record.scrollLeft) || 0, top: Number(record.scrollTop) || 0 });
     notify?.(`Loaded graph view: ${record.name}`);
     return true;
   }
@@ -298,21 +290,23 @@ export function bindSystemGraph({
   saveViewButton.addEventListener("click", () => saveNamedView());
   loadViewButton.addEventListener("click", () => loadNamedView());
   deleteViewButton.addEventListener("click", () => deleteNamedView());
-  workspace.subscribe(scheduleRefresh);
+
+  const unsubscribe = service.subscribe((nextGraph) => { graph = nextGraph; render(); });
+  graph = service.getGraph();
   renderViews();
-  refresh().catch((error) => notify?.(error instanceof Error ? error.message : String(error)));
+  render();
+  if (!graph.nodes?.length) refresh().catch(() => {});
 
   return Object.freeze({
-    layer,
+    layer: stage,
     toolbar,
     refresh,
     autoLayout,
-    focusNode,
     focusSymbol,
     saveNamedView,
     loadNamedView,
     deleteNamedView,
     getGraph: () => graph,
-    getPositions: () => new Map(positions)
+    destroy() { unsubscribe?.(); host.replaceChildren(); }
   });
 }

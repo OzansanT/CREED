@@ -5,6 +5,7 @@ function resetCanvasModel(state) {
   state.anchor = null;
   state.originCard = { worldX: 0, worldY: 0 };
   state.jsonCard = { visible: false, worldX: 0, worldY: 0 };
+  state.canvasComponents = [];
 }
 
 export function bindResetControls({
@@ -41,6 +42,7 @@ export function bindResetControls({
     clearStoredState();
     resetCanvasModel(state);
     state.sidebarView = "canvas";
+    state.secondarySidebarView = "chat";
     onInfiniteReset?.();
     returnToOrigin({ state, canvas, update, persist });
     notify?.("Infinite workspace reset");

@@ -2,7 +2,8 @@ import { createCommand } from "../../core/command-engine.js";
 import { getViewportWorldCenter } from "../../core/coordinates.js";
 
 function playCardClick(card) {
-  card.classList.remove("was-clicked");
+  card?.classList.remove("was-clicked");
+  if (!card) return;
   void card.offsetWidth;
   card.classList.add("was-clicked");
 }
@@ -23,7 +24,8 @@ export function bindSidebarMenu({
   state,
   update,
   persist,
-  history
+  history,
+  onAddJsonCard
 }) {
   function setView(view) {
     state.sidebarView = view;
@@ -38,7 +40,14 @@ export function bindSidebarMenu({
   });
   componentsButton.addEventListener("click", () => setView("components"));
 
-  addJsonCardButton.addEventListener("click", () => {
+  addJsonCardButton?.addEventListener("click", () => {
+    if (onAddJsonCard) {
+      setView("components");
+      showCanvas?.();
+      onAddJsonCard();
+      return;
+    }
+
     const center = getViewportWorldCenter(canvas, state);
     const before = {
       sidebarView: state.sidebarView,
@@ -66,7 +75,7 @@ export function bindSidebarMenu({
     }
 
     requestAnimationFrame(() => {
-      jsonCard.focus({ preventScroll: true });
+      jsonCard?.focus({ preventScroll: true });
       playCardClick(jsonCard);
     });
   });
