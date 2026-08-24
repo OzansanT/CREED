@@ -9,6 +9,8 @@ import {
   GIT_WORKSPACE_STORAGE_KEY
 } from "./core/config.js";
 import { getElements } from "./core/elements.js";
+import { state } from "./core/state.js";
+import { loadState } from "./core/storage.js";
 import { createUnifiedWorkspaceState } from "./core/workspace-state.js";
 import { bindAccessibilityNavigation } from "./ui/accessibility.js";
 import { showToast } from "./ui/toast.js";
@@ -17,6 +19,7 @@ import { disableUnavailableControls } from "./ui/unavailable-controls.js";
 import { bindPrimarySidebar } from "./components/primary-sidebar/primary-sidebar-main.js";
 import { bindWorkspaceSearchView } from "./components/primary-sidebar/workspace-search-view.js";
 import { bindSecondarySidebar } from "./components/secondary-sidebar/secondary-sidebar-main.js";
+import { bindSecondarySidebarViews } from "./components/secondary-sidebar/secondary-sidebar-view-controller.js";
 import { bindBottomPanel } from "./components/bottom-panel/bottom-panel-main.js";
 import { bindTerminalSessions } from "./components/bottom-panel/terminal-session.js";
 import { bindPanelResize } from "./components/panel-resize/panel-resize-input.js";
@@ -26,7 +29,10 @@ import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
 import { bindRunDebug } from "./components/run-debug/run-debug-main.js";
 import { bindSourceControl } from "./components/source-control/source-control-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
-import { bindSystemGraph } from "./components/infinite-canvas/system-graph-view.js";
+import { createCanvasComponentRegistry } from "./components/infinite-canvas/component-registry.js";
+import { bindCanvasComponentManager } from "./components/infinite-canvas/component-manager.js";
+import { registerDefaultCanvasComponents } from "./components/infinite-canvas/component-definitions.js";
+import { createSystemGraphService } from "./components/infinite-canvas/system-graph-service.js";
 import { bindDiagnostics } from "./components/diagnostics/diagnostics-main.js";
 import { bindDiagnosticsTerminalCommand } from "./components/diagnostics/diagnostics-terminal.js";
 import { bindAIWorkbench } from "./components/ai/ai-main.js";
@@ -50,6 +56,7 @@ hydrateIcons();
 disableUnavailableControls();
 
 const elements = getElements();
+loadState(elements.canvas);
 bindAccessibilityNavigation({
   activityBar: elements.activityBar,
   sidebarTabs: elements.explorerSectionTabs,
@@ -180,28 +187,21 @@ const sourceControl = bindSourceControl({
 
 elements.activitySourceControlBtn?.setAttribute("aria-controls", sourceControl.view.id);
 
-const systemGraph = bindSystemGraph({
-  canvas: elements.canvas,
-  world: elements.world,
+const systemGraph = createSystemGraphService({
   workspace: editorPanel.workspace,
-  openFile: editorPanel.openFile,
-  showCanvas: editorPanel.showCanvas,
-  focusWorldPoint: infiniteCanvas.focusWorldPoint,
-  captureViewport: infiniteCanvas.captureView,
-  restoreViewport: infiniteCanvas.restoreView,
   notify
 });
 
+let diagnostics = null;
 const diagnosticGraph = Object.freeze({
   getGraph: systemGraph.getGraph,
-  layer: systemGraph.layer,
   setDiagnostics(problems = []) {
     const counts = new Map();
     for (const problem of problems) {
       if (!problem.fileName) continue;
       counts.set(problem.fileName, (counts.get(problem.fileName) || 0) + 1);
     }
-    systemGraph.layer.querySelectorAll(".system-graph-node").forEach((node) => {
+    elements.world.querySelectorAll(".system-graph-node").forEach((node) => {
       const count = counts.get(node.dataset.fileName) || 0;
       node.style.outline = count ? "2px solid #dc2626" : "";
       node.style.outlineOffset = count ? "2px" : "";
@@ -211,7 +211,25 @@ const diagnosticGraph = Object.freeze({
   }
 });
 
-const diagnostics = bindDiagnostics({
+const componentRegistry = registerDefaultCanvasComponents(createCanvasComponentRegistry());
+const componentManager = bindCanvasComponentManager({
+  canvas: elements.canvas,
+  world: elements.world,
+  state,
+  registry: componentRegistry,
+  update: infiniteCanvas.update,
+  persist: infiniteCanvas.persist,
+  history: infiniteCanvas.history,
+  notify,
+  context: {
+    systemGraphService: systemGraph,
+    openFile: editorPanel.openFile,
+    onSystemGraphMounted: () => requestAnimationFrame(() => diagnosticGraph.setDiagnostics(diagnostics?.model.list() || [])),
+    onSystemGraphUnmounted: () => {}
+  }
+});
+
+diagnostics = bindDiagnostics({
   problemsView: elements.problemsView,
   workspace: editorPanel.workspace,
   systemGraph: diagnosticGraph,
@@ -223,7 +241,7 @@ const diagnostics = bindDiagnostics({
 const diagnosticGraphObserver = new MutationObserver(() => {
   diagnosticGraph.setDiagnostics(diagnostics.model.list());
 });
-diagnosticGraphObserver.observe(systemGraph.layer, { childList: true, subtree: true });
+diagnosticGraphObserver.observe(elements.world, { childList: true, subtree: true });
 
 const aiWorkbench = bindAIWorkbench({
   elements,
@@ -270,6 +288,14 @@ const secondarySidebar = bindSecondarySidebar({
   onLayoutChange: handlePanelVisibilityChange
 });
 
+const secondarySidebarViews = bindSecondarySidebarViews({
+  panel: elements.secondarySidebar,
+  state,
+  registry: componentRegistry,
+  componentManager,
+  persist: infiniteCanvas.persist
+});
+
 bindTerminalSessions({
   view: elements.terminalView,
   newButton: elements.newTerminalBtn,
@@ -312,6 +338,13 @@ panelResize = bindPanelResize({
 
 infiniteCanvas.bind({
   showCanvas: editorPanel.showCanvas,
+  onAddJsonCard: () => componentManager.add("json-file"),
+  componentItemsProvider: componentManager.getRecords,
+  onCanvasReset: () => componentManager.renderAll(),
+  onInfiniteReset: () => {
+    componentManager.renderAll();
+    secondarySidebarViews.setView("chat", false);
+  },
   resetEditorWorkspace: () => {
     runDebug.stop();
     splitEditor.close();
@@ -329,6 +362,7 @@ infiniteCanvas.bind({
   panelResize
 });
 
+requestAnimationFrame(() => componentManager.renderAll());
 systemGraph.refresh()
   .then(() => diagnostics.runChecks({ reveal: false }))
   .catch(() => {});
