@@ -1,5 +1,5 @@
-export function bindSecondarySidebarViews({ panel, state, componentManager, persist } = {}) {
-  if (!panel || !state || !componentManager) throw new TypeError("Secondary sidebar views require panel, state and component manager.");
+export function bindSecondarySidebarViews({ panel, state, registry, componentManager, persist } = {}) {
+  if (!panel || !state || !registry || !componentManager) throw new TypeError("Secondary sidebar views require panel, state, registry and component manager.");
   const header = panel.querySelector("#secondarySidebarHeader");
   const content = panel.querySelector("#secondarySidebarContent");
   const chatView = panel.querySelector("#chatView");
@@ -45,7 +45,7 @@ export function bindSecondarySidebarViews({ panel, state, componentManager, pers
 
   const componentList = document.createElement("div");
   Object.assign(componentList.style, { display: "grid", gap: "8px" });
-  for (const definition of componentManager.registry?.list?.() || []) {
+  for (const definition of registry.list()) {
     const item = document.createElement("button");
     item.type = "button";
     item.dataset.canvasComponentType = definition.type;
