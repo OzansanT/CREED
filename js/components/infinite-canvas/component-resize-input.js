@@ -19,7 +19,7 @@ export function calculateResizedBounds(start, direction, deltaX, deltaY, { minWi
   };
 }
 
-function applyBounds(record, bounds) {
+function setBounds(record, bounds) {
   record.worldX = bounds.worldX;
   record.worldY = bounds.worldY;
   record.width = bounds.width;
@@ -32,12 +32,11 @@ function cursorFor(direction) {
 
 function positionHandle(handle, direction) {
   const edge = "-5px";
-  const middle = "calc(50% - 5px)";
   Object.assign(handle.style, {
     position: "absolute",
     zIndex: "5",
-    width: direction.length === 1 && ["n", "s"].includes(direction) ? "calc(100% - 16px)" : "10px",
-    height: direction.length === 1 && ["e", "w"].includes(direction) ? "calc(100% - 16px)" : "10px",
+    width: direction === "n" || direction === "s" ? "calc(100% - 16px)" : "10px",
+    height: direction === "e" || direction === "w" ? "calc(100% - 16px)" : "10px",
     cursor: cursorFor(direction),
     touchAction: "none",
     userSelect: "none"
@@ -48,15 +47,27 @@ function positionHandle(handle, direction) {
   if (direction.includes("e")) handle.style.right = edge;
   if (direction === "n" || direction === "s") handle.style.left = "8px";
   if (direction === "e" || direction === "w") handle.style.top = "8px";
-  if (direction.length === 2 && !direction.includes("n") && !direction.includes("s")) handle.style.top = middle;
 }
 
-export function bindComponentResize({ shell, record, state, persist, history, setPosition, isResizable = () => true } = {}) {
+export function bindComponentResize({
+  shell,
+  record,
+  state,
+  persist,
+  history,
+  setPosition,
+  applyRecordBounds,
+  isResizable = () => true
+} = {}) {
   if (!shell || !record || !state || typeof setPosition !== "function") {
     throw new TypeError("Component resize requires shell, record, state and setPosition.");
   }
 
+  const applyById = typeof applyRecordBounds === "function"
+    ? applyRecordBounds
+    : (_id, bounds) => { setBounds(record, bounds); setPosition(shell, record); persist?.(); };
   const handles = [];
+
   for (const direction of DIRECTIONS) {
     const handle = document.createElement("div");
     handle.className = `canvas-component__resize-handle canvas-component__resize-handle--${direction}`;
@@ -93,7 +104,7 @@ export function bindComponentResize({ shell, record, state, persist, history, se
       const deltaY = (event.clientY - startClientY) / Math.max(0.01, state.zoom);
       const next = calculateResizedBounds(startBounds, direction, deltaX, deltaY);
       resized ||= next.width !== startBounds.width || next.height !== startBounds.height;
-      applyBounds(record, next);
+      setBounds(record, next);
       setPosition(shell, record);
     });
 
@@ -110,8 +121,8 @@ export function bindComponentResize({ shell, record, state, persist, history, se
       persist?.();
       history?.record(createCommand({
         label: `Resize ${record.type} component`,
-        redo: () => { applyBounds(record, after); setPosition(shell, record); persist?.(); },
-        undo: () => { applyBounds(record, before); setPosition(shell, record); persist?.(); },
+        redo: () => applyById(record.id, after),
+        undo: () => applyById(record.id, before),
         isNoop: () => before.worldX === after.worldX && before.worldY === after.worldY && before.width === after.width && before.height === after.height
       }));
     }
@@ -119,7 +130,7 @@ export function bindComponentResize({ shell, record, state, persist, history, se
     handle.addEventListener("pointerup", finish);
     handle.addEventListener("pointercancel", finish);
     handle.addEventListener("lostpointercapture", (event) => {
-      if (pointerId !== null) finish({ ...event, pointerId });
+      if (pointerId !== null) finish({ pointerId, stopPropagation: () => event.stopPropagation?.() });
     });
   }
 
