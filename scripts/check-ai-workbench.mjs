@@ -56,16 +56,12 @@ const contextEngine = createWorkspaceContextEngine({
   semanticIndex: index,
   getActiveFile: () => "js/main.js",
   getOpenFiles: () => ["js/main.js"],
-  getProblems: () => [{ severity: "warning", code: "W", message: "sample", fileName: "js/main.js", line: 0 }],
-  getGraph: () => ({
-    nodes: [{ id: "file:js/main.js" }, { id: "file:js/run.js" }],
-    edges: [{ from: "file:js/main.js", to: "file:js/run.js", type: "import" }]
-  })
+  getProblems: () => [{ severity: "warning", code: "W", message: "sample", fileName: "js/main.js", line: 0 }]
 });
 const context = await contextEngine.build("run function");
 assert.equal(context.activeFile, "js/main.js");
-assert(context.graphSummary.neighbors.includes("js/run.js"));
 assert(context.excerpts.some((item) => item.fileName === "js/main.js"));
+assert(context.relevantFiles.some((item) => item.fileName === "js/run.js"));
 
 const sandbox = createAgentToolSandbox({ workspace, semanticIndex: index, contextEngine });
 assert(sandbox.listTools().includes("propose-patch"));
@@ -140,17 +136,11 @@ const diagnostics = {
   model: { list: () => [{ severity: "error", code: "TEST", message: "Detected issue", fileName: "app.js" }] },
   runChecks: async () => ({ counts: { error: 0, warning: 0, info: 0 }, problems: [], passed: true, sequence: ++checks })
 };
-let graphVersion = 0;
-const systemGraph = {
-  getGraph: () => ({ nodes: Array.from({ length: 1 + graphVersion }, (_, index) => ({ id: `file:${index}`, type: "file" })), edges: [] }),
-  refresh: async () => { graphVersion = 1; return true; }
-};
 let openedProposal = null;
 const workflow = createSelfDevelopmentWorkflow({
   workspace: devWorkspace,
   sourceControlProvider: provider,
   diagnostics,
-  systemGraph,
   now: () => 1000,
   openPullRequest: async (proposal) => { openedProposal = proposal; return { number: 99, ...proposal }; }
 });
