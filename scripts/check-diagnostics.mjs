@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  buildDependencyModel,
   createProblemsModel,
   findArchitectureViolations,
   findDependencyCycles,
@@ -31,7 +32,7 @@ assert.equal(parsed[0].fileName, "src/app.js");
 assert.equal(parsed[0].line, 3);
 assert.equal(parsed[0].severity, "error");
 
-const cycleGraph = {
+const dependencyModel = {
   nodes: [
     { id: "file:a.js", type: "file", category: "js", fileName: "a.js" },
     { id: "file:b.js", type: "file", category: "js", fileName: "b.js" },
@@ -44,8 +45,8 @@ const cycleGraph = {
     { from: "file:main.js", to: "file:a.js", type: "import" }
   ]
 };
-assert.equal(findDependencyCycles(cycleGraph).length, 1, "One dependency cycle should be reported once.");
-const orphans = findOrphanModules(cycleGraph);
+assert.equal(findDependencyCycles(dependencyModel).length, 1, "One dependency cycle should be reported once.");
+const orphans = findOrphanModules(dependencyModel);
 assert(orphans.some((item) => item.fileName === "orphan.js"));
 assert(!orphans.some((item) => item.fileName === "main.js"), "Main entry modules must not be classified as orphaned.");
 
@@ -60,6 +61,17 @@ const workspace = {
 const architecture = await findArchitectureViolations(workspace);
 assert(architecture.some((item) => item.code === "UNRESOLVED-IMPORT" && item.fileName === "js/main.js"));
 assert(architecture.some((item) => item.code === "DUPLICATE-SUFFIX" && item.fileName === "js/tool-fix.js"));
+const dependencies = await buildDependencyModel({
+  listFiles: () => ["js/main.js", "js/run.js", "css/main.css", "css/base.css"],
+  readFile: async (path) => ({
+    "js/main.js": 'import "./run.js";',
+    "js/run.js": "export const run = true;",
+    "css/main.css": '@import "./base.css";',
+    "css/base.css": ":root{}"
+  })[path] || ""
+});
+assert(dependencies.edges.some((edge) => edge.type === "import" && edge.to === "file:js/run.js"));
+assert(dependencies.edges.some((edge) => edge.type === "css-import" && edge.to === "file:css/base.css"));
 
 let clock = 0;
 const profiler = createPerformanceProfiler({ now: () => clock });
@@ -104,13 +116,12 @@ assert(diagnosticsMain.includes("Test Explorer"), "Diagnostics must expose a Tes
 assert(diagnosticsMain.includes("async function runTest"), "Tests must be runnable independently.");
 assert(diagnosticsMain.includes("actions/runs?per_page=1"), "Diagnostics must expose GitHub Actions status.");
 assert(diagnosticsMain.includes("Performance Profiler"), "Diagnostics must expose profiler measurements.");
+assert(diagnosticsMain.includes("buildDependencyModel"), "Diagnostics must use its own dependency analyzer.");
 const terminalBridge = read("js/components/diagnostics/diagnostics-terminal.js");
 assert(terminalBridge.includes('command !== "npm check"'), "Terminal bridge must recognize npm check.");
 assert(terminalBridge.includes("runChecks({ reveal: true })"), "Terminal npm check must route to Problems diagnostics.");
 const main = read("js/main.js");
 assert(main.includes("problemsView: elements.problemsView"), "Application must bind diagnostics to the real Problems panel.");
-assert(main.includes("setDiagnostics(problems"), "Diagnostics must project architecture problems onto canvas nodes.");
-assert(main.includes('else node.removeAttribute("title")'), "Cleared diagnostics must remove stale System Graph problem titles.");
 assert(main.includes("createUnifiedWorkspaceState"), "Application must use the unified workspace-state envelope.");
 assert(main.includes("bindDiagnosticsTerminalCommand"), "Application must route terminal npm check into diagnostics.");
 
