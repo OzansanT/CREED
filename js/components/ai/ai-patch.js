@@ -1,5 +1,3 @@
-import { createLineDiff, summarizeDiff } from "../source-control/diff-engine.js";
-
 export const AI_PATCH_SCHEMA_VERSION = 1;
 
 export function hashPatchContent(value) {
@@ -48,8 +46,7 @@ export async function inspectAIPatch(patchValue, workspace) {
       ...entry,
       exists,
       before,
-      after,
-      diff: summarizeDiff(before, after)
+      after
     }));
   }
   return Object.freeze({ patch, files });
@@ -69,13 +66,14 @@ export async function applyAIPatch(patchValue, workspace, { approved = false } =
   return inspection.files.map((entry) => ({ path: entry.path, operation: entry.operation }));
 }
 
-function renderDiffRows(before, after) {
+function renderPatchPreview(file) {
   const pre = document.createElement("pre");
   Object.assign(pre.style, { maxHeight: "230px", overflow: "auto", margin: "4px 0 8px", fontSize: "11px", whiteSpace: "pre" });
-  pre.textContent = createLineDiff(before, after).map((row) => {
-    const prefix = row.type === "insert" ? "+" : row.type === "delete" ? "-" : " ";
-    return `${prefix} ${row.text}`;
-  }).join("\n");
+  if (file.operation === "delete") {
+    pre.textContent = file.before || "(empty file)";
+    return pre;
+  }
+  pre.textContent = file.after || "(empty file)";
   return pre;
 }
 
@@ -93,8 +91,8 @@ export async function renderPatchApproval({ container, patch, workspace, onAppro
 
   for (const file of inspection.files) {
     const fileHeading = document.createElement("div");
-    fileHeading.textContent = `${file.operation.toUpperCase()} ${file.path} · +${file.diff.additions} -${file.diff.deletions}`;
-    root.append(fileHeading, renderDiffRows(file.before, file.after));
+    fileHeading.textContent = `${file.operation.toUpperCase()} ${file.path}`;
+    root.append(fileHeading, renderPatchPreview(file));
   }
 
   const actions = document.createElement("div");
