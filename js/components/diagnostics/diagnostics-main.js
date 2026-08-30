@@ -23,10 +23,20 @@ function makeButton(label) {
   return button;
 }
 
+export function navigateToDiagnostic(problem, { openFile, openFileAt } = {}) {
+  if (!problem?.fileName) return false;
+  const line = Math.max(0, Math.trunc(Number(problem.line) || 0)) + 1;
+  const column = Math.max(0, Math.trunc(Number(problem.column) || 0)) + 1;
+  if (typeof openFileAt === "function") return openFileAt(problem.fileName, line, column) !== false;
+  if (typeof openFile === "function") return openFile(problem.fileName) !== false;
+  return false;
+}
+
 export function bindDiagnostics({
   problemsView,
   workspace,
   openFile,
+  openFileAt,
   showBottomView,
   notify,
   fetchImpl = typeof fetch === "function" ? fetch.bind(globalThis) : null
@@ -90,7 +100,7 @@ export function bindDiagnostics({
       code.textContent = problem.code;
       row.append(severity, message, code);
       row.disabled = !problem.fileName;
-      row.addEventListener("click", () => { if (problem.fileName) openFile?.(problem.fileName); });
+      row.addEventListener("click", () => navigateToDiagnostic(problem, { openFile, openFileAt }));
       fragment.append(row);
     }
     problemsList.replaceChildren(fragment);
