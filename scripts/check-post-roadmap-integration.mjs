@@ -161,6 +161,9 @@ assert(launcherBridge.includes('const serverUrl = "http://localhost:8000/"'), "F
 assert(launcherBridge.includes("window.location.replace(serverUrl)"), "A detected local server must open automatically from file:// launch.");
 assert(launcherBridge.includes("css/generated/creed.css?creed-launch-probe="), "File launch must probe a CREED-specific local resource before redirecting.");
 assert(launcherBridge.includes('button.addEventListener("click", openLauncher)'), "Starting the local launcher must remain a user-gesture action for browser compatibility.");
+assert(launcherBridge.includes("Double-click <code>Start-CREED.cmd</code> beside <code>index.html</code>"), "File launch guidance must prioritize the root Start-CREED.cmd cold-start path.");
+assert(launcherBridge.includes(">Use registered launcher</button>"), "The custom-protocol launcher must be presented as a secondary registered-launcher fallback.");
+assert(!launcherBridge.includes("optional/windows-local-launcher/Start-CREED.cmd"), "File launch guidance must not send users into the optional launcher directory for normal cold starts.");
 assert(!launcherBridge.includes("window.setTimeout(openLauncher"), "File launch must not rely on a blocked timer-driven custom-protocol navigation.");
 
 const rootLauncher = read("Start-CREED.cmd");
