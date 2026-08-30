@@ -1,10 +1,42 @@
-import { buildSystemGraph, resolveWorkspaceDependency } from "../infinite-canvas/system-graph-model.js";
-
 const JS_EXTENSIONS = new Set(["js", "mjs", "cjs"]);
 
 function extensionOf(path) {
   const index = String(path || "").lastIndexOf(".");
   return index < 0 ? "" : String(path).slice(index + 1).toLowerCase();
+}
+
+function dirname(path) {
+  const index = String(path || "").lastIndexOf("/");
+  return index < 0 ? "" : String(path).slice(0, index);
+}
+
+function normalizeSegments(path) {
+  const output = [];
+  for (const segment of String(path || "").split("/")) {
+    if (!segment || segment === ".") continue;
+    if (segment === "..") output.pop();
+    else output.push(segment);
+  }
+  return output.join("/");
+}
+
+function candidatePaths(specifier, importer) {
+  if (!specifier || (!specifier.startsWith(".") && !specifier.startsWith("/"))) return [];
+  const relative = specifier.startsWith("/")
+    ? specifier.slice(1)
+    : [dirname(importer), specifier].filter(Boolean).join("/");
+  const base = normalizeSegments(relative).replace(/[?#].*$/, "");
+  const candidates = [base];
+  if (!extensionOf(base)) {
+    candidates.push(`${base}.js`, `${base}.mjs`, `${base}.json`, `${base}.css`, `${base}.html`);
+    candidates.push(`${base}/index.js`, `${base}/index.mjs`);
+  }
+  return candidates;
+}
+
+function resolveWorkspaceDependency(specifier, importer, files) {
+  const fileSet = files instanceof Set ? files : new Set(files || []);
+  return candidatePaths(specifier, importer).find((candidate) => fileSet.has(candidate)) || "";
 }
 
 function normalizeDiagnostic(value, source = "workspace") {
@@ -104,9 +136,57 @@ export function parseCheckOutput(text, { source = "npm-check" } = {}) {
   return diagnostics;
 }
 
-export function findDependencyCycles(graph) {
+function collectRelativeImports(source, extension) {
+  const values = [];
+  const patterns = extension === "css"
+    ? [/@import\s+(?:url\(\s*)?["']([^"']+)["']/g]
+    : [
+      /\b(?:import|export)\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/g,
+      /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g
+    ];
+  for (const pattern of patterns) {
+    for (const match of String(source || "").matchAll(pattern)) if (match[1]?.startsWith(".")) values.push(match[1]);
+  }
+  return values;
+}
+
+export async function buildDependencyModel(workspace) {
+  if (!workspace?.listFiles || !workspace?.readFile) throw new TypeError("Dependency analysis requires a workspace.");
+  const files = workspace.listFiles();
+  const fileSet = new Set(files);
+  const nodes = [];
+  const edges = [];
+
+  for (const fileName of files) {
+    const extension = extensionOf(fileName);
+    if (!(JS_EXTENSIONS.has(extension) || extension === "css")) continue;
+    nodes.push({
+      id: `file:${fileName}`,
+      type: "file",
+      category: JS_EXTENSIONS.has(extension) ? "js" : "css",
+      fileName
+    });
+    let source = "";
+    try { source = await workspace.readFile(fileName); } catch { continue; }
+    for (const specifier of collectRelativeImports(source, extension)) {
+      const target = resolveWorkspaceDependency(specifier, fileName, fileSet);
+      if (!target) continue;
+      const targetExtension = extensionOf(target);
+      if (!(JS_EXTENSIONS.has(targetExtension) || targetExtension === "css")) continue;
+      edges.push({
+        from: `file:${fileName}`,
+        to: `file:${target}`,
+        type: extension === "css" ? "css-import" : "import"
+      });
+    }
+  }
+
+  return Object.freeze({ nodes, edges });
+}
+
+export function findDependencyCycles(model) {
   const adjacency = new Map();
-  for (const edge of graph?.edges || []) {
+  for (const edge of model?.edges || []) {
     if (!["import", "css-import"].includes(edge.type)) continue;
     if (!adjacency.has(edge.from)) adjacency.set(edge.from, []);
     adjacency.get(edge.from).push(edge.to);
@@ -149,10 +229,10 @@ export function findDependencyCycles(graph) {
   return diagnostics;
 }
 
-export function findOrphanModules(graph) {
-  const jsNodes = (graph?.nodes || []).filter((node) => node.type === "file" && node.category === "js");
+export function findOrphanModules(model) {
+  const jsNodes = (model?.nodes || []).filter((node) => node.type === "file" && node.category === "js");
   const incoming = new Map(jsNodes.map((node) => [node.id, 0]));
-  for (const edge of graph?.edges || []) {
+  for (const edge of model?.edges || []) {
     if (edge.type === "import" && incoming.has(edge.to)) incoming.set(edge.to, incoming.get(edge.to) + 1);
   }
   const entryPatterns = [/(^|\/)main\.js$/, /worker\.js$/, /-worker\.js$/, /service-worker\.js$/];
@@ -165,20 +245,6 @@ export function findOrphanModules(graph) {
       fileName: node.fileName,
       message: "JavaScript module has no incoming workspace import edge."
     }, "orphan-modules"));
-}
-
-function collectRelativeImports(source, extension) {
-  const values = [];
-  const patterns = extension === "css"
-    ? [/@import\s+(?:url\(\s*)?["']([^"']+)["']/g]
-    : [
-      /\b(?:import|export)\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/g,
-      /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g
-    ];
-  for (const pattern of patterns) {
-    for (const match of String(source || "").matchAll(pattern)) if (match[1]?.startsWith(".")) values.push(match[1]);
-  }
-  return values;
 }
 
 export async function findArchitectureViolations(workspace) {
@@ -213,14 +279,14 @@ export async function findArchitectureViolations(workspace) {
   return diagnostics;
 }
 
-export async function runWorkspaceDiagnostics({ workspace, graph = null } = {}) {
+export async function runWorkspaceDiagnostics({ workspace, dependencies = null } = {}) {
   if (!workspace) throw new TypeError("Workspace diagnostics require a workspace.");
-  const resolvedGraph = graph || await buildSystemGraph({ workspace });
+  const resolvedDependencies = dependencies || await buildDependencyModel(workspace);
   const architecture = await findArchitectureViolations(workspace);
-  const cycles = findDependencyCycles(resolvedGraph);
-  const orphans = findOrphanModules(resolvedGraph);
+  const cycles = findDependencyCycles(resolvedDependencies);
+  const orphans = findOrphanModules(resolvedDependencies);
   return Object.freeze({
-    graph: resolvedGraph,
+    dependencies: resolvedDependencies,
     architecture,
     cycles,
     orphans,

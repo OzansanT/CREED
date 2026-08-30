@@ -7,14 +7,6 @@ function slugify(value) {
   return slug || "change";
 }
 
-function graphSnapshot(graph) {
-  return {
-    nodes: graph?.nodes?.length || 0,
-    edges: graph?.edges?.length || 0,
-    files: (graph?.nodes || []).filter((node) => node.type === "file").length
-  };
-}
-
 export function selectDevelopmentIssue(problems = []) {
   const rank = { error: 0, warning: 1, info: 2 };
   const candidates = [...problems].filter((problem) => problem && problem.message);
@@ -26,7 +18,6 @@ export function createSelfDevelopmentWorkflow({
   workspace,
   sourceControlProvider,
   diagnostics,
-  systemGraph,
   openPullRequest,
   now = () => Date.now()
 } = {}) {
@@ -61,7 +52,6 @@ export function createSelfDevelopmentWorkflow({
     const branchName = `agent/${slugify(detectedIssue?.code || detectedIssue?.message || title)}-${Math.max(0, Math.trunc(now())).toString(36)}`;
     if (branchName === "main" || baseBranch === branchName) throw new Error("Self-development cannot target main directly.");
 
-    const beforeGraph = graphSnapshot(systemGraph?.getGraph?.());
     const runState = { branchName, baseBranch, issue: detectedIssue, patch: normalizedPatch, verification: null, commit: null };
 
     const dag = createTaskDag([
@@ -84,7 +74,6 @@ export function createSelfDevelopmentWorkflow({
             context: runState,
             edit: async () => applyAIPatch(normalizedPatch, workspace, { approved: true }),
             verify: async () => {
-              await systemGraph?.refresh?.();
               const result = await diagnostics.runChecks({ reveal: false });
               return { passed: (result.counts?.error || 0) === 0, ...result };
             },
@@ -114,24 +103,12 @@ export function createSelfDevelopmentWorkflow({
         id: "review",
         dependencies: ["commit"],
         run: async () => {
-          await systemGraph?.refresh?.();
-          const afterGraph = graphSnapshot(systemGraph?.getGraph?.());
-          const graphConsequences = {
-            before: beforeGraph,
-            after: afterGraph,
-            delta: {
-              nodes: afterGraph.nodes - beforeGraph.nodes,
-              edges: afterGraph.edges - beforeGraph.edges,
-              files: afterGraph.files - beforeGraph.files
-            }
-          };
           const pullRequestProposal = {
             title,
             body: [
               "CREED self-development proposal.",
               `Issue: ${detectedIssue?.message || "user-requested improvement"}`,
-              `Verification: ${runState.verification?.passed ? "passed" : "failed"}`,
-              `Canvas graph delta: ${graphConsequences.delta.nodes} nodes, ${graphConsequences.delta.edges} edges.`
+              `Verification: ${runState.verification?.passed ? "passed" : "failed"}`
             ].join("\n\n"),
             base: baseBranch,
             head: branchName,
@@ -141,7 +118,7 @@ export function createSelfDevelopmentWorkflow({
           const pullRequest = typeof openPullRequest === "function"
             ? await openPullRequest(pullRequestProposal)
             : null;
-          return { graphConsequences, pullRequestProposal, pullRequest };
+          return { pullRequestProposal, pullRequest };
         }
       }
     ]);
@@ -155,7 +132,6 @@ export function createSelfDevelopmentWorkflow({
         branch: branchName,
         commit: runState.commit,
         verification: runState.verification,
-        graphConsequences: review.graphConsequences,
         pullRequestProposal: review.pullRequestProposal,
         pullRequest: review.pullRequest,
         tasks: result.events

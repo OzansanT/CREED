@@ -1,4 +1,5 @@
 import {
+  buildDependencyModel,
   createProblemsModel,
   findArchitectureViolations,
   findDependencyCycles,
@@ -7,7 +8,6 @@ import {
   runWorkspaceDiagnostics
 } from "./diagnostics-model.js";
 import { createPerformanceProfiler } from "./performance-profiler.js";
-import { buildSystemGraph } from "../infinite-canvas/system-graph-model.js";
 
 const DEFAULT_ACTIONS_URL = "https://api.github.com/repos/OzansanT/CREED/actions/runs?per_page=1";
 
@@ -26,7 +26,6 @@ function makeButton(label) {
 export function bindDiagnostics({
   problemsView,
   workspace,
-  systemGraph,
   openFile,
   showBottomView,
   notify,
@@ -95,7 +94,6 @@ export function bindDiagnostics({
       fragment.append(row);
     }
     problemsList.replaceChildren(fragment);
-    systemGraph?.setDiagnostics?.(problems);
   }
 
   function renderProfiler() {
@@ -114,13 +112,13 @@ export function bindDiagnostics({
     profilerList.replaceChildren(fragment);
   }
 
-  async function currentGraph() {
-    return buildSystemGraph({ workspace });
+  async function currentDependencies() {
+    return buildDependencyModel(workspace);
   }
 
   async function runChecks({ output = "", reveal = true } = {}) {
-    const graph = await currentGraph();
-    const result = await profiler.measure("workspace diagnostics", () => runWorkspaceDiagnostics({ workspace, graph }));
+    const dependencies = await currentDependencies();
+    const result = await profiler.measure("workspace diagnostics", () => runWorkspaceDiagnostics({ workspace, dependencies }));
     model.setSource("architecture", result.architecture);
     model.setSource("dependency-cycles", result.cycles);
     model.setSource("orphan-modules", result.orphans);
@@ -155,7 +153,7 @@ export function bindDiagnostics({
       id: "dependency-cycles",
       label: "Dependency cycles",
       run: async () => {
-        const diagnostics = findDependencyCycles(await currentGraph());
+        const diagnostics = findDependencyCycles(await currentDependencies());
         model.setSource("dependency-cycles", diagnostics);
         return diagnostics;
       }
@@ -164,7 +162,7 @@ export function bindDiagnostics({
       id: "orphan-modules",
       label: "Orphan modules",
       run: async () => {
-        const diagnostics = findOrphanModules(await currentGraph());
+        const diagnostics = findOrphanModules(await currentDependencies());
         model.setSource("orphan-modules", diagnostics);
         return diagnostics;
       }
