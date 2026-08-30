@@ -48,8 +48,6 @@ hydrateIcons();
 disableUnavailableControls();
 
 const elements = getElements();
-const detachedFileContextKind = document.createElement("span");
-const detachedFileContextName = document.createElement("span");
 loadState(elements.canvas);
 bindAccessibilityNavigation({
   activityBar: elements.activityBar,
@@ -76,8 +74,6 @@ const editorPanel = bindEditorPanel({
   sourceScroller: elements.sourceScroller,
   codeContent: elements.sourceContent,
   codeMinimap: elements.sourceMinimap,
-  chatContextKind: detachedFileContextKind,
-  chatContextName: detachedFileContextName,
   statusLanguage: elements.statusLanguage,
   onCanvasShow: infiniteCanvas.scheduleViewportCenterPreservation,
   onError: notify,

@@ -34,8 +34,6 @@ export function bindWorkbenchFiles({
   sourceScroller,
   codeContent,
   codeMinimap,
-  chatContextKind,
-  chatContextName,
   statusLanguage,
   onCanvasShow,
   onError,
@@ -62,8 +60,6 @@ export function bindWorkbenchFiles({
     baseStatusLanguage = language;
     breadcrumbKind.textContent = kind;
     breadcrumbName.textContent = name;
-    chatContextKind.textContent = kind;
-    chatContextName.textContent = name;
     setNavigationStatus("");
   }
 
