@@ -107,6 +107,40 @@ assert(!lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/che
 assert(lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/real-export.js" && edge.to === "file:scripts/run.js"));
 assert(lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/real-dynamic.js" && edge.to === "file:scripts/run.js"));
 
+const cssFixtureSource = [
+  '/* @import "./comment-only.css"; */',
+  '.example::before { content: \'@import "./string-only.css";\'; }',
+  '@import "./base.css";',
+  '@import url("./theme.css");',
+  '@import url( ./print.css ) print;'
+].join("\n");
+const cssFixtureFiles = [
+  "css/fixture.css",
+  "css/base.css",
+  "css/theme.css",
+  "css/print.css"
+];
+const cssFixtureWorkspace = {
+  listFiles: () => cssFixtureFiles,
+  readFile: async (path) => ({
+    "css/fixture.css": cssFixtureSource,
+    "css/base.css": ":root{}",
+    "css/theme.css": ":root{}",
+    "css/print.css": ":root{}"
+  })[path] || ""
+};
+const cssArchitecture = await findArchitectureViolations(cssFixtureWorkspace);
+assert.equal(
+  cssArchitecture.filter((item) => item.code === "UNRESOLVED-IMPORT").length,
+  0,
+  "CSS @import text inside comments or strings must not create unresolved dependencies."
+);
+const cssDependencies = await buildDependencyModel(cssFixtureWorkspace);
+assert(cssDependencies.edges.some((edge) => edge.from === "file:css/fixture.css" && edge.to === "file:css/base.css"));
+assert(cssDependencies.edges.some((edge) => edge.from === "file:css/fixture.css" && edge.to === "file:css/theme.css"));
+assert(cssDependencies.edges.some((edge) => edge.from === "file:css/fixture.css" && edge.to === "file:css/print.css"));
+assert(!cssDependencies.edges.some((edge) => /comment-only|"string-only/.test(edge.to)), "Comment/string CSS imports must not create dependency edges.");
+
 let clock = 0;
 const profiler = createPerformanceProfiler({ now: () => clock });
 const measured = await profiler.measure("test", async () => {
