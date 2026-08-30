@@ -17,8 +17,6 @@ import { hydrateIcons } from "./ui/icons.js";
 import { disableUnavailableControls } from "./ui/unavailable-controls.js";
 import { bindPrimarySidebar } from "./components/primary-sidebar/primary-sidebar-main.js";
 import { bindWorkspaceSearchView } from "./components/primary-sidebar/workspace-search-view.js";
-import { bindSecondarySidebar } from "./components/secondary-sidebar/secondary-sidebar-main.js";
-import { bindSecondarySidebarViews } from "./components/secondary-sidebar/secondary-sidebar-view-controller.js";
 import { bindBottomPanel } from "./components/bottom-panel/bottom-panel-main.js";
 import { bindTerminalSessions } from "./components/bottom-panel/terminal-session.js";
 import { bindPanelResize } from "./components/panel-resize/panel-resize-input.js";
@@ -76,8 +74,6 @@ const editorPanel = bindEditorPanel({
   sourceScroller: elements.sourceScroller,
   codeContent: elements.sourceContent,
   codeMinimap: elements.sourceMinimap,
-  chatContextKind: elements.chatContextKind,
-  chatContextName: elements.chatContextName,
   statusLanguage: elements.statusLanguage,
   onCanvasShow: infiniteCanvas.scheduleViewportCenterPreservation,
   onError: notify,
@@ -156,7 +152,6 @@ const diagnostics = bindDiagnostics({
 });
 
 const aiWorkbench = bindAIWorkbench({
-  elements,
   editorPanel,
   diagnostics,
   notify
@@ -183,23 +178,6 @@ const primarySidebar = bindPrimarySidebar({
   onLayoutChange: handlePanelVisibilityChange
 });
 
-const secondarySidebar = bindSecondarySidebar({
-  app: elements.app,
-  panel: elements.secondarySidebar,
-  layoutButton: elements.toggleSecondarySidebarBtn,
-  maximizeButton: elements.maximizeSecondarySidebarBtn,
-  closeButton: elements.closeSecondarySidebarBtn,
-  onLayoutChange: handlePanelVisibilityChange
-});
-
-const secondarySidebarViews = bindSecondarySidebarViews({
-  panel: elements.secondarySidebar,
-  state,
-  registry: componentRegistry,
-  componentManager,
-  persist: infiniteCanvas.persist
-});
-
 bindTerminalSessions({
   view: elements.terminalView,
   newButton: elements.newTerminalBtn,
@@ -222,13 +200,10 @@ panelResize = bindPanelResize({
   app: elements.app,
   workbench: elements.workbench,
   primaryPanel: elements.primarySidebar,
-  secondaryPanel: elements.secondarySidebar,
   bottomPanel: elements.bottomPanel,
   primaryController: primarySidebar,
-  secondaryController: secondarySidebar,
   bottomController: bottomPanel,
   primaryHandle: elements.primarySidebarResizeHandle,
-  secondaryHandle: elements.secondarySidebarResizeHandle,
   bottomHandle: elements.bottomPanelResizeHandle,
   onLayoutChange: infiniteCanvas.scheduleViewportCenterPreservation
 });
@@ -240,19 +215,16 @@ infiniteCanvas.bind({
   onCanvasReset: () => componentManager.renderAll(),
   onInfiniteReset: () => {
     componentManager.renderAll();
-    secondarySidebarViews.setView("chat", false);
   },
   resetEditorWorkspace: () => {
     splitEditor.close();
     const reset = editorPanel.resetWorkspace();
-    secondarySidebar.setMaximized(false, false);
     bottomPanel.setMaximized(false, false);
     aiWorkbench.refreshIndex();
     diagnostics.runChecks({ reveal: false }).catch(() => {});
     return reset;
   },
   primarySidebar,
-  secondarySidebar,
   bottomPanel,
   panelResize
 });
