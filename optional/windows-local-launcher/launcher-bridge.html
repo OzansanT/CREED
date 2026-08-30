@@ -36,20 +36,50 @@
     if (window.location.protocol !== "file:") return;
 
     document.documentElement.dataset.creedFileLaunch = "true";
+    const serverUrl = "http://localhost:8000/";
     const launcherUrl = "creed://start";
     const openLauncher = () => { window.location.href = launcherUrl; };
+    const redirectToServer = () => { window.location.replace(serverUrl); };
+
     const renderFallback = () => {
       const shell = document.createElement("main");
       shell.className = "creed-file-launch";
       shell.innerHTML = `
         <section class="creed-file-launch__card">
           <h1>Starting CREED locally</h1>
-          <p>CREED JavaScript modules cannot run directly from <code>file://</code>. CREED is handing off to the Windows local launcher.</p>
-          <p>If this is the first run on this Windows account, run <code>optional/windows-local-launcher/Start-CREED.cmd</code> once. It registers the <code>creed://</code> launcher and opens CREED through <code>http://localhost:8000/</code>.</p>
+          <p>CREED JavaScript modules cannot run directly from <code>file://</code>. Checking whether the CREED local server is already available.</p>
+          <p data-creed-launch-status role="status">Checking <code>${serverUrl}</code>…</p>
+          <p>If the server is not running, use <strong>Start CREED</strong>. On the first run for this Windows account, run <code>optional/windows-local-launcher/Start-CREED.cmd</code> once to register the <code>creed://</code> launcher.</p>
           <button type="button">Start CREED</button>
         </section>`;
-      shell.querySelector("button").addEventListener("click", openLauncher);
+
+      const status = shell.querySelector("[data-creed-launch-status]");
+      const button = shell.querySelector("button");
+      button.addEventListener("click", openLauncher);
       document.body.prepend(shell);
+
+      const probe = document.createElement("link");
+      let settled = false;
+      const settle = (available) => {
+        if (settled) return;
+        settled = true;
+        probe.remove();
+        if (available) {
+          status.textContent = "CREED server detected. Opening it now…";
+          redirectToServer();
+          return;
+        }
+        status.innerHTML = `Local server is not running. Click <strong>Start CREED</strong> to launch it.`;
+        button.focus({ preventScroll: true });
+      };
+
+      probe.rel = "stylesheet";
+      probe.media = "not all";
+      probe.href = `${serverUrl}css/generated/creed.css?creed-launch-probe=${Date.now()}`;
+      probe.addEventListener("load", () => settle(true), { once: true });
+      probe.addEventListener("error", () => settle(false), { once: true });
+      document.head.append(probe);
+      window.setTimeout(() => settle(false), 1200);
     };
 
     if (document.readyState === "loading") {
@@ -57,7 +87,5 @@
     } else {
       renderFallback();
     }
-
-    window.setTimeout(openLauncher, 50);
   })();
 </script>
