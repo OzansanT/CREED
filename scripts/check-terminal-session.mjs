@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   completeTerminalInput,
   createTerminalCommandProcessor,
+  createTerminalOutputLine,
   findTerminalSourceReferences,
   formatTerminalPath,
   loadTerminalState,
@@ -62,6 +63,24 @@ assert.deepEqual(
   [],
   "Missing files and file paths without coordinates must remain plain terminal text."
 );
+
+const historicalLine = createTerminalOutputLine("util.js:3", "output", "/workspaces/CREED/src");
+assert.deepEqual(
+  historicalLine,
+  { text: "util.js:3", kind: "output", cwd: "src" },
+  "Terminal output rows must snapshot a normalized working directory."
+);
+assert.equal(
+  findTerminalSourceReferences(historicalLine.text, { workspace, cwd: historicalLine.cwd })[0]?.fileName,
+  "src/util.js",
+  "A historical relative source reference must resolve against the cwd captured when the row was written."
+);
+assert.deepEqual(
+  findTerminalSourceReferences(historicalLine.text, { workspace, cwd: "docs" }),
+  [],
+  "Changing the terminal cwd later must not be used to reinterpret historical relative references."
+);
+
 const referenceNavigationCalls = [];
 assert.equal(
   await navigateTerminalSourceReference(references[0], {
@@ -84,6 +103,8 @@ const terminalSource = readFileSync(new URL("../js/components/bottom-panel/termi
 assert(terminalSource.includes('link.className = "terminal-view__source-link"'), "Terminal source references must render as dedicated interactive controls.");
 assert(terminalSource.includes("findTerminalSourceReferences(text, { workspace: fs, cwd })"), "Terminal output rendering must pass through workspace-aware source-reference detection.");
 assert(terminalSource.includes("navigateTerminalSourceReference(reference, { openFile, openFileAt })"), "Terminal source links must use the shared exact-location navigation path.");
+assert(terminalSource.includes('line.cwd ?? session?.cwd ?? ""'), "Terminal rendering must prefer each row's captured cwd over the session's current cwd.");
+assert(terminalSource.includes("createTerminalOutputLine(line, kind, outputCwd)"), "Terminal writes must snapshot cwd on every output row.");
 
 const opened = [];
 const exactOpened = [];
