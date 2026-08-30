@@ -4,9 +4,6 @@ export const state = {
   zoom: 1,
   anchor: null,
   sidebarView: "canvas",
-  secondarySidebarView: "chat",
-  secondarySidebarChatSubView: "conversation",
-  secondarySidebarComponentsSubView: "library",
   originCard: { worldX: 0, worldY: 0 },
   jsonCard: { visible: false, worldX: 0, worldY: 0 },
   canvasComponents: []
