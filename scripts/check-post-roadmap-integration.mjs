@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { navigateToDiagnostic } from "../js/components/diagnostics/diagnostics-main.js";
+import { createSourceLocationNavigator } from "../js/components/editor-panel/source-navigation.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
@@ -12,13 +13,88 @@ assert(main.includes("function synchronizeTerminalBranch()"), "Terminal prompt m
 assert(main.includes("sourceControl.provider.subscribe(synchronizeTerminalBranch)"), "Terminal branch synchronization must subscribe to Source Control.");
 assert(main.includes("secondarySidebar.setMaximized(false, false)"), "Infinite Reset must clear Secondary Sidebar maximization.");
 assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset must clear Bottom Panel maximization.");
-assert(main.includes("openFileAt,"), "Diagnostics must receive exact-location editor navigation.");
-assert(main.includes("function revealEditorLocation(line, column, attempt = 0)"), "Exact-location navigation must expose a transient visual reveal step.");
-assert(main.includes('marker.className = "source-editor__location-marker"'), "Exact columns must receive a visible runtime marker.");
-assert(main.includes('row.dataset.runtimeTarget = "true"'), "The revealed source row must expose transient target state.");
-assert(main.includes("elements.sourceScroller.focus({ preventScroll: true })"), "Exact-location navigation must focus the source editor without disturbing scroll position.");
-assert(main.includes("window.setTimeout(clearEditorLocationReveal, 1600)"), "Diagnostic target highlighting must clear automatically.");
-assert(main.includes("requestAnimationFrame(() => revealEditorLocation(safeLine, targetColumn))"), "Target highlighting must wait for the virtualized source row to render.");
+assert(main.includes("createSourceLocationNavigator"), "Application orchestration must construct the editor-owned source location navigator.");
+assert(main.includes("const openFileAt = sourceLocationNavigator.openFileAt;"), "Run/Debug and Diagnostics must share the editor-owned exact-location navigator.");
+assert(!main.includes("function revealEditorLocation("), "Exact-location reveal implementation must not live in application orchestration.");
+assert(!main.includes('source-editor__location-marker'), "Runtime source-location decoration must remain owned by the editor navigation component.");
+
+const sourceNavigation = read("js/components/editor-panel/source-navigation.js");
+assert(sourceNavigation.includes("export function createSourceLocationNavigator"), "Editor source navigation must own exact-location navigation.");
+assert(sourceNavigation.includes('marker.className = "source-editor__location-marker"'), "Exact columns must receive a visible runtime marker.");
+assert(sourceNavigation.includes('row.dataset.runtimeTarget = "true"'), "The revealed source row must expose transient target state.");
+assert(sourceNavigation.includes("sourceScroller.focus({ preventScroll: true })"), "Exact-location navigation must focus the source editor without disturbing scroll position.");
+assert(sourceNavigation.includes("generation !== navigationGeneration"), "Superseded source-location requests must not reveal stale targets.");
+
+const marker = {
+  className: "",
+  style: {},
+  removed: false,
+  attributes: new Map(),
+  setAttribute(name, value) { this.attributes.set(name, value); },
+  remove() { this.removed = true; }
+};
+const row = {
+  dataset: {},
+  style: { background: "", boxShadow: "", position: "" },
+  appended: null,
+  append(node) { this.appended = node; }
+};
+const sourceContent = {
+  dataset: { lineCount: "20" },
+  querySelector(selector) {
+    return selector.includes('data-line-number="20"') ? row : null;
+  }
+};
+const focusCalls = [];
+const sourceScroller = {
+  scrollTop: 0,
+  scrollLeft: 0,
+  clientHeight: 190,
+  tabIndex: 0,
+  hasAttribute: () => false,
+  focus(options) { focusCalls.push(options); }
+};
+let activeFile = "";
+const openedFiles = [];
+const clearedTimers = [];
+let scheduledTimer = null;
+const navigator = createSourceLocationNavigator({
+  openFile(fileName) {
+    openedFiles.push(fileName);
+    activeFile = fileName;
+    return fileName !== "missing.js";
+  },
+  getActiveFile: () => activeFile,
+  sourceContent,
+  sourceScroller,
+  requestFrame(callback) { callback(); return 1; },
+  setTimer(callback, delay) { scheduledTimer = { callback, delay }; return 17; },
+  clearTimer(timer) { clearedTimers.push(timer); },
+  getStyle: () => ({ lineHeight: "19px" }),
+  createElement: () => marker
+});
+assert.equal(navigator.openFileAt("js/example.js", 20, 30), true, "Exact source navigation must open valid workspace files.");
+assert.deepEqual(openedFiles, ["js/example.js"]);
+assert.equal(sourceContent.dataset.runtimeTargetLine, "20");
+assert.equal(sourceContent.dataset.runtimeTargetColumn, "30");
+assert.equal(row.dataset.runtimeTarget, "true");
+assert.equal(row.appended, marker);
+assert.equal(marker.className, "source-editor__location-marker");
+assert.equal(marker.attributes.get("aria-hidden"), "true");
+assert.equal(marker.style.left, "256.8px");
+assert.equal(sourceScroller.scrollTop, 275.5);
+assert.equal(sourceScroller.scrollLeft, 128.8);
+assert.equal(sourceScroller.tabIndex, -1);
+assert.deepEqual(focusCalls, [{ preventScroll: true }]);
+assert.equal(scheduledTimer?.delay, 1600, "Transient source-location decoration must use the established reveal duration.");
+scheduledTimer.callback();
+assert.equal(marker.removed, true, "Transient source-location marker must be removed during cleanup.");
+assert.equal("runtimeTarget" in row.dataset, false, "Transient row state must be cleared after reveal cleanup.");
+assert.equal(row.style.background, "");
+assert.equal(row.style.boxShadow, "");
+assert.equal(row.style.position, "");
+assert.deepEqual(clearedTimers, [17], "Reveal cleanup must clear the pending timer before restoring row state.");
+assert.equal(navigator.openFileAt("missing.js", 1, 1), false, "Exact source navigation must reject files that cannot be opened.");
 
 const chat = read("js/components/ai/chat-main.js");
 const clearStart = chat.indexOf("function clear()");
