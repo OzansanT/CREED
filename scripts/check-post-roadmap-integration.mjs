@@ -163,6 +163,11 @@ assert(launcherBridge.includes("css/generated/creed.css?creed-launch-probe="), "
 assert(launcherBridge.includes('button.addEventListener("click", openLauncher)'), "Starting the local launcher must remain a user-gesture action for browser compatibility.");
 assert(!launcherBridge.includes("window.setTimeout(openLauncher"), "File launch must not rely on a blocked timer-driven custom-protocol navigation.");
 
+const rootLauncher = read("Start-CREED.cmd");
+assert(rootLauncher.includes('set "CREED_ROOT=%~dp0"'), "Root launcher must anchor delegation to the repository directory.");
+assert(rootLauncher.includes('call "%CREED_ROOT%optional\\windows-local-launcher\\Start-CREED.cmd" %*'), "Root launcher must delegate to the existing Windows launcher and forward all arguments.");
+assert(rootLauncher.includes("exit /b %ERRORLEVEL%"), "Root launcher must preserve the delegated launcher exit code.");
+
 const split = read("js/components/editor-panel/split-editor.js");
 assert(split.includes("function renameSession(oldName, newName)"), "Split editor must preserve file sessions across renames.");
 assert(split.includes("function renameDirectorySessions(oldPath, newPath)"), "Split editor must preserve directory-renamed sessions.");
