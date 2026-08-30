@@ -136,6 +136,45 @@ assert(
   "Missing imports inside template expressions must be reported."
 );
 
+const regexLiteralSource = [
+  'const fakeDynamic = /import\\("\\.\\/regex-only\\.js"\\)/;',
+  'const fakeExport = /export\\s+\\{value\\}\\s+from\\s+"\\.\\/regex-export-only\\.js"/;',
+  'const fakeClass = /[}\\]]+import\\("\\.\\/regex-class-only\\.js"\\)/g;',
+  'function fakeReturn(){ return /import\\("\\.\\/return-regex-only\\.js"\\)/; }',
+  'const ratio = total / count;',
+  'const real = condition ? import("./run.js") : /import\\("\\.\\/branch-regex-only\\.js"\\)/;'
+].join("\n");
+const regexWorkspace = {
+  listFiles: () => ["scripts/regex-literals.js", "scripts/run.js"],
+  readFile: async (path) => ({
+    "scripts/regex-literals.js": regexLiteralSource,
+    "scripts/run.js": "export const run = true;"
+  })[path] || ""
+};
+const regexArchitecture = await findArchitectureViolations(regexWorkspace);
+assert.equal(
+  regexArchitecture.filter((item) => item.code === "UNRESOLVED-IMPORT").length,
+  0,
+  "Import-like text inside JavaScript regex literals must not create unresolved dependencies."
+);
+const regexDependencies = await buildDependencyModel(regexWorkspace);
+assert(
+  regexDependencies.edges.some((edge) => edge.from === "file:scripts/regex-literals.js" && edge.to === "file:scripts/run.js"),
+  "Real imports after division and beside regex literals must still be detected."
+);
+
+const templateRegexDependencies = await buildDependencyModel({
+  listFiles: () => ["scripts/template-regex.js", "scripts/run.js"],
+  readFile: async (path) => ({
+    "scripts/template-regex.js": 'const value = `prefix ${/\\}/.test(text) ? import("./run.js") : null} suffix`;',
+    "scripts/run.js": "export const run = true;"
+  })[path] || ""
+});
+assert(
+  templateRegexDependencies.edges.some((edge) => edge.from === "file:scripts/template-regex.js" && edge.to === "file:scripts/run.js"),
+  "Regex braces inside template expressions must not terminate interpolation scanning early."
+);
+
 const cssFixtureSource = [
   '/* @import "./comment-only.css"; */',
   '.example::before { content: \'@import "./string-only.css";\'; }',

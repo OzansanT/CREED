@@ -1,4 +1,20 @@
 const JS_EXTENSIONS = new Set(["js", "mjs", "cjs"]);
+const REGEX_PREFIX_KEYWORDS = new Set([
+  "await",
+  "case",
+  "delete",
+  "do",
+  "else",
+  "in",
+  "instanceof",
+  "new",
+  "of",
+  "return",
+  "throw",
+  "typeof",
+  "void",
+  "yield"
+]);
 
 function extensionOf(path) {
   const index = String(path || "").lastIndexOf(".");
@@ -191,6 +207,57 @@ function skipBlockComment(source, start) {
   return end < 0 ? source.length : end + 2;
 }
 
+function previousSignificantToken(source, start) {
+  let index = start - 1;
+  while (index >= 0 && /\s/.test(source[index])) index -= 1;
+  if (index < 0) return { type: "start", value: "", index };
+
+  if (isIdentifierPart(source[index])) {
+    const end = index + 1;
+    while (index >= 0 && isIdentifierPart(source[index])) index -= 1;
+    return { type: "word", value: source.slice(index + 1, end), index: index + 1 };
+  }
+
+  return { type: "punctuation", value: source[index], index };
+}
+
+function canStartRegexLiteral(source, start) {
+  const previous = previousSignificantToken(source, start);
+  if (previous.type === "start") return true;
+  if (previous.type === "word") return REGEX_PREFIX_KEYWORDS.has(previous.value);
+  if ("([{,;:=!?&|*%^~<>".includes(previous.value)) return true;
+  if (previous.value === "+" || previous.value === "-") {
+    return source[previous.index - 1] !== previous.value;
+  }
+  return false;
+}
+
+function skipRegexLiteral(source, start) {
+  let inCharacterClass = false;
+  for (let index = start + 1; index < source.length; index += 1) {
+    const character = source[index];
+    if (character === "\\") {
+      index += 1;
+      continue;
+    }
+    if (character === "\n" || character === "\r") return start + 1;
+    if (character === "[" && !inCharacterClass) {
+      inCharacterClass = true;
+      continue;
+    }
+    if (character === "]" && inCharacterClass) {
+      inCharacterClass = false;
+      continue;
+    }
+    if (character === "/" && !inCharacterClass) {
+      let end = index + 1;
+      while (end < source.length && /[A-Za-z]/.test(source[end])) end += 1;
+      return end;
+    }
+  }
+  return start + 1;
+}
+
 function skipTrivia(source, start) {
   let index = start;
   while (index < source.length) {
@@ -237,6 +304,13 @@ function readJavaScriptModuleSpecifier(source, start, keyword) {
       index = skipTemplateLiteral(source, index);
       continue;
     }
+    if (character === "/" && canStartRegexLiteral(source, index)) {
+      const end = skipRegexLiteral(source, index);
+      if (end > index + 1) {
+        index = end;
+        continue;
+      }
+    }
     const token = readIdentifier(source, index);
     if (!token) {
       index += 1;
@@ -273,6 +347,13 @@ function findTemplateExpressionEnd(source, start) {
     if (character === "/" && source[index + 1] === "*") {
       index = skipBlockComment(source, index);
       continue;
+    }
+    if (character === "/" && canStartRegexLiteral(source, index)) {
+      const end = skipRegexLiteral(source, index);
+      if (end > index + 1) {
+        index = end;
+        continue;
+      }
     }
     if (character === "{") depth += 1;
     else if (character === "}") {
@@ -330,6 +411,13 @@ function collectJavaScriptRelativeImports(source) {
     if (character === "/" && text[index + 1] === "*") {
       index = skipBlockComment(text, index);
       continue;
+    }
+    if (character === "/" && canStartRegexLiteral(text, index)) {
+      const end = skipRegexLiteral(text, index);
+      if (end > index + 1) {
+        index = end;
+        continue;
+      }
     }
     const token = readIdentifier(text, index);
     if (!token) {
