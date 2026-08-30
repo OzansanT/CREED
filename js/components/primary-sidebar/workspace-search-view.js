@@ -16,7 +16,23 @@ function checkbox(labelText) {
   return { label, input };
 }
 
-export function bindWorkspaceSearchView({ sidebar, explorerView, workspace, openFile, breadcrumbName, sourceContent, sourceScroller, notify }) {
+function workspaceLocationCoordinate(location, zeroBasedKey, oneBasedKey) {
+  const oneBased = Number(location?.[oneBasedKey]);
+  if (Number.isFinite(oneBased)) return Math.max(1, Math.trunc(oneBased));
+  const zeroBased = Number(location?.[zeroBasedKey]);
+  return Math.max(1, Math.trunc(Number.isFinite(zeroBased) ? zeroBased : 0) + 1);
+}
+
+export function navigateToWorkspaceLocation(location, { openFile, openFileAt } = {}) {
+  if (!location?.fileName) return false;
+  const line = workspaceLocationCoordinate(location, "line", "lineNumber");
+  const column = workspaceLocationCoordinate(location, "column", "columnNumber");
+  if (typeof openFileAt === "function") return openFileAt(location.fileName, line, column) !== false;
+  if (typeof openFile === "function") return openFile(location.fileName) !== false;
+  return false;
+}
+
+export function bindWorkspaceSearchView({ sidebar, explorerView, workspace, openFile, openFileAt, breadcrumbName, notify }) {
   const engine = createWorkspaceSearchEngine({ workspace });
   const symbolIndex = createWorkspaceSymbolIndex({ workspace });
   const providers = createLanguageProviderRegistry();
@@ -89,25 +105,7 @@ export function bindWorkspaceSearchView({ sidebar, explorerView, workspace, open
   }
 
   function navigate(location) {
-    if (!location?.fileName) return false;
-    openFile?.(location.fileName);
-    let attempts = 0;
-    const seek = () => {
-      attempts += 1;
-      const active = breadcrumbName?.textContent === location.fileName;
-      const ready = Boolean(sourceContent?.dataset.lineCount);
-      if (active && ready) {
-        const line = Math.max(0, Number(location.line ?? location.lineNumber - 1) || 0);
-        const column = Math.max(0, Number(location.column ?? location.columnNumber - 1) || 0);
-        sourceScroller.scrollTop = Math.max(0, line * 19 - sourceScroller.clientHeight * 0.35);
-        sourceScroller.scrollLeft = Math.max(0, column * 7.2 - sourceScroller.clientWidth * 0.25);
-        sourceScroller.dispatchEvent(new Event("scroll"));
-        return;
-      }
-      if (attempts < 40) setTimeout(seek, 25);
-    };
-    seek();
-    return true;
+    return navigateToWorkspaceLocation(location, { openFile, openFileAt });
   }
 
   function resultButton(location, label) {
