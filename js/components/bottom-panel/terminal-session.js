@@ -84,6 +84,18 @@ export function formatTerminalPath(cwd = "") {
   return normalized ? `${WORKSPACE_ROOT}/${normalized}` : WORKSPACE_ROOT;
 }
 
+export function parseTerminalOpenTarget(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return { path: "", line: null, column: null };
+  const match = raw.match(/^(.*):(\d+)(?::(\d+))?$/);
+  if (!match || !match[1]) return { path: raw, line: null, column: null };
+  return {
+    path: match[1],
+    line: Math.max(1, Math.trunc(Number(match[2]) || 1)),
+    column: match[3] ? Math.max(1, Math.trunc(Number(match[3]) || 1)) : 1
+  };
+}
+
 export function listWorkspaceDirectory(workspace, directory = "") {
   const source = getWorkspace(workspace);
   const normalized = resolveTerminalPath(directory, "");
@@ -186,7 +198,7 @@ async function copyWorkspaceDirectory(workspace, sourcePath, targetPath) {
   return sourceFiles.length;
 }
 
-export function createTerminalCommandProcessor({ openFile, workspace, now = () => new Date() } = {}) {
+export function createTerminalCommandProcessor({ openFile, openFileAt, workspace, now = () => new Date() } = {}) {
   const fs = getWorkspace(workspace);
 
   function requireWritable(method) {
@@ -212,7 +224,7 @@ export function createTerminalCommandProcessor({ openFile, workspace, now = () =
         "cd [folder]                Change workspace directory",
         "ls [path]                  List workspace entries",
         "files [query]              Find workspace files",
-        "open <file>                Open a workspace file in the editor",
+        "open <file>[:line[:column]] Open a workspace file or exact source location",
         "cat <file>                 Print a workspace file",
         "mkdir <folder> [...]       Create workspace folders",
         "touch <file> [...]         Create empty workspace files",
@@ -265,12 +277,17 @@ export function createTerminalCommandProcessor({ openFile, workspace, now = () =
     }
 
     if (command === "open") {
-      const fileName = resolvePath(args.join(" "));
-      if (!args.length) throw new Error("Usage: open <file>");
+      if (!args.length) throw new Error("Usage: open <file>[:line[:column]]");
+      const target = parseTerminalOpenTarget(args.join(" "));
+      const fileName = resolvePath(target.path);
       if (!fs.hasFile?.(fileName)) throw new Error("Workspace file not found: " + fileName);
-      const opened = await openFile?.(fileName);
+      const opened = target.line != null && typeof openFileAt === "function"
+        ? await openFileAt(fileName, target.line, target.column)
+        : await openFile?.(fileName);
       if (opened === false) throw new Error("Unable to open " + fileName);
-      write("Opened " + fileName);
+      write(target.line != null
+        ? `Opened ${fileName}:${target.line}:${target.column}`
+        : "Opened " + fileName);
       return true;
     }
 
@@ -488,6 +505,7 @@ export function bindTerminalSessions({
   splitButton,
   killButton,
   openFile,
+  openFileAt,
   workspace,
   showView,
   notify,
@@ -513,7 +531,7 @@ export function bindTerminalSessions({
   const { form, input, path: promptPath } = createPromptInput();
   view.replaceChildren(sessionBar, output, form);
 
-  const processor = createTerminalCommandProcessor({ openFile, workspace: fs });
+  const processor = createTerminalCommandProcessor({ openFile, openFileAt, workspace: fs });
 
   if (restored?.sessions.length) {
     for (const session of restored.sessions) {
