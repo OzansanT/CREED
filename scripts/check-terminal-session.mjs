@@ -4,6 +4,7 @@ import {
   createTerminalCommandProcessor,
   formatTerminalPath,
   loadTerminalState,
+  parseTerminalOpenTarget,
   resolveTerminalPath,
   saveTerminalState,
   searchWorkspaceFiles,
@@ -16,6 +17,10 @@ assert.deepEqual(tokenizeTerminalCommand("echo 'hello world'"), ["echo", "hello 
 assert.deepEqual(tokenizeTerminalCommand("echo hello\\\"world"), ["echo", 'hello"world']);
 assert.equal(resolveTerminalPath("../README.md", "src"), "README.md");
 assert.equal(formatTerminalPath("src"), "/workspaces/CREED/src");
+assert.deepEqual(parseTerminalOpenTarget("src/main.js"), { path: "src/main.js", line: null, column: null });
+assert.deepEqual(parseTerminalOpenTarget("src/main.js:12"), { path: "src/main.js", line: 12, column: 1 });
+assert.deepEqual(parseTerminalOpenTarget("src/main.js:12:7"), { path: "src/main.js", line: 12, column: 7 });
+assert.deepEqual(parseTerminalOpenTarget("src/main.js:0:0"), { path: "src/main.js", line: 1, column: 1 });
 
 const baseline = new Map([
   ["README.md", "CREED"],
@@ -36,6 +41,7 @@ const workspace = createWorkspaceFileSystem({
 });
 
 const opened = [];
+const exactOpened = [];
 const output = [];
 let cleared = 0;
 let cwd = "";
@@ -43,6 +49,10 @@ const processor = createTerminalCommandProcessor({
   workspace,
   openFile: async (fileName) => {
     opened.push(fileName);
+    return true;
+  },
+  openFileAt: async (...args) => {
+    exactOpened.push(args);
     return true;
   },
   now: () => new Date("2026-08-20T06:00:00Z")
@@ -73,6 +83,12 @@ await processor.execute("cat main.js", context);
 assert.equal(output.at(-1), "console.log('main');");
 await processor.execute("open main.js", context);
 assert.deepEqual(opened, ["src/main.js"]);
+assert.deepEqual(exactOpened, []);
+await processor.execute("open main.js:1:9", context);
+assert.deepEqual(exactOpened, [["src/main.js", 1, 9]], "Explicit terminal source locations must use exact editor navigation.");
+assert.equal(output.at(-1), "Opened src/main.js:1:9");
+await processor.execute("open util.js:1", context);
+assert.deepEqual(exactOpened[1], ["src/util.js", 1, 1], "Line-only terminal locations must default to column 1.");
 
 await processor.execute("mkdir nested", context);
 assert.equal(workspace.hasDirectory("src/nested"), true);
@@ -114,6 +130,17 @@ await assert.rejects(
   processor.execute("rm ../nested-copy", { ...context, getCwd: () => "src" }),
   /is a directory/
 );
+
+const fallbackOpened = [];
+const fallbackProcessor = createTerminalCommandProcessor({
+  workspace,
+  openFile: async (fileName) => {
+    fallbackOpened.push(fileName);
+    return true;
+  }
+});
+await fallbackProcessor.execute("open util.js:2:3", context);
+assert.deepEqual(fallbackOpened, ["src/util.js"], "Terminal exact-location syntax must gracefully fall back to plain file opening when no exact navigator is supplied.");
 
 const terminalValues = new Map();
 const terminalStorage = {
