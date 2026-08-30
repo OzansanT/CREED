@@ -5,9 +5,10 @@ import { snapWorldPoint } from "./snapping.js";
 
 const MIN_COMPONENT_WIDTH = 220;
 const MIN_COMPONENT_HEIGHT = 140;
-const MINIMIZED_HEIGHT = 36;
+const MINIMIZED_HEIGHT = 44;
 const MAXIMIZE_MARGIN = 24;
 const WINDOW_STATES = new Set(["normal", "minimized", "maximized"]);
+const INTERACTIVE_DRAG_BLOCKER = "button, input, textarea, select, a, [contenteditable='true'], [role='button']";
 
 function nextId(type) {
   const random = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
@@ -92,12 +93,16 @@ export function bindCanvasComponentManager({
     element.style.width = `${record.width}px`;
     element.style.height = `${minimized ? MINIMIZED_HEIGHT : record.height}px`;
     element.style.minHeight = minimized ? `${MINIMIZED_HEIGHT}px` : `${MIN_COMPONENT_HEIGHT}px`;
+    element.style.padding = minimized ? "8px 90px 8px 12px" : "18px";
     element.dataset.windowState = record.windowState || "normal";
     element.classList.toggle("is-minimized", minimized);
     element.classList.toggle("is-maximized", maximized);
 
     const content = element.querySelector(".canvas-component__content");
     if (content) content.hidden = minimized;
+    element.querySelectorAll(".canvas-component__kind, .canvas-component__description").forEach((item) => {
+      item.hidden = minimized;
+    });
     const minimize = element.querySelector('[data-component-action="minimize"]');
     if (minimize) {
       minimize.textContent = minimized ? "▢" : "—";
@@ -154,6 +159,8 @@ export function bindCanvasComponentManager({
 
     handle.addEventListener("pointerdown", (event) => {
       if (event.button !== 0 || pointerId !== null || record.windowState === "maximized") return;
+      const target = event.target instanceof Element ? event.target.closest(INTERACTIVE_DRAG_BLOCKER) : null;
+      if (target && shell.contains(target)) return;
       event.preventDefault();
       event.stopPropagation();
       pointerId = event.pointerId;
@@ -276,7 +283,7 @@ export function bindCanvasComponentManager({
     button.className = "icon-button";
     button.dataset.componentAction = action;
     button.textContent = label;
-    Object.assign(button.style, { width: "28px", minWidth: "28px" });
+    Object.assign(button.style, { width: "28px", minWidth: "28px", height: "28px", padding: "0" });
     button.addEventListener("pointerdown", (event) => event.stopPropagation());
     return button;
   }
@@ -286,26 +293,36 @@ export function bindCanvasComponentManager({
     if (!definition || mounted.has(record.id)) return null;
 
     const shell = document.createElement("section");
-    shell.className = "canvas-card canvas-card--component canvas-component";
+    shell.className = "canvas-card canvas-card--origin canvas-component";
     shell.dataset.componentId = record.id;
     shell.dataset.componentType = record.type;
     shell.tabIndex = 0;
+    shell.setAttribute("aria-label", `Draggable ${definition.title} canvas component`);
     Object.assign(shell.style, {
-      position: "absolute", display: "flex", flexDirection: "column", padding: "0", overflow: "visible",
-      minWidth: `${MIN_COMPONENT_WIDTH}px`, cursor: "default", touchAction: "auto"
+      position: "absolute", display: "flex", flexDirection: "column", overflow: "visible",
+      minWidth: `${MIN_COMPONENT_WIDTH}px`, cursor: "grab", touchAction: "none", zIndex: "2"
     });
 
-    const header = document.createElement("header");
-    header.className = "canvas-component__header";
-    Object.assign(header.style, {
-      display: "flex", alignItems: "center", gap: "6px", minHeight: "34px", padding: "5px 7px 5px 10px",
-      borderBottom: "1px solid var(--border, #d0d0d0)", cursor: "grab", userSelect: "none", touchAction: "none",
-      background: "var(--panel-bg, #f7f7fa)", overflow: "hidden"
+    const controls = document.createElement("div");
+    controls.className = "canvas-component__header";
+    controls.setAttribute("aria-label", `${definition.title} component controls`);
+    Object.assign(controls.style, {
+      position: "absolute", top: "8px", right: "8px", display: "flex", alignItems: "center", gap: "4px",
+      zIndex: "4", userSelect: "none", touchAction: "auto"
     });
 
-    const title = document.createElement("strong");
+    const kind = document.createElement("small");
+    kind.className = "canvas-component__kind";
+    kind.textContent = "● COMPONENT";
+
+    const title = document.createElement("h1");
+    title.className = "canvas-component__title";
     title.textContent = definition.title;
-    Object.assign(title.style, { flex: "1", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+    title.style.paddingRight = "84px";
+
+    const description = document.createElement("p");
+    description.className = "canvas-component__description";
+    description.textContent = definition.description || "CREED Infinite Canvas component.";
 
     const minimize = makeWindowButton("minimize", "—");
     minimize.addEventListener("click", (event) => { event.stopPropagation(); toggleMinimize(record.id); });
@@ -319,16 +336,16 @@ export function bindCanvasComponentManager({
     const content = document.createElement("div");
     content.className = "canvas-component__content";
     Object.assign(content.style, {
-      position: "relative", flex: "1", minHeight: "0", overflow: "hidden", userSelect: "text",
-      background: "inherit", borderRadius: "0 0 var(--radius-sm, 4px) var(--radius-sm, 4px)"
+      position: "relative", flex: "1", minHeight: "0", marginTop: "12px", overflow: "auto", userSelect: "text",
+      background: "transparent", borderRadius: "var(--radius-sm, 4px)"
     });
 
-    header.append(title, minimize, maximize, close);
-    shell.append(header, content);
+    controls.append(minimize, maximize, close);
+    shell.append(controls, kind, title, description, content);
     world.append(shell);
     mounted.set(record.id, { shell, dispose: () => {} });
 
-    const componentDispose = definition.mount({ shell, content, record, context, notify, manager: api }) || (() => {});
+    const componentDispose = definition.mount({ shell, content, record, context, notify, manager: api, canvas, world }) || (() => {});
     const resizeDispose = bindComponentResize({
       shell,
       record,
@@ -346,7 +363,7 @@ export function bindCanvasComponentManager({
         componentDispose?.();
       }
     });
-    bindInstanceDrag(shell, header, record);
+    bindInstanceDrag(shell, shell, record);
     setPosition(shell, record);
     return shell;
   }

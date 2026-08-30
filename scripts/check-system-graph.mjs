@@ -54,7 +54,10 @@ assert(view.includes("openFile?.(node.fileName)"), "Graph file nodes must open w
 assert(view.includes("function focusSymbol"), "System graph must support symbol navigation.");
 assert(view.includes("SYSTEM_GRAPH_VIEWS_STORAGE_KEY"), "Named graph views must be persisted.");
 assert(view.includes("dataset.graphCategory"), "System graph must expose category filters.");
-assert(view.includes("Embedded System Graph requires a host and graph service"), "System graph view must mount inside a component host.");
+assert(view.includes("System Graph requires a canvas host, controls host and graph service"), "System graph must target the Infinite Canvas world instead of an embedded graph window.");
+assert(view.includes('className = "canvas-card canvas-card--origin system-graph-node"'), "System graph nodes must use the origin-card visual language.");
+assert(view.includes("host.append(stage)"), "System graph node and edge layers must mount directly on the canvas host.");
+assert(view.includes("stage.remove()"), "System graph teardown must remove only its canvas-level graph layer.");
 
 const service = read("js/components/infinite-canvas/system-graph-service.js");
 assert(service.includes("createSystemGraphService"), "Headless graph service is missing.");
@@ -64,10 +67,14 @@ const definitions = read("js/components/infinite-canvas/component-definitions.js
 assert(definitions.includes('type: "system-graph"'), "System Graph component definition is missing.");
 assert(definitions.includes("bindSystemGraph"), "System Graph component must own the visual graph lifecycle.");
 assert(definitions.includes("singleton: true"), "System Graph must remain a singleton canvas component.");
+assert(definitions.includes("host: world"), "System Graph must mount its graph layer into Infinite Canvas rather than inside its own card.");
+assert(definitions.includes("controlsHost: content"), "System Graph controls must remain associated with its component card.");
 
 const manager = read("js/components/infinite-canvas/component-manager.js");
 assert(manager.includes("application/x-creed-canvas-component"), "Canvas components must support palette drag/drop.");
 assert(manager.includes("remove(record.id)"), "Canvas component close control must remove the instance.");
+assert(manager.includes('className = "canvas-card canvas-card--origin canvas-component"'), "Dropped components must use the same visual card language as the CREED origin card.");
+assert(manager.includes("bindInstanceDrag(shell, shell, record)"), "The whole component card must act as its drag surface while interactive controls remain protected.");
 
 const main = read("js/main.js");
 assert(main.includes("createSystemGraphService"), "Application orchestration must create the headless System Graph service.");
@@ -75,4 +82,4 @@ assert(main.includes("registerDefaultCanvasComponents"), "Application orchestrat
 assert(!main.includes("const systemGraph = bindSystemGraph"), "System Graph must not be mounted globally at startup.");
 assert(main.includes("systemGraphService: systemGraph"), "System Graph component must receive the headless service.");
 
-console.log("System graph component checks passed.");
+console.log("System graph canvas-card checks passed.");
