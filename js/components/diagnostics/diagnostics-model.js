@@ -293,12 +293,77 @@ function collectJavaScriptRelativeImports(source) {
   return values;
 }
 
-function collectRelativeImports(source, extension) {
-  if (extension !== "css") return collectJavaScriptRelativeImports(source);
+function skipCssTrivia(source, start) {
+  let index = start;
+  while (index < source.length) {
+    if (/\s/.test(source[index])) {
+      index += 1;
+      continue;
+    }
+    if (source[index] === "/" && source[index + 1] === "*") {
+      index = skipBlockComment(source, index);
+      continue;
+    }
+    break;
+  }
+  return index;
+}
+
+function readCssImportSpecifier(source, start) {
+  let index = skipCssTrivia(source, start);
+  const direct = readQuotedString(source, index);
+  if (direct) return direct;
+
+  const token = readIdentifier(source, index);
+  if (!token || token.value.toLowerCase() !== "url") return null;
+  index = skipCssTrivia(source, token.end);
+  if (source[index] !== "(") return null;
+  index = skipCssTrivia(source, index + 1);
+
+  const quoted = readQuotedString(source, index);
+  if (quoted) return quoted;
+
+  const close = source.indexOf(")", index);
+  if (close < 0) return null;
+  const value = source.slice(index, close).trim();
+  return value ? { value, end: close + 1 } : null;
+}
+
+function collectCssRelativeImports(source) {
+  const text = String(source || "");
   const values = [];
-  const pattern = /@import\s+(?:url\(\s*)?["']([^"']+)["']/g;
-  for (const match of String(source || "").matchAll(pattern)) if (match[1]?.startsWith(".")) values.push(match[1]);
+  let index = 0;
+  while (index < text.length) {
+    const character = text[index];
+    if (character === '"' || character === "'") {
+      const literal = readQuotedString(text, index);
+      index = literal ? literal.end : index + 1;
+      continue;
+    }
+    if (character === "/" && text[index + 1] === "*") {
+      index = skipBlockComment(text, index);
+      continue;
+    }
+    if (character !== "@") {
+      index += 1;
+      continue;
+    }
+    const token = readIdentifier(text, index + 1);
+    if (!token || token.value.toLowerCase() !== "import") {
+      index += 1;
+      continue;
+    }
+    const result = readCssImportSpecifier(text, token.end);
+    if (result?.value.startsWith(".")) values.push(result.value);
+    index = result ? result.end : token.end;
+  }
   return values;
+}
+
+function collectRelativeImports(source, extension) {
+  return extension === "css"
+    ? collectCssRelativeImports(source)
+    : collectJavaScriptRelativeImports(source);
 }
 
 export async function buildDependencyModel(workspace) {
