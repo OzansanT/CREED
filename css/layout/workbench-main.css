@@ -3,7 +3,7 @@
     position: absolute;
     z-index: 20;
     top: var(--workbench-top);
-    right: var(--secondary-sidebar-w);
+    right: 0;
     bottom: var(--status-h);
     left: calc(var(--activity-w) + var(--primary-sidebar-w));
     min-width: 0;
