@@ -25,7 +25,6 @@ import { bindPanelResize } from "./components/panel-resize/panel-resize-input.js
 import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js";
 import { bindQuickOpen } from "./components/editor-panel/quick-open.js";
 import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
-import { bindRunDebug } from "./components/run-debug/run-debug-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 import { createCanvasComponentRegistry } from "./components/infinite-canvas/component-registry.js";
 import { bindCanvasComponentManager } from "./components/infinite-canvas/component-manager.js";
@@ -133,19 +132,6 @@ function showBottomView(viewName) {
   return bottomPanel.setActiveView(viewName);
 }
 
-const runDebug = bindRunDebug({
-  sidebar: elements.primarySidebar,
-  editorViewport: elements.editorViewport,
-  workspace: editorPanel.workspace,
-  outputView: elements.outputView,
-  debugConsoleView: elements.debugConsoleView,
-  showBottomView,
-  openFileAt: editorPanel.openFileAt,
-  notify
-});
-
-elements.activityRunBtn?.setAttribute("aria-controls", runDebug.view.id);
-
 const componentRegistry = registerDefaultCanvasComponents(createCanvasComponentRegistry());
 state.canvasComponents = (state.canvasComponents || []).filter((item) => componentRegistry.has(item.type));
 const componentManager = bindCanvasComponentManager({
@@ -189,13 +175,10 @@ const primarySidebar = bindPrimarySidebar({
   layoutButton: elements.togglePrimarySidebarBtn,
   explorerButton: elements.activityExplorerBtn,
   searchButton: elements.activitySearchBtn,
-  runButton: elements.activityRunBtn,
   explorerView: elements.explorerView,
   searchView: workspaceSearch.view,
-  runView: runDebug.view,
   onViewChange: (viewName) => {
     if (viewName === "search") workspaceSearch.refreshOutline();
-    if (viewName === "run") runDebug.refreshConfiguration();
   },
   onLayoutChange: handlePanelVisibilityChange
 });
@@ -260,7 +243,6 @@ infiniteCanvas.bind({
     secondarySidebarViews.setView("chat", false);
   },
   resetEditorWorkspace: () => {
-    runDebug.stop();
     splitEditor.close();
     const reset = editorPanel.resetWorkspace();
     secondarySidebar.setMaximized(false, false);
