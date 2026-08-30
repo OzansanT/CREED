@@ -239,6 +239,7 @@ bindTerminalSessions({
   splitButton: elements.splitTerminalBtn,
   killButton: elements.killTerminalBtn,
   openFile: editorPanel.openFile,
+  openFileAt: editorPanel.openFileAt,
   workspace: editorPanel.workspace,
   showView: showBottomView,
   notify
