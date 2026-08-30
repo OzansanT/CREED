@@ -137,6 +137,64 @@ function showBottomView(viewName) {
   return bottomPanel.setActiveView(viewName);
 }
 
+let editorLocationRevealTimer = 0;
+let editorLocationRevealState = null;
+
+function clearEditorLocationReveal() {
+  if (editorLocationRevealTimer) clearTimeout(editorLocationRevealTimer);
+  editorLocationRevealTimer = 0;
+  if (!editorLocationRevealState) return;
+  const { row, marker, background, boxShadow, position } = editorLocationRevealState;
+  marker.remove();
+  row.style.background = background;
+  row.style.boxShadow = boxShadow;
+  row.style.position = position;
+  delete row.dataset.runtimeTarget;
+  editorLocationRevealState = null;
+}
+
+function revealEditorLocation(line, column, attempt = 0) {
+  const row = elements.sourceContent.querySelector(`.source-editor__line[data-line-number="${line}"]`);
+  if (!row) {
+    if (attempt < 8) requestAnimationFrame(() => revealEditorLocation(line, column, attempt + 1));
+    return false;
+  }
+
+  clearEditorLocationReveal();
+  const marker = document.createElement("span");
+  marker.className = "source-editor__location-marker";
+  marker.setAttribute("aria-hidden", "true");
+  Object.assign(marker.style, {
+    position: "absolute",
+    zIndex: "2",
+    top: "1px",
+    bottom: "1px",
+    left: `${48 + (Math.max(1, column) - 1) * 7.2}px`,
+    width: "2px",
+    borderRadius: "1px",
+    background: "var(--color-status)",
+    pointerEvents: "none"
+  });
+
+  editorLocationRevealState = {
+    row,
+    marker,
+    background: row.style.background,
+    boxShadow: row.style.boxShadow,
+    position: row.style.position
+  };
+  row.dataset.runtimeTarget = "true";
+  row.style.position = "relative";
+  row.style.background = "color-mix(in srgb, var(--color-status) 16%, transparent)";
+  row.style.boxShadow = "inset 2px 0 var(--color-status)";
+  row.append(marker);
+
+  if (!elements.sourceScroller.hasAttribute("tabindex")) elements.sourceScroller.tabIndex = -1;
+  elements.sourceScroller.focus({ preventScroll: true });
+  editorLocationRevealTimer = window.setTimeout(clearEditorLocationReveal, 1600);
+  return true;
+}
+
 function openFileAt(fileName, line = 1, column = 1) {
   if (!editorPanel.openFile(fileName)) return false;
   const targetLine = Math.max(1, Math.trunc(Number(line) || 1));
@@ -157,6 +215,7 @@ function openFileAt(fileName, line = 1, column = 1) {
     elements.sourceScroller.scrollLeft = Math.max(0, ((targetColumn - 1) * 7.2) - 80);
     elements.sourceContent.dataset.runtimeTargetLine = String(safeLine);
     elements.sourceContent.dataset.runtimeTargetColumn = String(targetColumn);
+    requestAnimationFrame(() => revealEditorLocation(safeLine, targetColumn));
   }
 
   requestAnimationFrame(revealLocation);
