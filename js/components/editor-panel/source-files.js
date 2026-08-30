@@ -115,6 +115,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "js/components/diagnostics/diagnostics-model.js",
   "js/components/diagnostics/diagnostics-terminal.js",
   "js/components/diagnostics/performance-profiler.js",
+  "js/components/edit-mode/edit-mode-main.js",
   "js/components/editor-panel/editor-buffer-store.js",
   "js/components/editor-panel/editor-editing.js",
   "js/components/editor-panel/editor-panel-main.js",
