@@ -60,11 +60,11 @@
           <p>CREED JavaScript modules cannot run directly from <code>file://</code>. Checking whether the CREED local server is already available.</p>
           <p data-creed-launch-status role="status">Checking <code>${serverUrl}</code>…</p>
           <div class="creed-file-launch__command">
-            <strong>Cold start</strong>
-            <span>Double-click <code>Start-CREED.cmd</code> beside <code>index.html</code>. It starts the local server and opens CREED automatically.</span>
+            <strong>Start CREED</strong>
+            <span>When the server is not already running, use the button below to launch CREED through the registered Windows launcher.</span>
           </div>
-          <p class="creed-file-launch__secondary">If the <code>creed://</code> protocol is already registered for this Windows account, you can use the fallback below instead.</p>
-          <button data-creed-protocol-launch type="button">Use registered launcher</button>
+          <button data-creed-protocol-launch type="button">Start CREED</button>
+          <p class="creed-file-launch__secondary">First launch on this Windows account: double-click <code>Start-CREED.cmd</code> once. It registers the <code>creed://</code> launcher, starts the server, and opens CREED. After that, opening <code>index.html</code> can use the button above.</p>
         </section>`;
 
       const status = shell.querySelector("[data-creed-launch-status]");
@@ -83,7 +83,8 @@
           redirectToServer();
           return;
         }
-        status.innerHTML = `Local server is not running. Double-click <code>Start-CREED.cmd</code> beside <code>index.html</code> to start it.`;
+        status.textContent = "Local server is not running. Click Start CREED to launch it.";
+        button.focus({ preventScroll: true });
       };
 
       probe.rel = "stylesheet";
