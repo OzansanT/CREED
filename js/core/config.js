@@ -10,4 +10,3 @@ export const EDITOR_WORKSPACE_STORAGE_KEY = "creedEditorWorkspace.v1";
 export const WORKSPACE_FS_STORAGE_KEY = "creedWorkspaceFs.v1";
 export const EDITOR_BUFFER_STORAGE_KEY = "creedEditorBuffers.v1";
 export const TERMINAL_SESSIONS_STORAGE_KEY = "creedTerminalSessions.v1";
-export const GIT_WORKSPACE_STORAGE_KEY = "creedGitWorkspace.v1";
