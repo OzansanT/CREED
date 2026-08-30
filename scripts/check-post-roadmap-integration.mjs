@@ -13,8 +13,13 @@ assert(main.includes("function synchronizeTerminalBranch()"), "Terminal prompt m
 assert(main.includes("sourceControl.provider.subscribe(synchronizeTerminalBranch)"), "Terminal branch synchronization must subscribe to Source Control.");
 assert(main.includes("secondarySidebar.setMaximized(false, false)"), "Infinite Reset must clear Secondary Sidebar maximization.");
 assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset must clear Bottom Panel maximization.");
-assert(main.includes("createSourceLocationNavigator"), "Application orchestration must construct the editor-owned source location navigator.");
-assert(main.includes("const openFileAt = sourceLocationNavigator.openFileAt;"), "Run/Debug and Diagnostics must share the editor-owned exact-location navigator.");
+assert(!main.includes("createSourceLocationNavigator"), "Application orchestration must not construct source-location internals directly.");
+assert.equal(
+  (main.match(/openFileAt: editorPanel\.openFileAt/g) || []).length,
+  2,
+  "Run/Debug and Diagnostics must consume the editor panel exact-location API."
+);
+assert(!main.includes("sourceLocationNavigator"), "Application orchestration must not retain editor navigation implementation state.");
 assert(!main.includes("function revealEditorLocation("), "Exact-location reveal implementation must not live in application orchestration.");
 assert(!main.includes('source-editor__location-marker'), "Runtime source-location decoration must remain owned by the editor navigation component.");
 
@@ -142,7 +147,10 @@ assert(workbench.includes("workspace.subscribe((change) =>"), "Primary editor mu
 assert(workbench.includes("pendingWorkspaceReset"), "Branch/workspace resets must invalidate clean editor caches.");
 assert(workbench.includes("buffers.isDirty(fileName)"), "External workspace reconciliation must protect dirty primary buffers.");
 assert(workbench.includes('change.type === "file-renamed"'), "Primary editor must preserve open tabs across external file renames.");
-assert(workbench.includes('change.type === "directory-renamed"'), "Primary editor must preserve open tabs across external directory renames.");
+assert(workbench.includes('change.type === "directory-renamed"'), "Primary editor must preserve directory-renamed sessions.");
+assert(workbench.includes("createSourceLocationNavigator"), "Editor panel must construct its exact-location navigator internally.");
+assert(workbench.includes("openFileAt: sourceLocationNavigator.openFileAt"), "Editor panel API must expose exact-location navigation.");
+assert(workbench.includes("sourceLocationNavigator?.clear()"), "Editor panel lifecycle must clear stale source-location decoration.");
 
 const split = read("js/components/editor-panel/split-editor.js");
 assert(split.includes("function renameSession(oldName, newName)"), "Split editor must preserve file sessions across renames.");

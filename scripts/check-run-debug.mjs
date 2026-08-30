@@ -142,7 +142,10 @@ assert(main.includes('runButton: elements.activityRunBtn'), "Run activity button
 assert(main.includes('runView: runDebug.view'), "Run sidebar view must be registered with the primary sidebar controller.");
 assert(main.includes('outputView: elements.outputView'), "Run output must use the real Output panel.");
 assert(main.includes('debugConsoleView: elements.debugConsoleView'), "Runtime failures must use the real Debug Console panel.");
-assert(main.includes("createSourceLocationNavigator"), "Application orchestration must wire the shared source location navigator.");
+assert(main.includes("openFileAt: editorPanel.openFileAt"), "Application orchestration must route runtime source navigation through the editor panel API.");
+assert(!main.includes("createSourceLocationNavigator"), "Application orchestration must not construct source-location internals.");
+const workbench = read("js/components/editor-panel/workbench-input.js");
+assert(workbench.includes("createSourceLocationNavigator"), "Editor panel must own the shared source location navigator.");
 const sourceNavigation = read("js/components/editor-panel/source-navigation.js");
 assert(sourceNavigation.includes("runtimeTargetLine"), "Runtime source navigation must retain the resolved target line in its editor-owned implementation.");
 

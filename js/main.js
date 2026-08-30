@@ -26,7 +26,6 @@ import { bindPanelResize } from "./components/panel-resize/panel-resize-input.js
 import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js";
 import { bindQuickOpen } from "./components/editor-panel/quick-open.js";
 import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
-import { createSourceLocationNavigator } from "./components/editor-panel/source-navigation.js";
 import { bindRunDebug } from "./components/run-debug/run-debug-main.js";
 import { bindSourceControl } from "./components/source-control/source-control-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
@@ -138,14 +137,6 @@ function showBottomView(viewName) {
   return bottomPanel.setActiveView(viewName);
 }
 
-const sourceLocationNavigator = createSourceLocationNavigator({
-  openFile: editorPanel.openFile,
-  getActiveFile: editorPanel.getActiveFile,
-  sourceContent: elements.sourceContent,
-  sourceScroller: elements.sourceScroller
-});
-const openFileAt = sourceLocationNavigator.openFileAt;
-
 const runDebug = bindRunDebug({
   sidebar: elements.primarySidebar,
   editorViewport: elements.editorViewport,
@@ -153,7 +144,7 @@ const runDebug = bindRunDebug({
   outputView: elements.outputView,
   debugConsoleView: elements.debugConsoleView,
   showBottomView,
-  openFileAt,
+  openFileAt: editorPanel.openFileAt,
   notify
 });
 
@@ -186,7 +177,7 @@ const diagnostics = bindDiagnostics({
   problemsView: elements.problemsView,
   workspace: editorPanel.workspace,
   openFile: editorPanel.openFile,
-  openFileAt,
+  openFileAt: editorPanel.openFileAt,
   showBottomView,
   notify
 });
