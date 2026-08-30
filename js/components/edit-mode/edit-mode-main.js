@@ -1,31 +1,11 @@
+import { createElementInspector } from "./element-inspector.js";
+
 const BLOCKED_TAGS = new Set([
-  "HTML",
-  "HEAD",
-  "BODY",
-  "SCRIPT",
-  "STYLE",
-  "LINK",
-  "META",
-  "TITLE",
-  "BASE",
-  "NOSCRIPT"
+  "HTML", "HEAD", "BODY", "SCRIPT", "STYLE", "LINK", "META", "TITLE", "BASE", "NOSCRIPT"
 ]);
 
 const VOID_TAGS = new Set([
-  "AREA",
-  "BASE",
-  "BR",
-  "COL",
-  "EMBED",
-  "HR",
-  "IMG",
-  "INPUT",
-  "LINK",
-  "META",
-  "PARAM",
-  "SOURCE",
-  "TRACK",
-  "WBR"
+  "AREA", "BASE", "BR", "COL", "EMBED", "HR", "IMG", "INPUT", "LINK", "META", "PARAM", "SOURCE", "TRACK", "WBR"
 ]);
 
 const EDIT_BLUE = "#007acc";
@@ -52,7 +32,6 @@ function createTitlebarButton({ id, label, title, after, hidden = false }) {
   labelElement.className = "titlebar-action__label";
   labelElement.textContent = label;
   button.append(labelElement);
-
   after.insertAdjacentElement("afterend", button);
   return button;
 }
@@ -70,14 +49,14 @@ function createControls(resetButton) {
   const undoButton = createTitlebarButton({
     id: "editModeUndoBtn",
     label: "Undo",
-    title: "Undo last Edit Mode move",
+    title: "Undo last Edit Mode action",
     after: editButton,
     hidden: true
   });
   const redoButton = createTitlebarButton({
     id: "editModeRedoBtn",
     label: "Redo",
-    title: "Redo last Edit Mode move",
+    title: "Redo last Edit Mode action",
     after: undoButton,
     hidden: true
   });
@@ -114,7 +93,6 @@ function restoreStyle(element, snapshot) {
 function getDropPosition(target, clientY) {
   const rect = target.getBoundingClientRect();
   if (!Number.isFinite(rect.height) || rect.height <= 0) return "inside";
-
   const ratio = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
   if (ratio <= DROP_EDGE_RATIO) return "before";
   if (ratio >= 1 - DROP_EDGE_RATIO) return "after";
@@ -150,6 +128,29 @@ function safeClearLayout() {
   }
 }
 
+function nextCopyId(originalId) {
+  const base = `${originalId}-copy`;
+  if (!document.getElementById(base)) return base;
+  let index = 2;
+  while (document.getElementById(`${base}-${index}`)) index += 1;
+  return `${base}-${index}`;
+}
+
+function prepareClone(source) {
+  const clone = source.cloneNode(true);
+  const nodes = [clone, ...clone.querySelectorAll("*")];
+  for (const node of nodes) {
+    delete node.dataset.editModeKey;
+    node.removeAttribute("draggable");
+    node.style.removeProperty("outline");
+    node.style.removeProperty("outline-offset");
+    node.style.removeProperty("box-shadow");
+    node.style.removeProperty("opacity");
+    if (node.id) node.id = nextCopyId(node.id);
+  }
+  return clone;
+}
+
 export function bindEditMode({ resetButton, notify = () => {} } = {}) {
   const controls = createControls(resetButton);
   if (!controls) {
@@ -159,7 +160,9 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
       toggle: () => false,
       undo: () => false,
       redo: () => false,
-      saveLayout: () => false
+      saveLayout: () => false,
+      select: () => false,
+      clearSelection: () => false
     });
   }
 
@@ -167,6 +170,7 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
   let active = false;
   let dragSource = null;
   let hoverState = null;
+  let selectedState = null;
   let dropState = null;
   let sourceOpacity = null;
   let dirty = false;
@@ -178,7 +182,6 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
 
   function getStructuralKey(element) {
     if (element.id) return `id:${element.id}`;
-
     const parts = [];
     let current = element;
     while (current && current !== document.body) {
@@ -256,7 +259,7 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
   }
 
   function showHover(element) {
-    if (!active || dragSource || !isEligible(element) || hoverState?.element === element) return;
+    if (!active || dragSource || !isEligible(element) || selectedState?.element === element || hoverState?.element === element) return;
     clearHover();
     const snapshot = snapshotStyle(element, ["outline", "outline-offset"]);
     element.style.setProperty("outline", `1px solid ${EDIT_BLUE}`);
@@ -288,18 +291,8 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
     return isEligible(eventTarget) ? eventTarget : null;
   }
 
-  function isValidDropTarget(target) {
-    return Boolean(
-      dragSource
-      && target
-      && target !== dragSource
-      && !dragSource.contains(target)
-    );
-  }
-
   function insertNode(parent, source, nextSibling) {
-    if (!(parent instanceof Node) || !(source instanceof Node)) return false;
-    if (source.contains(parent)) return false;
+    if (!(parent instanceof Node) || !(source instanceof Node) || source.contains(parent)) return false;
     const anchor = nextSibling?.parentNode === parent ? nextSibling : null;
     parent.insertBefore(source, anchor);
     return true;
@@ -320,79 +313,186 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
     saveButton.hidden = !active;
   }
 
-  function recordMove(source, fromParent, fromNextSibling, toParent, toNextSibling) {
-    undoStack.push({ source, fromParent, fromNextSibling, toParent, toNextSibling });
+  function refreshInspector() {
+    if (!active || !selectedState?.element?.isConnected) {
+      inspector.hide();
+      return false;
+    }
+    return inspector.update(selectedState.element);
+  }
+
+  function clearSelection() {
+    if (!selectedState) {
+      inspector.hide();
+      return false;
+    }
+    restoreStyle(selectedState.element, selectedState.snapshot);
+    selectedState = null;
+    inspector.hide();
+    return true;
+  }
+
+  function select(element) {
+    if (!active || !isEligible(element)) return false;
+    if (selectedState?.element === element) return refreshInspector();
+    clearSelection();
+    clearHover();
+    const snapshot = snapshotStyle(element, ["outline", "outline-offset"]);
+    element.style.setProperty("outline", `2px solid ${EDIT_BLUE}`);
+    element.style.setProperty("outline-offset", "-2px");
+    selectedState = { element, snapshot };
+    ensureElementKey(element);
+    return refreshInspector();
+  }
+
+  function recordTransaction(transaction) {
+    undoStack.push(transaction);
     redoStack.length = 0;
-    markTouchedParent(fromParent);
-    markTouchedParent(toParent);
+    for (const parent of transaction.parents || []) markTouchedParent(parent);
     dirty = true;
     updateControlState();
+    refreshInspector();
+  }
+
+  function createMoveTransaction(source, fromParent, fromNextSibling, toParent, toNextSibling) {
+    return {
+      parents: [fromParent, toParent],
+      undo: () => insertNode(fromParent, source, fromNextSibling),
+      redo: () => insertNode(toParent, source, toNextSibling)
+    };
+  }
+
+  function recordCompletedMove(source, fromParent, fromNextSibling) {
+    recordTransaction(createMoveTransaction(source, fromParent, fromNextSibling, source.parentNode, source.nextSibling));
+  }
+
+  function runHistory(stack, destination) {
+    if (!active || stack.length === 0) return false;
+    const transaction = stack.pop();
+    const action = stack === undoStack ? transaction.undo : transaction.redo;
+    if (!action()) {
+      stack.push(transaction);
+      return false;
+    }
+    destination.push(transaction);
+    for (const parent of transaction.parents || []) markTouchedParent(parent);
+    dirty = true;
+    if (selectedState?.element && !selectedState.element.isConnected) clearSelection();
+    updateControlState();
+    refreshInspector();
+    return true;
+  }
+
+  function undo() {
+    return runHistory(undoStack, redoStack);
+  }
+
+  function redo() {
+    return runHistory(redoStack, undoStack);
+  }
+
+  function isValidDropTarget(target) {
+    return Boolean(dragSource && target && target !== dragSource && !dragSource.contains(target));
   }
 
   function moveSource(target, position) {
     if (!isValidDropTarget(target)) return false;
-
     const source = dragSource;
     const fromParent = source.parentNode;
     const fromNextSibling = source.nextSibling;
-    let moved = false;
 
     if (position === "inside") {
       if (VOID_TAGS.has(target.tagName)) return false;
       target.append(source);
-      moved = true;
     } else {
       const parent = target.parentNode;
       if (!parent || parent === source || source.contains(parent)) return false;
       if (position === "before") parent.insertBefore(source, target);
       else parent.insertBefore(source, target.nextSibling);
-      moved = true;
     }
 
-    if (moved) {
-      recordMove(source, fromParent, fromNextSibling, source.parentNode, source.nextSibling);
-    }
-    return moved;
-  }
-
-  function undo() {
-    if (!active || undoStack.length === 0) return false;
-    const transaction = undoStack.pop();
-    if (!insertNode(transaction.fromParent, transaction.source, transaction.fromNextSibling)) {
-      undoStack.push(transaction);
-      return false;
-    }
-    redoStack.push(transaction);
-    markTouchedParent(transaction.fromParent);
-    markTouchedParent(transaction.toParent);
-    dirty = true;
-    updateControlState();
+    recordCompletedMove(source, fromParent, fromNextSibling);
     return true;
   }
 
-  function redo() {
-    if (!active || redoStack.length === 0) return false;
-    const transaction = redoStack.pop();
-    if (!insertNode(transaction.toParent, transaction.source, transaction.toNextSibling)) {
-      redoStack.push(transaction);
-      return false;
+  function moveSelected(direction) {
+    const source = selectedState?.element;
+    const parent = source?.parentNode;
+    if (!active || !source || !parent) return false;
+    const fromNextSibling = source.nextSibling;
+
+    if (direction < 0) {
+      const previous = source.previousElementSibling;
+      if (!previous) return false;
+      parent.insertBefore(source, previous);
+    } else {
+      const next = source.nextElementSibling;
+      if (!next) return false;
+      parent.insertBefore(source, next.nextSibling);
     }
-    undoStack.push(transaction);
-    markTouchedParent(transaction.fromParent);
-    markTouchedParent(transaction.toParent);
-    dirty = true;
-    updateControlState();
+
+    recordCompletedMove(source, parent, fromNextSibling);
     return true;
   }
+
+  function deleteSelected() {
+    const source = selectedState?.element;
+    const parent = source?.parentNode;
+    if (!active || !source || !parent) return false;
+    const nextSibling = source.nextSibling;
+    clearSelection();
+    source.remove();
+    recordTransaction({
+      parents: [parent],
+      undo: () => insertNode(parent, source, nextSibling),
+      redo: () => {
+        if (!source.isConnected) return false;
+        source.remove();
+        return true;
+      }
+    });
+    notify("Element deleted. Undo is available.");
+    return true;
+  }
+
+  function duplicateSelected() {
+    const source = selectedState?.element;
+    const parent = source?.parentNode;
+    if (!active || !source || !parent) return false;
+    const clone = prepareClone(source);
+    const anchor = source.nextSibling;
+    parent.insertBefore(clone, anchor);
+    indexTree(clone);
+    if (active) markTreeDraggable(clone);
+
+    recordTransaction({
+      parents: [parent],
+      undo: () => {
+        if (!clone.isConnected) return false;
+        clone.remove();
+        return true;
+      },
+      redo: () => insertNode(parent, clone, anchor)
+    });
+    select(clone);
+    notify("Element duplicated.");
+    return true;
+  }
+
+  const inspector = createElementInspector({
+    onClear: clearSelection,
+    onDelete: deleteSelected,
+    onDuplicate: duplicateSelected,
+    onMoveUp: () => moveSelected(-1),
+    onMoveDown: () => moveSelected(1)
+  });
 
   function captureLayout() {
     const parents = [];
     for (const parentKey of touchedParentKeys) {
       const parent = getElementByKey(parentKey);
       if (!parent) continue;
-      const childKeys = [...parent.children]
-        .map((child) => ensureElementKey(child))
-        .filter(Boolean);
+      const childKeys = [...parent.children].map((child) => ensureElementKey(child)).filter(Boolean);
       parents.push({ parentKey, childKeys });
     }
     return { version: EDIT_LAYOUT_VERSION, parents };
@@ -401,12 +501,10 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
   function applyLayout(layout) {
     if (!layout?.parents?.length) return false;
     let applied = false;
-
     for (const record of layout.parents) {
       const parent = getElementByKey(record.parentKey);
       if (!parent || !Array.isArray(record.childKeys)) continue;
       touchedParentKeys.add(record.parentKey);
-
       for (const childKey of record.childKeys) {
         const child = getElementByKey(childKey);
         if (!child || child === parent || child.contains(parent)) continue;
@@ -414,7 +512,6 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
         applied = true;
       }
     }
-
     return applied;
   }
 
@@ -446,8 +543,10 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
   function handleClickCapture(event) {
     if (!active) return;
     if (event.target instanceof Element && event.target.closest("[data-edit-mode-control=\"true\"]")) return;
+    const target = resolveTarget(event.target);
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (target) select(target);
   }
 
   function handleDragStart(event) {
@@ -457,12 +556,10 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
       event.preventDefault();
       return;
     }
-
     dragSource = source;
     clearHover();
     sourceOpacity = snapshotStyle(source, ["opacity"]);
     source.style.setProperty("opacity", "0.55");
-
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = "move";
       event.dataTransfer.setData("text/plain", source.id || source.tagName.toLowerCase());
@@ -476,7 +573,6 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
       clearDrop();
       return;
     }
-
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
     showDrop(target, getDropPosition(target, event.clientY));
@@ -486,10 +582,8 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
     if (!active || !dragSource) return;
     const target = resolveTarget(event.target);
     if (!isValidDropTarget(target)) return;
-
     event.preventDefault();
-    const position = getDropPosition(target, event.clientY);
-    moveSource(target, position);
+    moveSource(target, getDropPosition(target, event.clientY));
     clearDrop();
   }
 
@@ -499,10 +593,12 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
     sourceOpacity = null;
     clearDrop();
     clearHover();
+    refreshInspector();
   }
 
   function handleKeyDown(event) {
     if (!active) return;
+    if (event.target instanceof Element && event.target.closest("input, textarea, [contenteditable=\"true\"]")) return;
     const commandKey = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
 
@@ -512,7 +608,6 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
       saveLayout();
       return;
     }
-
     if (commandKey && key === "z") {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -520,17 +615,22 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
       else undo();
       return;
     }
-
     if (commandKey && key === "y") {
       event.preventDefault();
       event.stopImmediatePropagation();
       redo();
       return;
     }
-
+    if (event.key === "Delete" && selectedState) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      deleteSelected();
+      return;
+    }
     if (event.key === "Escape") {
       event.preventDefault();
-      setActive(false);
+      if (selectedState) clearSelection();
+      else setActive(false);
     }
   }
 
@@ -542,6 +642,7 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
         if (active) markTreeDraggable(node);
       });
     }
+    refreshInspector();
   });
 
   function setButtonActive(nextActive) {
@@ -563,14 +664,13 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
     if (active === next) return active;
     active = next;
     setButtonActive(active);
-
     if (active) {
       refreshDraggables();
     } else {
       handleDragEnd();
+      clearSelection();
       restoreDraggables();
     }
-
     updateControlState();
     return active;
   }
@@ -581,7 +681,6 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
 
   indexTree(document.body);
   observer.observe(document.body, { childList: true, subtree: true });
-
   const savedLayout = safeReadLayout();
   if (savedLayout && applyLayout(savedLayout)) {
     dirty = false;
@@ -594,6 +693,7 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
   saveButton.addEventListener("click", saveLayout);
   resetButton?.addEventListener("click", () => {
     safeClearLayout();
+    clearSelection();
     touchedParentKeys.clear();
     undoStack.length = 0;
     redoStack.length = 0;
@@ -608,6 +708,7 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
   document.addEventListener("drop", handleDrop, true);
   document.addEventListener("dragend", handleDragEnd, true);
   document.addEventListener("keydown", handleKeyDown, true);
+  window.addEventListener("resize", refreshInspector);
 
   updateControlState();
 
@@ -617,6 +718,8 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
     toggle,
     undo,
     redo,
-    saveLayout
+    saveLayout,
+    select,
+    clearSelection
   });
 }
