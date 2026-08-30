@@ -2,8 +2,9 @@ import { filterSystemGraph, layoutSystemGraph } from "./system-graph-model.js";
 
 export const SYSTEM_GRAPH_VIEWS_STORAGE_KEY = "creedSystemGraphViews.v1";
 const CATEGORY_LABELS = Object.freeze({ html: "HTML", css: "CSS", js: "JavaScript", component: "Components", dom: "DOM IDs" });
-const NODE_WIDTH = 190;
-const NODE_HEIGHT = 62;
+const NODE_WIDTH = 300;
+const NODE_HEIGHT = 118;
+const GRAPH_GAP = 84;
 
 function safeStorage() {
   if (typeof localStorage !== "undefined") return localStorage;
@@ -47,7 +48,12 @@ function normalizePositions(graph) {
   const maxX = Math.max(...values.map((point) => point.x));
   const maxY = Math.max(...values.map((point) => point.y));
   const positions = new Map();
-  for (const [id, point] of raw) positions.set(id, { x: point.x - minX + 40, y: point.y - minY + 40 });
+  for (const [id, point] of raw) {
+    positions.set(id, {
+      x: point.x - minX + (NODE_WIDTH / 2) + 40,
+      y: point.y - minY + (NODE_HEIGHT / 2) + 40
+    });
+  }
   return {
     positions,
     width: Math.max(640, maxX - minX + NODE_WIDTH + 80),
@@ -55,29 +61,40 @@ function normalizePositions(graph) {
   };
 }
 
+function graphNodeDescription(node) {
+  if (node.type === "dom") return `${node.tag || "DOM"} · ${node.fileName || "workspace"}`;
+  if (node.fileName) return `${CATEGORY_LABELS[node.category] || node.category || node.type} · ${node.fileName}`;
+  return CATEGORY_LABELS[node.category] || node.category || node.type || "System node";
+}
+
 export function bindSystemGraph({
   host,
+  controlsHost = host,
+  anchorRecord = null,
+  anchorElement = null,
   service,
   openFile,
   notify,
   storage = safeStorage()
 } = {}) {
-  if (!host || !service?.getGraph || !service?.refresh) throw new TypeError("Embedded System Graph requires a host and graph service.");
+  if (!host || !controlsHost || !service?.getGraph || !service?.refresh) {
+    throw new TypeError("System Graph requires a canvas host, controls host and graph service.");
+  }
 
-  style(host, { display: "flex", flexDirection: "column", minHeight: "0", overflow: "hidden" });
+  style(controlsHost, { display: "grid", gap: "8px", minHeight: "0", overflow: "visible" });
   const toolbar = style(document.createElement("section"), {
-    flex: "0 0 auto", padding: "8px", borderBottom: "1px solid var(--border, #c8c8c8)",
-    background: "var(--panel-bg, rgba(248,248,252,.98))", fontSize: "12px", display: "grid", gap: "6px"
+    display: "grid", gap: "7px", fontSize: "12px", background: "transparent"
   });
   toolbar.id = "systemGraphToolbar";
   toolbar.setAttribute("aria-label", "System graph controls");
+  toolbar.addEventListener("pointerdown", (event) => event.stopPropagation());
 
   const topRow = style(document.createElement("div"), { display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" });
   const refreshButton = button("Refresh Graph");
   refreshButton.id = "refreshSystemGraphBtn";
   const layoutButton = button("Auto Layout");
   layoutButton.id = "layoutSystemGraphBtn";
-  const status = document.createElement("span");
+  const status = style(document.createElement("span"), { opacity: ".68" });
   status.id = "systemGraphStatus";
   topRow.append(refreshButton, layoutButton, status);
 
@@ -101,41 +118,60 @@ export function bindSystemGraph({
   symbolInput.type = "search";
   symbolInput.placeholder = "Find symbol";
   symbolInput.setAttribute("aria-label", "Find symbol in system graph");
-  style(symbolInput, { flex: "1 1 180px", minWidth: "100px" });
-  const symbolButton = button("Locate Symbol");
+  style(symbolInput, { flex: "1 1 160px", minWidth: "100px" });
+  const symbolButton = button("Locate");
   symbolButton.id = "locateSystemGraphSymbolBtn";
   symbolRow.append(symbolInput, symbolButton);
 
-  const viewRow = style(document.createElement("div"), { display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" });
+  const viewRow = style(document.createElement("div"), { display: "grid", gridTemplateColumns: "1fr auto", gap: "6px", alignItems: "center" });
   const viewName = document.createElement("input");
   viewName.id = "systemGraphViewName";
   viewName.placeholder = "Named view";
-  const saveViewButton = button("Save View");
+  const saveViewButton = button("Save");
   const viewSelect = document.createElement("select");
   viewSelect.id = "systemGraphSavedViews";
-  const loadViewButton = button("Load View");
-  const deleteViewButton = button("Delete View");
-  viewRow.append(viewName, saveViewButton, viewSelect, loadViewButton, deleteViewButton);
+  const viewActions = style(document.createElement("div"), { display: "flex", gap: "6px" });
+  const loadViewButton = button("Load");
+  const deleteViewButton = button("Delete");
+  viewActions.append(loadViewButton, deleteViewButton);
+  viewRow.append(viewName, saveViewButton, viewSelect, viewActions);
   toolbar.append(topRow, filterRow, symbolRow, viewRow);
+  controlsHost.append(toolbar);
 
-  const scroller = style(document.createElement("div"), { position: "relative", flex: "1", minHeight: "0", overflow: "auto", background: "#f3f4f6" });
-  scroller.className = "system-graph-scroller";
-  const stage = style(document.createElement("section"), { position: "relative", minWidth: "640px", minHeight: "420px" });
+  const stage = style(document.createElement("section"), {
+    position: "absolute", left: "0", top: "0", width: "640px", height: "420px",
+    overflow: "visible", pointerEvents: "none", zIndex: "1"
+  });
   stage.id = "systemGraphLayer";
-  stage.setAttribute("aria-label", "CREED system graph");
-  const edgesSvg = style(document.createElementNS("http://www.w3.org/2000/svg", "svg"), { position: "absolute", inset: "0", pointerEvents: "none", overflow: "visible" });
+  stage.dataset.canvasGraph = "system-graph";
+  stage.setAttribute("aria-label", "CREED system graph connections");
+
+  const edgesSvg = style(document.createElementNS("http://www.w3.org/2000/svg", "svg"), {
+    position: "absolute", inset: "0", pointerEvents: "none", overflow: "visible", zIndex: "0"
+  });
   edgesSvg.setAttribute("aria-hidden", "true");
-  const nodeHost = style(document.createElement("div"), { position: "absolute", inset: "0" });
+  const nodeHost = style(document.createElement("div"), { position: "absolute", inset: "0", pointerEvents: "none", zIndex: "1" });
   stage.append(edgesSvg, nodeHost);
-  scroller.append(stage);
-  host.append(toolbar, scroller);
+  host.append(stage);
 
   let graph = service.getGraph() || { nodes: [], edges: [], symbols: [] };
   let positions = new Map();
   let views = loadViews(storage);
+  let currentLayout = { positions, width: 640, height: 420 };
 
   function activeCategories() {
     return [...categoryInputs].filter(([, input]) => input.checked).map(([category]) => category);
+  }
+
+  function positionStage() {
+    const width = Number(anchorRecord?.width) || 300;
+    const worldX = Number(anchorRecord?.worldX) || 0;
+    const worldY = Number(anchorRecord?.worldY) || 0;
+    const anchorHalfWidth = Math.min(width, 380) / 2;
+    stage.style.left = `${worldX + anchorHalfWidth + GRAPH_GAP}px`;
+    stage.style.top = `${worldY - (currentLayout.height / 2)}px`;
+    stage.style.width = `${currentLayout.width}px`;
+    stage.style.height = `${currentLayout.height}px`;
   }
 
   function renderViews() {
@@ -161,14 +197,16 @@ export function bindSystemGraph({
       const from = positions.get(edge.from);
       const to = positions.get(edge.to);
       if (!from || !to) continue;
+      const forward = from.x <= to.x;
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("x1", String(from.x + NODE_WIDTH));
-      line.setAttribute("y1", String(from.y + NODE_HEIGHT / 2));
-      line.setAttribute("x2", String(to.x));
-      line.setAttribute("y2", String(to.y + NODE_HEIGHT / 2));
+      line.setAttribute("x1", String(from.x + (forward ? NODE_WIDTH / 2 : -NODE_WIDTH / 2)));
+      line.setAttribute("y1", String(from.y));
+      line.setAttribute("x2", String(to.x + (forward ? -NODE_WIDTH / 2 : NODE_WIDTH / 2)));
+      line.setAttribute("y2", String(to.y));
       line.setAttribute("stroke", edge.type === "owner" ? "#8b5cf6" : edge.type === "dom" ? "#64748b" : edge.type === "css-import" ? "#2563eb" : "#059669");
       line.setAttribute("stroke-width", edge.type === "contains" ? "1" : "1.5");
       line.setAttribute("stroke-dasharray", edge.type === "owner" ? "5 4" : edge.type === "contains" ? "2 4" : "");
+      line.setAttribute("vector-effect", "non-scaling-stroke");
       line.dataset.edgeType = edge.type;
       fragment.append(line);
     }
@@ -180,39 +218,49 @@ export function bindSystemGraph({
     for (const node of filtered.nodes) {
       const position = positions.get(node.id);
       if (!position) continue;
-      const nodeButton = style(button(""), {
-        position: "absolute", left: `${position.x}px`, top: `${position.y}px`, width: `${NODE_WIDTH}px`, minHeight: `${NODE_HEIGHT}px`,
-        padding: "7px 9px", textAlign: "left", border: "1px solid #9ca3af", borderRadius: "6px",
-        background: node.type === "dom" ? "#f8fafc" : "#ffffff", color: "#111827", boxShadow: "0 2px 7px rgba(0,0,0,.10)"
+      const nodeCard = document.createElement("section");
+      nodeCard.className = "canvas-card canvas-card--origin system-graph-node";
+      nodeCard.tabIndex = 0;
+      nodeCard.setAttribute("role", "button");
+      nodeCard.dataset.nodeId = node.id;
+      nodeCard.dataset.nodeCategory = node.category || node.type;
+      nodeCard.dataset.fileName = node.fileName || "";
+      nodeCard.setAttribute("aria-label", `${node.label} system graph node`);
+      Object.assign(nodeCard.style, {
+        left: `${position.x}px`, top: `${position.y}px`, width: `${NODE_WIDTH}px`, minHeight: `${NODE_HEIGHT}px`,
+        boxSizing: "border-box", pointerEvents: "auto", cursor: node.fileName ? "pointer" : "default", zIndex: "1"
       });
-      nodeButton.className = "system-graph-node";
-      nodeButton.dataset.nodeId = node.id;
-      nodeButton.dataset.nodeCategory = node.category || node.type;
-      nodeButton.dataset.fileName = node.fileName || "";
+
       const kind = document.createElement("small");
-      kind.textContent = node.type === "dom" ? `${node.tag || "DOM"} · ${node.fileName}` : (CATEGORY_LABELS[node.category] || node.category || node.type);
-      style(kind, { display: "block", opacity: ".65", marginBottom: "3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
-      const label = document.createElement("strong");
+      kind.textContent = `● ${node.type === "dom" ? "DOM" : (CATEGORY_LABELS[node.category] || node.category || node.type || "SYSTEM")}`;
+      const label = document.createElement("h1");
       label.textContent = node.label;
-      style(label, { display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
-      nodeButton.append(kind, label);
-      nodeButton.addEventListener("click", () => {
-        nodeButton.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+      const description = document.createElement("p");
+      description.textContent = graphNodeDescription(node);
+      nodeCard.append(kind, label, description);
+
+      function activate() {
+        nodeCard.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
         if (node.fileName) openFile?.(node.fileName);
+      }
+      nodeCard.addEventListener("click", activate);
+      nodeCard.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        activate();
       });
-      fragment.append(nodeButton);
+      fragment.append(nodeCard);
     }
     nodeHost.replaceChildren(fragment);
   }
 
   function render() {
     const filtered = filterSystemGraph(graph, activeCategories());
-    const layout = normalizePositions(filtered);
-    positions = layout.positions;
-    stage.style.width = `${layout.width}px`;
-    stage.style.height = `${layout.height}px`;
-    edgesSvg.setAttribute("width", String(layout.width));
-    edgesSvg.setAttribute("height", String(layout.height));
+    currentLayout = normalizePositions(filtered);
+    positions = currentLayout.positions;
+    edgesSvg.setAttribute("width", String(currentLayout.width));
+    edgesSvg.setAttribute("height", String(currentLayout.height));
+    positionStage();
     drawEdges(filtered);
     renderNodes(filtered);
     status.textContent = `${filtered.nodes.length} nodes · ${filtered.edges.length} edges`;
@@ -250,7 +298,7 @@ export function bindSystemGraph({
   function saveNamedView(rawName = viewName.value) {
     const name = String(rawName || "").trim();
     if (!name) return false;
-    const record = { name, categories: activeCategories(), scrollLeft: scroller.scrollLeft, scrollTop: scroller.scrollTop };
+    const record = { name, categories: activeCategories() };
     const existing = views.findIndex((item) => item.name === name);
     if (existing >= 0) views[existing] = record;
     else views.push(record);
@@ -267,7 +315,6 @@ export function bindSystemGraph({
     if (!record) return false;
     for (const [category, input] of categoryInputs) input.checked = record.categories?.includes(category) ?? true;
     render();
-    scroller.scrollTo({ left: Number(record.scrollLeft) || 0, top: Number(record.scrollTop) || 0 });
     notify?.(`Loaded graph view: ${record.name}`);
     return true;
   }
@@ -292,6 +339,11 @@ export function bindSystemGraph({
   deleteViewButton.addEventListener("click", () => deleteNamedView());
 
   const unsubscribe = service.subscribe((nextGraph) => { graph = nextGraph; render(); });
+  const anchorObserver = anchorElement && typeof MutationObserver !== "undefined"
+    ? new MutationObserver(positionStage)
+    : null;
+  anchorObserver?.observe(anchorElement, { attributes: true, attributeFilter: ["style", "data-window-state"] });
+
   graph = service.getGraph();
   renderViews();
   render();
@@ -307,6 +359,11 @@ export function bindSystemGraph({
     loadNamedView,
     deleteNamedView,
     getGraph: () => graph,
-    destroy() { unsubscribe?.(); host.replaceChildren(); }
+    destroy() {
+      unsubscribe?.();
+      anchorObserver?.disconnect();
+      toolbar.remove();
+      stage.remove();
+    }
   });
 }
