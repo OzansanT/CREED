@@ -2,6 +2,8 @@ import { TERMINAL_SESSIONS_STORAGE_KEY } from "../../core/config.js";
 import { WORKSPACE_FILES } from "../editor-panel/source-files.js";
 
 const MAX_OUTPUT_LINES = 1000;
+const MAX_PERSISTED_OUTPUT_LINES = 200;
+const MAX_PERSISTED_LINE_LENGTH = 4096;
 const MAX_FILE_RESULTS = 60;
 const MAX_HISTORY_ITEMS = 200;
 const TERMINAL_SCHEMA_VERSION = 1;
@@ -168,6 +170,21 @@ export function createTerminalOutputLine(text, kind = "output", cwd = "") {
     kind: typeof kind === "string" && kind ? kind : "output",
     cwd: resolveTerminalPath(cwd || ".", "")
   };
+}
+
+function normalizeStoredOutputLines(value, cwd = "") {
+  if (!Array.isArray(value)) return [];
+  return value
+    .slice(-MAX_PERSISTED_OUTPUT_LINES)
+    .map((line) => {
+      if (!line || typeof line !== "object") return null;
+      return createTerminalOutputLine(
+        String(line.text ?? "").slice(0, MAX_PERSISTED_LINE_LENGTH),
+        line.kind,
+        typeof line.cwd === "string" ? line.cwd : cwd
+      );
+    })
+    .filter(Boolean);
 }
 
 export function listWorkspaceDirectory(workspace, directory = "") {
@@ -497,7 +514,8 @@ function normalizeStoredSession(value, index) {
   const history = Array.isArray(value.history)
     ? value.history.filter((item) => typeof item === "string").slice(-MAX_HISTORY_ITEMS)
     : [];
-  return { id, name, cwd, history };
+  const lines = normalizeStoredOutputLines(value.lines, cwd);
+  return { id, name, cwd, history, lines };
 }
 
 export function normalizeTerminalState(value = {}) {
@@ -611,7 +629,9 @@ export function bindTerminalSessions({
     for (const session of restored.sessions) {
       sessions.push({
         ...session,
-        lines: [createTerminalOutputLine("Restored CREED terminal session.", "output", session.cwd)],
+        lines: session.lines.length
+          ? session.lines
+          : [createTerminalOutputLine("Restored CREED terminal session.", "output", session.cwd)],
         historyIndex: session.history.length
       });
     }
@@ -639,7 +659,8 @@ export function bindTerminalSessions({
         id: session.id,
         name: session.name,
         cwd: session.cwd,
-        history: session.history
+        history: session.history,
+        lines: session.lines
       }))
     });
   }
@@ -722,6 +743,7 @@ export function bindTerminalSessions({
       session.lines.splice(0, session.lines.length - MAX_OUTPUT_LINES);
     }
     renderOutput();
+    persist();
   }
 
   function clear() {
@@ -729,6 +751,7 @@ export function bindTerminalSessions({
     if (!session) return;
     session.lines.length = 0;
     renderOutput();
+    persist();
   }
 
   function createSession(label = "browser", { focus = true } = {}) {
