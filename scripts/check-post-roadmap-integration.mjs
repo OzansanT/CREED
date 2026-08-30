@@ -114,6 +114,21 @@ const cancellationCheck = chat.indexOf("if (token !== generation) return false;"
 assert(cancellationCheck > firstProviderCall && cancellationCheck < firstToolCall, "Cancelled AI requests must not execute tool calls.");
 assert(!chat.includes("selfDevelopment"), "Chat must not retain removed Source Control self-development routing.");
 
+const secondaryViews = read("js/components/secondary-sidebar/secondary-sidebar-view-controller.js");
+assert(secondaryViews.includes('makeTab("generalChatBtn", "Chat", "chatView")'), "Secondary sidebar must keep Chat as a top-level tab button.");
+assert(secondaryViews.includes('makeTab("generalComponentsBtn", "Components", "componentLibraryView")'), "Secondary sidebar must keep Components as a top-level tab button.");
+assert(secondaryViews.includes('makeTab("chatConversationBtn", "Conversation", "chatView", "chat")'), "Chat must expose its first secondary button.");
+assert(secondaryViews.includes('makeTab("chatSettingsViewBtn", "Settings", "chatView", "chat")'), "Chat must expose its second secondary button.");
+assert(secondaryViews.includes('makeTab("componentLibraryBtn", "Library", "componentLibraryView", "components")'), "Components must expose its first secondary button.");
+assert(secondaryViews.includes('makeTab("componentInstancesBtn", "Instances", "componentLibraryView", "components")'), "Components must expose its second secondary button.");
+assert(secondaryViews.includes('subBar.setAttribute("role", "tablist")'), "Secondary sidebar sub buttons must form an accessible tablist.");
+assert(secondaryViews.includes("renderComponentInstances"), "Component secondary navigation must render placed canvas instances into the shared component sub-area.");
+assert(secondaryViews.includes("chatSettingsAction?.click()"), "Chat Settings secondary button must reuse the existing chat settings behavior.");
+
+const storage = read("js/core/storage.js");
+assert(storage.includes('secondarySidebarChatSubView = ["conversation", "settings"]'), "Chat secondary-tab state must be restored from persisted workspace state.");
+assert(storage.includes('secondarySidebarComponentsSubView = ["library", "instances"]'), "Component secondary-tab state must be restored from persisted workspace state.");
+
 const diagnostics = read("js/components/diagnostics/diagnostics-main.js");
 assert(diagnostics.includes("return buildDependencyModel(workspace);"), "Diagnostics must build fresh dependency state from the workspace.");
 assert(diagnostics.includes("workspace.subscribe?.(scheduleWorkspaceDiagnostics)"), "Diagnostics must refresh when WorkspaceFS changes outside the Problems panel.");
