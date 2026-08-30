@@ -55,10 +55,26 @@ function resolveWorkspaceDependency(specifier, importer, files) {
   return candidatePaths(specifier, importer).find((candidate) => fileSet.has(candidate)) || "";
 }
 
+function sourcePositionAt(source, index) {
+  const text = String(source || "");
+  const target = Math.max(0, Math.min(text.length, Math.trunc(Number(index) || 0)));
+  let line = 0;
+  let column = 0;
+  for (let offset = 0; offset < target; offset += 1) {
+    if (text[offset] === "\n") {
+      line += 1;
+      column = 0;
+    } else {
+      column += 1;
+    }
+  }
+  return { line, column };
+}
+
 function normalizeDiagnostic(value, source = "workspace") {
   const severity = ["error", "warning", "info"].includes(value?.severity) ? value.severity : "warning";
   return Object.freeze({
-    id: String(value?.id || `${source}:${value?.fileName || "workspace"}:${value?.line || 0}:${value?.code || value?.message || "diagnostic"}`),
+    id: String(value?.id || `${source}:${value?.fileName || "workspace"}:${value?.line || 0}:${value?.column || 0}:${value?.code || value?.message || "diagnostic"}`),
     source: String(value?.source || source),
     severity,
     code: String(value?.code || "CREED"),
@@ -365,7 +381,7 @@ function findTemplateExpressionEnd(source, start) {
   return source.length;
 }
 
-function collectTemplateExpressionImports(source, start) {
+function collectTemplateExpressionImports(source, start, baseOffset = 0) {
   const values = [];
   let index = start + 1;
   while (index < source.length) {
@@ -378,7 +394,7 @@ function collectTemplateExpressionImports(source, start) {
       const expressionStart = index + 2;
       const expressionEnd = findTemplateExpressionEnd(source, expressionStart);
       const expressionSource = source.slice(expressionStart, Math.max(expressionStart, expressionEnd - 1));
-      values.push(...collectJavaScriptRelativeImports(expressionSource));
+      values.push(...collectJavaScriptRelativeImports(expressionSource, baseOffset + expressionStart));
       index = expressionEnd;
       continue;
     }
@@ -387,7 +403,7 @@ function collectTemplateExpressionImports(source, start) {
   return { values, end: source.length };
 }
 
-function collectJavaScriptRelativeImports(source) {
+function collectJavaScriptRelativeImports(source, baseOffset = 0) {
   const text = String(source || "");
   const values = [];
   let index = 0;
@@ -399,7 +415,7 @@ function collectJavaScriptRelativeImports(source) {
       continue;
     }
     if (character === "`") {
-      const template = collectTemplateExpressionImports(text, index);
+      const template = collectTemplateExpressionImports(text, index, baseOffset);
       values.push(...template.values);
       index = template.end;
       continue;
@@ -419,6 +435,7 @@ function collectJavaScriptRelativeImports(source) {
         continue;
       }
     }
+    const tokenStart = index;
     const token = readIdentifier(text, index);
     if (!token) {
       index += 1;
@@ -426,7 +443,7 @@ function collectJavaScriptRelativeImports(source) {
     }
     if (token.value === "import" || token.value === "export") {
       const result = readJavaScriptModuleSpecifier(text, token.end, token.value);
-      if (result?.value.startsWith(".")) values.push(result.value);
+      if (result?.value.startsWith(".")) values.push({ specifier: result.value, index: baseOffset + tokenStart });
       if (result) {
         index = result.end;
         continue;
@@ -492,13 +509,14 @@ function collectCssRelativeImports(source) {
       index += 1;
       continue;
     }
+    const importStart = index;
     const token = readIdentifier(text, index + 1);
     if (!token || token.value.toLowerCase() !== "import") {
       index += 1;
       continue;
     }
     const result = readCssImportSpecifier(text, token.end);
-    if (result?.value.startsWith(".")) values.push(result.value);
+    if (result?.value.startsWith(".")) values.push({ specifier: result.value, index: importStart });
     index = result ? result.end : token.end;
   }
   return values;
@@ -528,8 +546,8 @@ export async function buildDependencyModel(workspace) {
     });
     let source = "";
     try { source = await workspace.readFile(fileName); } catch { continue; }
-    for (const specifier of collectRelativeImports(source, extension)) {
-      const target = resolveWorkspaceDependency(specifier, fileName, fileSet);
+    for (const dependency of collectRelativeImports(source, extension)) {
+      const target = resolveWorkspaceDependency(dependency.specifier, fileName, fileSet);
       if (!target) continue;
       const targetExtension = extensionOf(target);
       if (!(JS_EXTENSIONS.has(targetExtension) || targetExtension === "css")) continue;
@@ -625,14 +643,17 @@ export async function findArchitectureViolations(workspace) {
     if (!(JS_EXTENSIONS.has(extension) || extension === "css")) continue;
     let source = "";
     try { source = await workspace.readFile(fileName); } catch { continue; }
-    for (const specifier of collectRelativeImports(source, extension)) {
-      if (resolveWorkspaceDependency(specifier, fileName, fileSet)) continue;
+    for (const dependency of collectRelativeImports(source, extension)) {
+      if (resolveWorkspaceDependency(dependency.specifier, fileName, fileSet)) continue;
+      const position = sourcePositionAt(source, dependency.index);
       diagnostics.push(normalizeDiagnostic({
         source: "architecture",
         severity: "error",
         code: "UNRESOLVED-IMPORT",
         fileName,
-        message: `Unresolved local dependency: ${specifier}`
+        line: position.line,
+        column: position.column,
+        message: `Unresolved local dependency: ${dependency.specifier}`
       }, "architecture"));
     }
   }
