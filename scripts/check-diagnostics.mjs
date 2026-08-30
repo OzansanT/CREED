@@ -107,6 +107,35 @@ assert(!lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/che
 assert(lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/real-export.js" && edge.to === "file:scripts/run.js"));
 assert(lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/real-dynamic.js" && edge.to === "file:scripts/run.js"));
 
+const templateExpressionSource = [
+  'const direct = `prefix ${import("./run.js")} suffix`;',
+  'const objectExpression = `value ${({ load: () => import("./run.js") }).load}`;',
+  'const nested = `outer ${`inner ${import("./run.js")}`}`;',
+  'const textOnly = `import("./template-text-only.js")`;',
+  'const escaped = `\\${import("./escaped-template-only.js")}`;'
+].join("\n");
+const templateDependencies = await buildDependencyModel({
+  listFiles: () => ["scripts/template-expression.js", "scripts/run.js"],
+  readFile: async (path) => ({
+    "scripts/template-expression.js": templateExpressionSource,
+    "scripts/run.js": "export const run = true;"
+  })[path] || ""
+});
+assert(
+  templateDependencies.edges.some((edge) => edge.from === "file:scripts/template-expression.js" && edge.to === "file:scripts/run.js"),
+  "Dynamic imports inside template expressions must create dependency edges."
+);
+assert(!templateDependencies.edges.some((edge) => /template-text-only|escaped-template-only/.test(edge.to)), "Template text must remain non-executable to dependency analysis.");
+
+const templateMissingArchitecture = await findArchitectureViolations({
+  listFiles: () => ["scripts/template-missing.js"],
+  readFile: async () => 'const missing = `value ${import("./missing-template.js")}`;'
+});
+assert(
+  templateMissingArchitecture.some((item) => item.code === "UNRESOLVED-IMPORT" && item.message.includes("./missing-template.js")),
+  "Missing imports inside template expressions must be reported."
+);
+
 const cssFixtureSource = [
   '/* @import "./comment-only.css"; */',
   '.example::before { content: \'@import "./string-only.css";\'; }',
