@@ -8,6 +8,7 @@ import {
   createWorkspaceSymbolIndex,
   extractSourceSymbols
 } from "../js/components/editor-panel/workspace-symbols.js";
+import { navigateToWorkspaceLocation } from "../js/components/primary-sidebar/workspace-search-view.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
@@ -74,6 +75,34 @@ assert.equal(definition.fileName, "src/util.js");
 const providerRefs = await providers.provideReferences({ language: "*", symbol: "greetCount", matchCase: true });
 assert(providerRefs.length >= 2);
 
+const navigationCalls = [];
+assert.equal(
+  navigateToWorkspaceLocation(
+    { fileName: "src/main.js", lineNumber: 3, columnNumber: 5 },
+    { openFileAt: (...args) => { navigationCalls.push(args); return true; } }
+  ),
+  true,
+  "Workspace search matches must navigate through exact editor locations."
+);
+assert.deepEqual(navigationCalls, [["src/main.js", 3, 5]], "One-based search match coordinates must pass through unchanged.");
+assert.equal(
+  navigateToWorkspaceLocation(
+    { fileName: "src/util.js", line: 1, column: 7 },
+    { openFileAt: (...args) => { navigationCalls.push(args); return true; } }
+  ),
+  true,
+  "Zero-based workspace symbol coordinates must navigate through the same editor API."
+);
+assert.deepEqual(navigationCalls[1], ["src/util.js", 2, 8], "Zero-based symbol coordinates must convert to one-based editor locations.");
+const fallbackOpen = [];
+assert.equal(
+  navigateToWorkspaceLocation({ fileName: "README.md", lineNumber: 2, columnNumber: 1 }, { openFile: (fileName) => { fallbackOpen.push(fileName); return true; } }),
+  true,
+  "Workspace navigation must preserve plain file-opening fallback behavior."
+);
+assert.deepEqual(fallbackOpen, ["README.md"]);
+assert.equal(navigateToWorkspaceLocation({ lineNumber: 1 }, { openFileAt: () => true }), false, "Fileless workspace locations must not navigate.");
+
 const searchView = read("js/components/primary-sidebar/workspace-search-view.js");
 assert(searchView.includes("workspaceSearchInput"), "Search view must provide a workspace search input.");
 assert(searchView.includes("workspaceReplaceInput"), "Search view must provide workspace replacement.");
@@ -81,6 +110,13 @@ assert(searchView.includes("workspaceOutlineResults"), "Search view must expose 
 assert(searchView.includes("workspaceSymbolInput"), "Search view must expose workspace symbol navigation.");
 assert(searchView.includes("provideReferences"), "Search view must expose reference navigation.");
 assert(searchView.includes("provideDefinition"), "Search view must use the definition provider interface.");
+assert(searchView.includes("navigateToWorkspaceLocation(location, { openFile, openFileAt })"), "Search results, symbols, definitions, and references must share exact editor navigation.");
+assert(!searchView.includes("sourceScroller.scrollTop"), "Workspace Search must not own duplicate source scrolling math.");
+assert(!searchView.includes("sourceScroller.scrollLeft"), "Workspace Search must not own duplicate horizontal navigation math.");
+
+const main = read("js/main.js");
+const exactNavigationBindings = main.match(/openFileAt: editorPanel\.openFileAt/g) || [];
+assert(exactNavigationBindings.length >= 3, "Search, Run/Debug, and Diagnostics must share editorPanel.openFileAt.");
 
 const sidebar = read("js/components/primary-sidebar/primary-sidebar-input.js");
 assert(sidebar.includes('activeView = "explorer"'), "Primary sidebar must track an active activity view.");
