@@ -108,9 +108,8 @@ const workspaceSearch = bindWorkspaceSearchView({
   explorerView: elements.explorerView,
   workspace: editorPanel.workspace,
   openFile: editorPanel.openFile,
+  openFileAt: editorPanel.openFileAt,
   breadcrumbName: elements.editorBreadcrumbName,
-  sourceContent: elements.sourceContent,
-  sourceScroller: elements.sourceScroller,
   notify
 });
 

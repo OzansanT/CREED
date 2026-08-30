@@ -16,8 +16,8 @@ assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset 
 assert(!main.includes("createSourceLocationNavigator"), "Application orchestration must not construct source-location internals directly.");
 assert.equal(
   (main.match(/openFileAt: editorPanel\.openFileAt/g) || []).length,
-  2,
-  "Run/Debug and Diagnostics must consume the editor panel exact-location API."
+  3,
+  "Workspace Search, Run/Debug, and Diagnostics must consume the editor panel exact-location API."
 );
 assert(!main.includes("sourceLocationNavigator"), "Application orchestration must not retain editor navigation implementation state.");
 assert(!main.includes("function revealEditorLocation("), "Exact-location reveal implementation must not live in application orchestration.");
