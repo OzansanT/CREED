@@ -1,8 +1,9 @@
 import { WORKSPACE_FS_STORAGE_KEY } from "../../core/config.js";
 import { WORKSPACE_FILES } from "./source-files.js";
 
-export const WORKSPACE_FS_SCHEMA_VERSION = 2;
-const LEGACY_WORKSPACE_FS_SCHEMA_VERSION = 1;
+export const WORKSPACE_FS_SCHEMA_VERSION = 3;
+const SOURCE_CONTROL_SCHEMA_VERSION = 1;
+const RUN_DEBUG_SCHEMA_VERSION = 2;
 const DEFAULT_MAX_PATH_LENGTH = 240;
 const MAX_DELETE_HISTORY = 20;
 
@@ -30,6 +31,23 @@ const SOURCE_CONTROL_MIGRATION_RETIRED_FILES = new Set([
 ]);
 const SOURCE_CONTROL_MIGRATION_RETIRED_DIRECTORIES = Object.freeze([
   "js/components/source-control"
+]);
+
+const RUN_DEBUG_MIGRATION_RESET_FILES = new Set([
+  "index.html",
+  "js/components/editor-panel/source-files.js",
+  "js/components/editor-panel/workspace-fs.js",
+  "js/components/primary-sidebar/primary-sidebar-input.js",
+  "js/core/elements.js",
+  "js/main.js",
+  "scripts/check-architecture.mjs",
+  "scripts/check-post-roadmap-integration.mjs",
+  "scripts/check-run-debug.mjs",
+  "scripts/check-workspace-fs.mjs",
+  "ui/bars/activity-bar/activity-bar.html"
+]);
+const RUN_DEBUG_MIGRATION_RETIRED_DIRECTORIES = Object.freeze([
+  "js/components/run-debug"
 ]);
 
 function createMemoryStorage() {
@@ -82,33 +100,56 @@ function isWithinDirectory(path, directory) {
   return path === directory || path.startsWith(directory + "/");
 }
 
-function migrateLegacyStoredState(state) {
-  for (const fileName of SOURCE_CONTROL_MIGRATION_RESET_FILES) {
-    delete state.overlays[fileName];
-  }
+function purgeRetiredFeatureState(state, {
+  resetFiles = new Set(),
+  retiredFiles = new Set(),
+  retiredDirectories = [],
+  nextVersion
+} = {}) {
+  for (const fileName of resetFiles) delete state.overlays[fileName];
 
   for (const fileName of Object.keys(state.overlays)) {
-    if (SOURCE_CONTROL_MIGRATION_RETIRED_FILES.has(fileName)
-      || SOURCE_CONTROL_MIGRATION_RETIRED_DIRECTORIES.some((directory) => isWithinDirectory(fileName, directory))) {
+    if (retiredFiles.has(fileName)
+      || retiredDirectories.some((directory) => isWithinDirectory(fileName, directory))) {
       delete state.overlays[fileName];
     }
   }
 
   state.deleted = state.deleted.filter((fileName) => (
-    !SOURCE_CONTROL_MIGRATION_RESET_FILES.has(fileName)
-    && !SOURCE_CONTROL_MIGRATION_RETIRED_FILES.has(fileName)
-    && !SOURCE_CONTROL_MIGRATION_RETIRED_DIRECTORIES.some((directory) => isWithinDirectory(fileName, directory))
+    !resetFiles.has(fileName)
+    && !retiredFiles.has(fileName)
+    && !retiredDirectories.some((directory) => isWithinDirectory(fileName, directory))
   ));
   state.directories = state.directories.filter((directory) => (
-    !SOURCE_CONTROL_MIGRATION_RETIRED_DIRECTORIES.some((retired) => isWithinDirectory(directory, retired))
+    !retiredDirectories.some((retired) => isWithinDirectory(directory, retired))
   ));
-  state.version = WORKSPACE_FS_SCHEMA_VERSION;
+  state.version = nextVersion;
   return state;
 }
 
+function migrateSourceControlState(state) {
+  return purgeRetiredFeatureState(state, {
+    resetFiles: SOURCE_CONTROL_MIGRATION_RESET_FILES,
+    retiredFiles: SOURCE_CONTROL_MIGRATION_RETIRED_FILES,
+    retiredDirectories: SOURCE_CONTROL_MIGRATION_RETIRED_DIRECTORIES,
+    nextVersion: RUN_DEBUG_SCHEMA_VERSION
+  });
+}
+
+function migrateRunDebugState(state) {
+  return purgeRetiredFeatureState(state, {
+    resetFiles: RUN_DEBUG_MIGRATION_RESET_FILES,
+    retiredDirectories: RUN_DEBUG_MIGRATION_RETIRED_DIRECTORIES,
+    nextVersion: WORKSPACE_FS_SCHEMA_VERSION
+  });
+}
+
 function normalizeStoredState(value) {
-  const supportedVersion = value?.version === WORKSPACE_FS_SCHEMA_VERSION
-    || value?.version === LEGACY_WORKSPACE_FS_SCHEMA_VERSION;
+  const supportedVersion = [
+    SOURCE_CONTROL_SCHEMA_VERSION,
+    RUN_DEBUG_SCHEMA_VERSION,
+    WORKSPACE_FS_SCHEMA_VERSION
+  ].includes(value?.version);
   if (!value || typeof value !== "object" || !supportedVersion) {
     return { version: WORKSPACE_FS_SCHEMA_VERSION, overlays: {}, deleted: [], directories: [] };
   }
@@ -134,9 +175,9 @@ function normalizeStoredState(value) {
     } catch { /* ignore invalid persisted entries */ }
   }
   const normalized = { version: value.version, overlays, deleted, directories };
-  return value.version === LEGACY_WORKSPACE_FS_SCHEMA_VERSION
-    ? migrateLegacyStoredState(normalized)
-    : normalized;
+  if (normalized.version === SOURCE_CONTROL_SCHEMA_VERSION) migrateSourceControlState(normalized);
+  if (normalized.version === RUN_DEBUG_SCHEMA_VERSION) migrateRunDebugState(normalized);
+  return normalized;
 }
 
 async function defaultReadBaseline(fileName, { signal } = {}) {
@@ -160,7 +201,7 @@ export function createWorkspaceFileSystem({
   } catch {
     rawStored = null;
   }
-  const shouldPersistMigration = rawStored?.version === LEGACY_WORKSPACE_FS_SCHEMA_VERSION;
+  const shouldPersistMigration = [SOURCE_CONTROL_SCHEMA_VERSION, RUN_DEBUG_SCHEMA_VERSION].includes(rawStored?.version);
   const stored = normalizeStoredState(rawStored);
   const overlays = new Map(Object.entries(stored.overlays));
   const deleted = new Set(stored.deleted);
