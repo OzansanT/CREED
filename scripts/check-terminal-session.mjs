@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   completeTerminalInput,
   createTerminalCommandProcessor,
+  findTerminalSourceReferences,
   formatTerminalPath,
   loadTerminalState,
+  navigateTerminalSourceReference,
   parseTerminalOpenTarget,
   resolveTerminalPath,
   saveTerminalState,
@@ -39,6 +42,48 @@ const workspace = createWorkspaceFileSystem({
   storage: workspaceStorage,
   readBaseline: async (path) => baseline.get(path)
 });
+
+const references = findTerminalSourceReferences(
+  "Error at src/main.js:2:4, util.js:3, workspace/src/util.js:5:6 and /workspaces/CREED/README.md:7:8; https://example.com:12",
+  { workspace, cwd: "src" }
+);
+assert.deepEqual(
+  references.map(({ text, fileName, line, column }) => ({ text, fileName, line, column })),
+  [
+    { text: "src/main.js:2:4", fileName: "src/main.js", line: 2, column: 4 },
+    { text: "util.js:3", fileName: "src/util.js", line: 3, column: 1 },
+    { text: "workspace/src/util.js:5:6", fileName: "src/util.js", line: 5, column: 6 },
+    { text: "/workspaces/CREED/README.md:7:8", fileName: "README.md", line: 7, column: 8 }
+  ],
+  "Terminal output must identify only real workspace source locations while preserving displayed reference text."
+);
+assert.deepEqual(
+  findTerminalSourceReferences("missing.js:9:2 and src/main.js", { workspace, cwd: "src" }),
+  [],
+  "Missing files and file paths without coordinates must remain plain terminal text."
+);
+const referenceNavigationCalls = [];
+assert.equal(
+  await navigateTerminalSourceReference(references[0], {
+    openFileAt: async (...args) => { referenceNavigationCalls.push(args); return true; }
+  }),
+  true
+);
+assert.deepEqual(referenceNavigationCalls, [["src/main.js", 2, 4]], "Clickable terminal references must use exact editor navigation.");
+const referenceFallbackCalls = [];
+assert.equal(
+  await navigateTerminalSourceReference(references[1], {
+    openFile: async (fileName) => { referenceFallbackCalls.push(fileName); return true; }
+  }),
+  true
+);
+assert.deepEqual(referenceFallbackCalls, ["src/util.js"], "Clickable source references must retain plain-file fallback navigation.");
+assert.equal(await navigateTerminalSourceReference(null, { openFileAt: () => true }), false);
+
+const terminalSource = readFileSync(new URL("../js/components/bottom-panel/terminal-session.js", import.meta.url), "utf8");
+assert(terminalSource.includes('link.className = "terminal-view__source-link"'), "Terminal source references must render as dedicated interactive controls.");
+assert(terminalSource.includes("findTerminalSourceReferences(text, { workspace: fs, cwd })"), "Terminal output rendering must pass through workspace-aware source-reference detection.");
+assert(terminalSource.includes("navigateTerminalSourceReference(reference, { openFile, openFileAt })"), "Terminal source links must use the shared exact-location navigation path.");
 
 const opened = [];
 const exactOpened = [];

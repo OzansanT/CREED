@@ -96,6 +96,72 @@ export function parseTerminalOpenTarget(value) {
   };
 }
 
+function terminalReferenceAliases(fileName, cwd = "") {
+  const aliases = new Set([
+    fileName,
+    `workspace/${fileName}`,
+    `${WORKSPACE_ROOT}/${fileName}`
+  ]);
+  const normalizedCwd = resolveTerminalPath(".", cwd);
+  const prefix = normalizedCwd ? normalizedCwd + "/" : "";
+  if (prefix && fileName.startsWith(prefix)) aliases.add(fileName.slice(prefix.length));
+  return [...aliases].filter(Boolean).sort((left, right) => right.length - left.length);
+}
+
+function hasTerminalReferenceBoundary(text, index) {
+  if (index <= 0) return true;
+  return !/[A-Za-z0-9_.@~+\/-]/.test(text[index - 1]);
+}
+
+export function findTerminalSourceReferences(value, { workspace, cwd = "" } = {}) {
+  const fs = getWorkspace(workspace);
+  const text = String(value ?? "");
+  const candidates = [];
+  const files = [...fs.listFiles()].sort((left, right) => right.length - left.length || left.localeCompare(right));
+
+  for (const fileName of files) {
+    for (const alias of terminalReferenceAliases(fileName, cwd)) {
+      let searchIndex = 0;
+      while (searchIndex < text.length) {
+        const start = text.indexOf(alias + ":", searchIndex);
+        if (start < 0) break;
+        searchIndex = start + alias.length + 1;
+        if (!hasTerminalReferenceBoundary(text, start)) continue;
+        const suffix = text.slice(start + alias.length).match(/^:(\d+)(?::(\d+))?/);
+        if (!suffix) continue;
+        const end = start + alias.length + suffix[0].length;
+        candidates.push({
+          start,
+          end,
+          text: text.slice(start, end),
+          fileName,
+          line: Math.max(1, Math.trunc(Number(suffix[1]) || 1)),
+          column: suffix[2] ? Math.max(1, Math.trunc(Number(suffix[2]) || 1)) : 1
+        });
+      }
+    }
+  }
+
+  candidates.sort((left, right) => left.start - right.start || right.end - left.end);
+  const references = [];
+  let coveredUntil = -1;
+  for (const candidate of candidates) {
+    if (candidate.start < coveredUntil) continue;
+    references.push(candidate);
+    coveredUntil = candidate.end;
+  }
+  return references;
+}
+
+export async function navigateTerminalSourceReference(reference, { openFile, openFileAt } = {}) {
+  if (!reference?.fileName) return false;
+  const line = Math.max(1, Math.trunc(Number(reference.line) || 1));
+  const column = Math.max(1, Math.trunc(Number(reference.column) || 1));
+  if (typeof openFileAt === "function") return await openFileAt(reference.fileName, line, column) !== false;
+  if (typeof openFile === "function") return await openFile(reference.fileName) !== false;
+  return false;
+}
+
 export function listWorkspaceDirectory(workspace, directory = "") {
   const source = getWorkspace(workspace);
   const normalized = resolveTerminalPath(directory, "");
@@ -589,12 +655,49 @@ export function bindTerminalSessions({
     renderPrompt();
   }
 
+  function appendOutputText(row, text, cwd) {
+    const references = findTerminalSourceReferences(text, { workspace: fs, cwd });
+    if (!references.length) {
+      row.textContent = text;
+      return;
+    }
+    let cursor = 0;
+    for (const reference of references) {
+      if (reference.start > cursor) row.append(document.createTextNode(text.slice(cursor, reference.start)));
+      const link = document.createElement("button");
+      link.type = "button";
+      link.className = "terminal-view__source-link";
+      link.textContent = reference.text;
+      link.title = `Open ${reference.fileName}:${reference.line}:${reference.column}`;
+      link.setAttribute("aria-label", link.title);
+      Object.assign(link.style, {
+        appearance: "none",
+        border: "0",
+        background: "transparent",
+        color: "inherit",
+        font: "inherit",
+        padding: "0",
+        margin: "0",
+        cursor: "pointer",
+        textDecoration: "underline",
+        textUnderlineOffset: "2px"
+      });
+      link.addEventListener("click", async () => {
+        const opened = await navigateTerminalSourceReference(reference, { openFile, openFileAt });
+        if (!opened) notify?.(`Unable to open ${reference.fileName}:${reference.line}:${reference.column}`);
+      });
+      row.append(link);
+      cursor = reference.end;
+    }
+    if (cursor < text.length) row.append(document.createTextNode(text.slice(cursor)));
+  }
+
   function renderOutput() {
     const session = activeSession();
     const fragment = document.createDocumentFragment();
     for (const line of session?.lines || []) {
       const row = document.createElement("div");
-      row.textContent = line.text;
+      appendOutputText(row, line.text, session?.cwd || "");
       if (line.kind === "error") row.setAttribute("role", "alert");
       fragment.append(row);
     }
