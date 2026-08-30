@@ -33,7 +33,7 @@ const requiredIds = [
   "sourceEditor", "bottomPanel", "secondarySidebar", "chatView", "notificationLayer",
   "statusBar", "togglePrimarySidebarBtn", "toggleBottomPanelBtn",
   "toggleSecondarySidebarBtn", "returnToOriginBtn", "resetCanvasBtn", "resetWorkspaceBtn",
-  "activityMenuBtn", "activityExplorerBtn", "activitySearchBtn", "activityRunBtn",
+  "activityMenuBtn", "activityExplorerBtn", "activitySearchBtn",
   "activityExtensionsBtn", "activityGitHubBtn", "activityAccountBtn",
   "activitySettingsBtn", "workspaceDisclosureBtn", "newFileBtn", "newFolderBtn",
   "refreshExplorerBtn", "canvasControlsTabBtn", "infiniteCanvasTabBtn", "componentsTabBtn",
