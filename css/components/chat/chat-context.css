@@ -1,0 +1,4 @@
+@layer components {
+  .chat-composer__context { display: flex; align-items: center; gap: 5px; color: #646469; font-size: 11px; }
+  .chat-composer__context .ui-icon { width: 14px; height: 14px; }
+}

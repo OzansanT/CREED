@@ -13,8 +13,7 @@ assert(!main.includes("SourceControl"), "Application orchestration must not reta
 assert(!main.includes("sourceControl"), "Application orchestration must not retain removed Source Control state.");
 assert(!main.includes("bindRunDebug"), "Application orchestration must not retain removed Run and Debug wiring.");
 assert(!main.includes("runDebug"), "Application orchestration must not retain removed Run and Debug state.");
-assert(!main.includes("bindSecondarySidebar"), "Application orchestration must not retain removed Secondary Sidebar wiring.");
-assert(!main.includes("secondarySidebarViews"), "Application orchestration must not retain removed Secondary Sidebar views.");
+assert(main.includes("secondarySidebar.setMaximized(false, false)"), "Infinite Reset must clear Secondary Sidebar maximization.");
 assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset must clear Bottom Panel maximization.");
 assert(!main.includes("createSourceLocationNavigator"), "Application orchestration must not construct source-location internals directly.");
 assert.equal(
@@ -25,18 +24,6 @@ assert.equal(
 assert(!main.includes("sourceLocationNavigator"), "Application orchestration must not retain editor navigation implementation state.");
 assert(!main.includes("function revealEditorLocation("), "Exact-location reveal implementation must not live in application orchestration.");
 assert(!main.includes('source-editor__location-marker'), "Runtime source-location decoration must remain owned by the editor navigation component.");
-
-const frame = read("ui/main-frame.html");
-assert(!frame.includes('id="secondarySidebar"'), "Main frame must not retain the removed Secondary Sidebar.");
-assert(!frame.includes("secondary-sidebar-header"), "Main frame must not retain Secondary Sidebar bar slots.");
-assert(!frame.includes("secondary-sidebar-footer"), "Main frame must not retain Secondary Sidebar footer slots.");
-const titleBar = read("ui/bars/title-bar/title-bar.html");
-assert(!titleBar.includes("toggleSecondarySidebarBtn"), "Title bar must not expose a Secondary Sidebar layout toggle.");
-const elements = read("js/core/elements.js");
-assert(!elements.includes("secondarySidebar"), "DOM element registry must not retain Secondary Sidebar bindings.");
-const storage = read("js/core/storage.js");
-assert(!storage.includes("secondaryVisible"), "Panel layout persistence must not retain Secondary Sidebar visibility.");
-assert(!storage.includes("secondaryWidth"), "Panel layout persistence must not retain Secondary Sidebar dimensions.");
 
 const sourceNavigation = read("js/components/editor-panel/source-navigation.js");
 assert(sourceNavigation.includes("export function createSourceLocationNavigator"), "Editor source navigation must own exact-location navigation.");
@@ -116,6 +103,32 @@ assert.equal(row.style.position, "");
 assert.deepEqual(clearedTimers, [17], "Reveal cleanup must clear the pending timer before restoring row state.");
 assert.equal(navigator.openFileAt("missing.js", 1, 1), false, "Exact source navigation must reject files that cannot be opened.");
 
+const chat = read("js/components/ai/chat-main.js");
+const clearStart = chat.indexOf("function clear()");
+const clearEnd = chat.indexOf("async function executeToolCalls", clearStart);
+const clearBody = chat.slice(clearStart, clearEnd);
+assert(clearBody.includes("running = false"), "New Chat must release a running AI composer immediately.");
+const firstProviderCall = chat.indexOf("providerRegistry.complete");
+const firstToolCall = chat.indexOf("executeToolCalls(response.toolCalls)");
+const cancellationCheck = chat.indexOf("if (token !== generation) return false;", firstProviderCall);
+assert(cancellationCheck > firstProviderCall && cancellationCheck < firstToolCall, "Cancelled AI requests must not execute tool calls.");
+assert(!chat.includes("selfDevelopment"), "Chat must not retain removed Source Control self-development routing.");
+
+const secondaryViews = read("js/components/secondary-sidebar/secondary-sidebar-view-controller.js");
+assert(secondaryViews.includes('makeTab("generalChatBtn", "Chat", "chatView")'), "Secondary sidebar must keep Chat as a top-level tab button.");
+assert(secondaryViews.includes('makeTab("generalComponentsBtn", "Components", "componentLibraryView")'), "Secondary sidebar must keep Components as a top-level tab button.");
+assert(secondaryViews.includes('makeTab("chatConversationBtn", "Conversation", "chatView", "chat")'), "Chat must expose its first secondary button.");
+assert(secondaryViews.includes('makeTab("chatSettingsViewBtn", "Settings", "chatView", "chat")'), "Chat must expose its second secondary button.");
+assert(secondaryViews.includes('makeTab("componentLibraryBtn", "Library", "componentLibraryView", "components")'), "Components must expose its first secondary button.");
+assert(secondaryViews.includes('makeTab("componentInstancesBtn", "Instances", "componentLibraryView", "components")'), "Components must expose its second secondary button.");
+assert(secondaryViews.includes('subBar.setAttribute("role", "tablist")'), "Secondary sidebar sub buttons must form an accessible tablist.");
+assert(secondaryViews.includes("renderComponentInstances"), "Component secondary navigation must render placed canvas instances into the shared component sub-area.");
+assert(secondaryViews.includes("chatSettingsAction?.click()"), "Chat Settings secondary button must reuse the existing chat settings behavior.");
+
+const storage = read("js/core/storage.js");
+assert(storage.includes('secondarySidebarChatSubView = ["conversation", "settings"]'), "Chat secondary-tab state must be restored from persisted workspace state.");
+assert(storage.includes('secondarySidebarComponentsSubView = ["library", "instances"]'), "Component secondary-tab state must be restored from persisted workspace state.");
+
 const diagnostics = read("js/components/diagnostics/diagnostics-main.js");
 assert(diagnostics.includes("return buildDependencyModel(workspace);"), "Diagnostics must build fresh dependency state from the workspace.");
 assert(diagnostics.includes("workspace.subscribe?.(scheduleWorkspaceDiagnostics)"), "Diagnostics must refresh when WorkspaceFS changes outside the Problems panel.");
@@ -184,6 +197,8 @@ assert(split.includes("function renameDirectorySessions(oldPath, newPath)"), "Sp
 assert(split.includes("scheduleMissingFileReconcile"), "Split editor must defer missing-file cleanup until composite rename events settle.");
 
 const bottom = read("js/components/bottom-panel/bottom-panel-input.js");
+const secondary = read("js/components/secondary-sidebar/secondary-sidebar-input.js");
 assert(bottom.includes("setMaximized"), "Bottom Panel controller must expose explicit maximize lifecycle control.");
+assert(secondary.includes("setMaximized"), "Secondary Sidebar controller must expose explicit maximize lifecycle control.");
 
 console.log("Post-roadmap integration audit checks passed.");

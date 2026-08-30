@@ -31,6 +31,8 @@
 @import url("./components/infinite-canvas/infinitecanvas-main.css");
 @import url("./components/source-editor/source-editor-main.css");
 @import url("./components/bottom-panel/bottom-panel-main.css");
+@import url("./components/secondary-sidebar/secondary-sidebar-main.css");
+@import url("./components/chat/chat-view-main.css");
 @import url("./components/feedback/feedback-main.css");
 @import url("./components/status-bar/status-bar-main.css");
 

@@ -14,6 +14,7 @@
     "behaviorOwners": [
       "js/components/primary-sidebar/primary-sidebar-main.js",
       "js/components/bottom-panel/bottom-panel-main.js",
+      "js/components/secondary-sidebar/secondary-sidebar-main.js",
       "js/components/infinite-canvas/infinitecanvas-main.js"
     ]
   },
@@ -76,6 +77,22 @@
     "behaviorOwners": [
       "js/components/bottom-panel/bottom-panel-main.js"
     ]
+  },
+  {
+    "slot": "secondary-sidebar-header",
+    "rootId": "secondarySidebarHeader",
+    "template": "ui/bars/secondary-sidebar-header/secondary-sidebar-header.html",
+    "styleEntry": "css/components/secondary-sidebar/secondary-sidebar-main.css",
+    "behaviorOwners": [
+      "js/components/secondary-sidebar/secondary-sidebar-main.js"
+    ]
+  },
+  {
+    "slot": "secondary-sidebar-footer",
+    "rootId": "secondarySidebarFooter",
+    "template": "ui/bars/secondary-sidebar-footer/secondary-sidebar-footer.html",
+    "styleEntry": "css/components/secondary-sidebar/secondary-sidebar-main.css",
+    "behaviorOwners": []
   },
   {
     "slot": "status-bar",

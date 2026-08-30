@@ -171,6 +171,30 @@
       </section>
     </div>
 
+    <aside id="secondarySidebar" class="secondary-sidebar panel" aria-label="Sohbet">
+      <div id="secondarySidebarResizeHandle" class="panel-resize-handle panel-resize-handle--vertical panel-resize-handle--secondary" role="separator" aria-label="Resize secondary sidebar" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="900" aria-valuenow="290" tabindex="0"></div>
+      <!-- @bar secondary-sidebar-header -->
+      <div id="secondarySidebarContent" class="secondary-sidebar__content panel__content">
+        <section id="chatView" class="chat-view" aria-label="Chat view">
+          <div id="chatEmptyState" class="chat-view__empty">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M9 10h25a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H21l-8 6v-6H9a5 5 0 0 1-5-5V15a5 5 0 0 1 5-5Z"/>
+              <path d="m36 6 1.5 3.5L41 11l-3.5 1.5L36 16l-1.5-3.5L31 11l3.5-1.5Z"/>
+            </svg>
+            <strong>Aracıyla Oluşturun</strong>
+            <span>Yapay zeka yanıtları hatalı olabilir</span>
+          </div>
+          <div id="chatMessages" class="chat-view__messages" aria-live="polite"></div>
+          <div id="chatComposer" class="chat-composer">
+            <div id="chatContext" class="chat-composer__context"><span data-icon="plus" aria-hidden="true"></span><span id="chatContextKind" class="file-kind">◇</span><em id="chatContextName">Infinite Canvas</em></div>
+            <textarea id="chatPromptInput" class="chat-composer__input" rows="2" aria-label="Describe what to create" placeholder="Ne oluşturulacağını açıkla"></textarea>
+            <div class="chat-composer__toolbar toolbar"><span data-icon="plus" aria-hidden="true"></span><span>Agent</span><span>Models</span><span data-icon="sliders" aria-hidden="true"></span><button id="sendChatMessageBtn" class="chat-composer__send icon-button" data-icon="send" type="button" aria-label="Send message" title="Send message"></button></div>
+          </div>
+        </section>
+      </div>
+      <!-- @bar secondary-sidebar-footer -->
+    </aside>
+
     <div id="notificationLayer" class="notification-layer" aria-live="polite">
       <div id="toastRegion" class="toast-region toast" role="status"></div>
     </div>

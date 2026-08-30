@@ -30,23 +30,23 @@ const requiredIds = [
   "commandCenter", "layoutControls", "activityBar", "primarySidebar", "explorerView",
   "workspaceTree", "workbench", "editorPanel", "editorTabs", "editorViewport",
   "canvasView", "canvasViewport", "canvasWorld", "canvasOverlay", "sourceEditorView",
-  "sourceEditor", "bottomPanel", "notificationLayer", "statusBar",
-  "togglePrimarySidebarBtn", "toggleBottomPanelBtn", "returnToOriginBtn",
-  "resetCanvasBtn", "resetWorkspaceBtn", "activityMenuBtn", "activityExplorerBtn",
-  "activitySearchBtn", "activityExtensionsBtn", "activityGitHubBtn", "activityAccountBtn",
+  "sourceEditor", "bottomPanel", "secondarySidebar", "chatView", "notificationLayer",
+  "statusBar", "togglePrimarySidebarBtn", "toggleBottomPanelBtn",
+  "toggleSecondarySidebarBtn", "returnToOriginBtn", "resetCanvasBtn", "resetWorkspaceBtn",
+  "activityMenuBtn", "activityExplorerBtn", "activitySearchBtn",
+  "activityExtensionsBtn", "activityGitHubBtn", "activityAccountBtn",
   "activitySettingsBtn", "workspaceDisclosureBtn", "newFileBtn", "newFolderBtn",
   "refreshExplorerBtn", "canvasControlsTabBtn", "infiniteCanvasTabBtn", "componentsTabBtn",
   "canvasTab", "fileTabs", "editorBreadcrumbKind", "editorBreadcrumbName", "splitEditorBtn",
   "editorActionsBtn", "problemsTabBtn", "outputTabBtn", "debugConsoleTabBtn",
   "terminalTabBtn", "portsTabBtn", "newTerminalBtn", "splitTerminalBtn", "killTerminalBtn",
-  "maximizeBottomPanelBtn", "closeBottomPanelBtn"
+  "maximizeBottomPanelBtn", "closeBottomPanelBtn", "newChatBtn", "chatSettingsBtn",
+  "maximizeSecondarySidebarBtn", "closeSecondarySidebarBtn", "chatContext",
+  "chatPromptInput", "sendChatMessageBtn"
 ];
 
 const missingRequiredIds = requiredIds.filter((id) => !idSet.has(id));
 assert(missingRequiredIds.length === 0, "Missing recommended IDs: " + missingRequiredIds.join(", "));
-for (const removedId of ["secondarySidebar", "toggleSecondarySidebarBtn", "chatView", "chatPromptInput", "sendChatMessageBtn"]) {
-  assert(!idSet.has(removedId), "Removed Secondary Sidebar ID returned: " + removedId);
-}
 
 const ariaTargets = [...html.matchAll(/aria-controls="([^"]+)"/g)]
   .flatMap((match) => match[1].split(/\s+/));

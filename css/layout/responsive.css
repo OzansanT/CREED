@@ -2,6 +2,7 @@
   @media (max-width: 1500px) {
     :root {
       --primary-sidebar-w: 270px;
+      --secondary-sidebar-w: 250px;
     }
     .command-center { width: min(520px, 42vw); }
     .editor-tab--canvas { min-width: 38px; width: 38px; padding: 0; justify-content: center; }
@@ -9,6 +10,9 @@
   }
 
   @media (max-width: 1180px) {
+    :root { --secondary-sidebar-w: 0px; }
+    .secondary-sidebar { display: none; }
+    .workbench { right: 0; }
     .toast-region { left: calc(var(--activity-w) + var(--primary-sidebar-w) + (100vw - var(--activity-w) - var(--primary-sidebar-w)) / 2); }
     .command-center { width: 40vw; }
   }

@@ -12,10 +12,13 @@ export function getElements() {
     togglePrimarySidebarBtn: document.getElementById("togglePrimarySidebarBtn"),
     activityExplorerBtn: document.getElementById("activityExplorerBtn"),
     activitySearchBtn: document.getElementById("activitySearchBtn"),
+    toggleSecondarySidebarBtn: document.getElementById("toggleSecondarySidebarBtn"),
+    secondarySidebar: document.getElementById("secondarySidebar"),
     toggleBottomPanelBtn: document.getElementById("toggleBottomPanelBtn"),
     workbench: document.getElementById("workbench"),
     bottomPanel: document.getElementById("bottomPanel"),
     primarySidebarResizeHandle: document.getElementById("primarySidebarResizeHandle"),
+    secondarySidebarResizeHandle: document.getElementById("secondarySidebarResizeHandle"),
     bottomPanelResizeHandle: document.getElementById("bottomPanelResizeHandle"),
     canvasMenuBtn: document.getElementById("canvasControlsTabBtn"),
     infiniteCanvasMenuBtn: document.getElementById("infiniteCanvasTabBtn"),
@@ -43,6 +46,14 @@ export function getElements() {
     sourceScroller: document.getElementById("sourceScroller"),
     sourceContent: document.getElementById("sourceContent"),
     sourceMinimap: document.getElementById("sourceMinimap"),
+    chatEmptyState: document.getElementById("chatEmptyState"),
+    chatMessages: document.getElementById("chatMessages"),
+    chatPromptInput: document.getElementById("chatPromptInput"),
+    sendChatMessageBtn: document.getElementById("sendChatMessageBtn"),
+    newChatBtn: document.getElementById("newChatBtn"),
+    chatSettingsBtn: document.getElementById("chatSettingsBtn"),
+    chatContextKind: document.getElementById("chatContextKind"),
+    chatContextName: document.getElementById("chatContextName"),
     statusLanguage: document.getElementById("statusLanguage"),
 
     bottomPanelTabsRoot: document.getElementById("bottomPanelTabs"),
@@ -57,6 +68,8 @@ export function getElements() {
     killTerminalBtn: document.getElementById("killTerminalBtn"),
     maximizeBottomPanelBtn: document.getElementById("maximizeBottomPanelBtn"),
     closeBottomPanelBtn: document.getElementById("closeBottomPanelBtn"),
+    maximizeSecondarySidebarBtn: document.getElementById("maximizeSecondarySidebarBtn"),
+    closeSecondarySidebarBtn: document.getElementById("closeSecondarySidebarBtn"),
 
     grids: Object.fromEntries(
       [...document.querySelectorAll(".infinite-canvas__grid[data-grid-order]")]
