@@ -10,6 +10,7 @@ import {
 import { createPerformanceProfiler } from "./performance-profiler.js";
 
 const DEFAULT_ACTIONS_URL = "https://api.github.com/repos/OzansanT/CREED/actions/runs?per_page=1";
+const TOOLING_ENTRY_PATTERN = /^scripts\/[^/]+\.(?:js|mjs|cjs)$/i;
 
 function style(element, values) {
   Object.assign(element.style, values);
@@ -21,6 +22,10 @@ function makeButton(label) {
   button.type = "button";
   button.textContent = label;
   return button;
+}
+
+export function isActionableOrphanDiagnostic(problem) {
+  return !TOOLING_ENTRY_PATTERN.test(String(problem?.fileName || ""));
 }
 
 export function navigateToDiagnostic(problem, { openFile, openFileAt } = {}) {
@@ -131,7 +136,7 @@ export function bindDiagnostics({
     const result = await profiler.measure("workspace diagnostics", () => runWorkspaceDiagnostics({ workspace, dependencies }));
     model.setSource("architecture", result.architecture);
     model.setSource("dependency-cycles", result.cycles);
-    model.setSource("orphan-modules", result.orphans);
+    model.setSource("orphan-modules", result.orphans.filter(isActionableOrphanDiagnostic));
     if (output) model.setSource("npm-check", parseCheckOutput(output));
     if (reveal) {
       showBottomView?.("problems");
@@ -172,7 +177,7 @@ export function bindDiagnostics({
       id: "orphan-modules",
       label: "Orphan modules",
       run: async () => {
-        const diagnostics = findOrphanModules(await currentDependencies());
+        const diagnostics = findOrphanModules(await currentDependencies()).filter(isActionableOrphanDiagnostic);
         model.setSource("orphan-modules", diagnostics);
         return diagnostics;
       }
