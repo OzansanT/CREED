@@ -111,5 +111,7 @@ const main = read("js/main.js");
 assert(main.includes("bindAIWorkbench"), "Application orchestration must keep the headless AI workbench services enabled.");
 assert(main.includes("globalThis.CREED_AI"), "External LLM providers must have an explicit registration surface.");
 assert(!main.includes("bindSecondarySidebar"), "Application orchestration must not retain Secondary Sidebar wiring.");
+const titleBar = read("ui/bars/title-bar/title-bar.html");
+assert(!titleBar.includes("toggleSecondarySidebarBtn"), "Title bar must not restore the removed Secondary Sidebar toggle.");
 
 console.log("AI workbench checks passed.");
