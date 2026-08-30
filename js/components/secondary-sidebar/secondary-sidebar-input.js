@@ -9,6 +9,12 @@ export function bindSecondarySidebar({
   onLayoutChange
 }) {
   const responsiveQuery = window.matchMedia(RESPONSIVE_SECONDARY_SIDEBAR_QUERY);
+  const header = panel.querySelector("#secondarySidebarHeader");
+  const actions = panel.querySelector(".secondary-sidebar__actions");
+  if (header && actions && actions.parentElement === header) {
+    panel.insertBefore(actions, header);
+  }
+
   let preferredVisible = !panel.hidden;
   let responsiveHidden = responsiveQuery.matches;
   let maximized = false;
