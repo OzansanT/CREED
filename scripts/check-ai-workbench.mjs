@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import { createAgentToolSandbox } from "../js/components/ai/agent-sandbox.js";
 import { applyAIPatch, hashPatchContent, normalizeAIPatch } from "../js/components/ai/ai-patch.js";
 import { createLLMProviderRegistry, createLocalContextProvider } from "../js/components/ai/llm-provider.js";
-import { createSelfDevelopmentWorkflow, selectDevelopmentIssue } from "../js/components/ai/self-development.js";
 import { createSemanticRepositoryIndex } from "../js/components/ai/semantic-index.js";
 import { createTaskDag } from "../js/components/ai/task-dag.js";
 import { runVerifyRepairLoop } from "../js/components/ai/verify-repair-loop.js";
@@ -101,75 +100,19 @@ const loop = await runVerifyRepairLoop({
 assert.equal(loop.passed, true);
 assert.equal(repairCount, 1);
 
-const issue = selectDevelopmentIssue([
-  { severity: "warning", code: "W", message: "warn" },
-  { severity: "error", code: "E", message: "error" }
-]);
-assert.equal(issue.code, "E");
-
-const devWorkspace = memoryWorkspace({ "app.js": "export const value = 1;" });
-const baseline = devWorkspace.snapshot();
-let currentBranch = "main";
-const branches = new Set(["main"]);
-const staged = new Set();
-const commits = [];
-const provider = {
-  getCurrentBranch: () => currentBranch,
-  getStaged: () => [...staged].map((path) => ({ path })),
-  getWorkingChanges: async () => Object.entries(devWorkspace.snapshot())
-    .filter(([path, content]) => baseline[path] !== content)
-    .map(([path, content]) => ({ path, status: baseline[path] === undefined ? "created" : "modified", content })),
-  createBranch: (name) => { assert.notEqual(name, "main"); branches.add(name); return name; },
-  switchBranch: async (name) => { assert(branches.has(name)); currentBranch = name; return name; },
-  stage: async (path) => { staged.add(path); return { path }; },
-  commit: async (message) => {
-    assert.notEqual(currentBranch, "main", "Self-development must never commit directly to main.");
-    assert(staged.size > 0);
-    const commit = { id: "agent-commit-1", branch: currentBranch, message };
-    commits.push(commit);
-    staged.clear();
-    return commit;
-  }
-};
-let checks = 0;
-const diagnostics = {
-  model: { list: () => [{ severity: "error", code: "TEST", message: "Detected issue", fileName: "app.js" }] },
-  runChecks: async () => ({ counts: { error: 0, warning: 0, info: 0 }, problems: [], passed: true, sequence: ++checks })
-};
-let openedProposal = null;
-const workflow = createSelfDevelopmentWorkflow({
-  workspace: devWorkspace,
-  sourceControlProvider: provider,
-  diagnostics,
-  now: () => 1000,
-  openPullRequest: async (proposal) => { openedProposal = proposal; return { number: 99, ...proposal }; }
-});
-const selfPatch = { version: 1, title: "Fix app", files: [{ path: "app.js", content: "export const value = 2;" }] };
-await assert.rejects(workflow.execute({ patch: selfPatch, approved: false }), /explicit patch approval/);
-const selfResult = await workflow.execute({ patch: selfPatch, approved: true, title: "Fix detected issue" });
-assert(selfResult.branch.startsWith("agent/"));
-assert.notEqual(selfResult.branch, "main");
-assert.equal(selfResult.commit.id, "agent-commit-1");
-assert.equal(selfResult.verification.passed, true);
-assert.equal(openedProposal.base, "main");
-assert.equal(openedProposal.head, selfResult.branch);
-assert.equal(selfResult.pullRequest.number, 99);
-assert.equal(commits.length, 1);
-
 const chat = read("js/components/ai/chat-main.js");
 assert(chat.includes("renderPatchApproval"), "Chat must render a diff approval UI for proposed patches.");
-assert(chat.includes("selfDevelopment.execute"), "Chat must route approved self-development patches through the isolated workflow.");
+assert(chat.includes("applyAIPatch(patch, workspace, { approved: true })"), "Approved patches must apply directly to the workspace.");
+assert(!chat.includes("selfDevelopment"), "AI chat must not retain the removed Source Control self-development path.");
 const aiMain = read("js/components/ai/ai-main.js");
 assert(aiMain.includes("createAgentToolSandbox"), "AI workbench must wire the tool sandbox.");
 assert(aiMain.includes("createSemanticRepositoryIndex"), "AI workbench must wire the semantic repository index.");
+assert(!aiMain.includes("self-development"), "AI workbench must not import the removed self-development workflow.");
 const unavailable = read("js/ui/unavailable-controls.js");
 assert(!unavailable.includes('"#chatPromptInput"'));
 assert(!unavailable.includes('"#sendChatMessageBtn"'));
 const main = read("js/main.js");
 assert(main.includes("bindAIWorkbench"), "Application orchestration must enable the Secondary Sidebar AI workbench.");
 assert(main.includes("globalThis.CREED_AI"), "External LLM providers must have an explicit registration surface.");
-const selfDevelopment = read("js/components/ai/self-development.js");
-assert(selfDevelopment.includes('sourceControlProvider.getCurrentBranch() === "main"'), "Self-development must assert main protection after branch creation.");
-assert(selfDevelopment.includes("pullRequestProposal"), "Self-development must produce a reviewable PR proposal.");
 
-console.log("AI workbench and self-development checks passed.");
+console.log("AI workbench checks passed.");

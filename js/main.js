@@ -5,8 +5,7 @@ import {
   EDITOR_WORKSPACE_STORAGE_KEY,
   WORKSPACE_FS_STORAGE_KEY,
   EDITOR_BUFFER_STORAGE_KEY,
-  TERMINAL_SESSIONS_STORAGE_KEY,
-  GIT_WORKSPACE_STORAGE_KEY
+  TERMINAL_SESSIONS_STORAGE_KEY
 } from "./core/config.js";
 import { getElements } from "./core/elements.js";
 import { state } from "./core/state.js";
@@ -27,7 +26,6 @@ import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js"
 import { bindQuickOpen } from "./components/editor-panel/quick-open.js";
 import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
 import { bindRunDebug } from "./components/run-debug/run-debug-main.js";
-import { bindSourceControl } from "./components/source-control/source-control-main.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 import { createCanvasComponentRegistry } from "./components/infinite-canvas/component-registry.js";
 import { bindCanvasComponentManager } from "./components/infinite-canvas/component-manager.js";
@@ -44,8 +42,7 @@ const unifiedWorkspaceState = createUnifiedWorkspaceState({
     EDITOR_WORKSPACE_STORAGE_KEY,
     WORKSPACE_FS_STORAGE_KEY,
     EDITOR_BUFFER_STORAGE_KEY,
-    TERMINAL_SESSIONS_STORAGE_KEY,
-    GIT_WORKSPACE_STORAGE_KEY
+    TERMINAL_SESSIONS_STORAGE_KEY
   ]
 });
 unifiedWorkspaceState.restoreMissing();
@@ -149,15 +146,6 @@ const runDebug = bindRunDebug({
 
 elements.activityRunBtn?.setAttribute("aria-controls", runDebug.view.id);
 
-const sourceControl = bindSourceControl({
-  sidebar: elements.primarySidebar,
-  workspace: editorPanel.workspace,
-  openFile: editorPanel.openFile,
-  notify
-});
-
-elements.activitySourceControlBtn?.setAttribute("aria-controls", sourceControl.view.id);
-
 const componentRegistry = registerDefaultCanvasComponents(createCanvasComponentRegistry());
 state.canvasComponents = (state.canvasComponents || []).filter((item) => componentRegistry.has(item.type));
 const componentManager = bindCanvasComponentManager({
@@ -185,7 +173,6 @@ const aiWorkbench = bindAIWorkbench({
   elements,
   editorPanel,
   diagnostics,
-  sourceControl,
   notify
 });
 
@@ -202,15 +189,12 @@ const primarySidebar = bindPrimarySidebar({
   layoutButton: elements.togglePrimarySidebarBtn,
   explorerButton: elements.activityExplorerBtn,
   searchButton: elements.activitySearchBtn,
-  sourceControlButton: elements.activitySourceControlBtn,
   runButton: elements.activityRunBtn,
   explorerView: elements.explorerView,
   searchView: workspaceSearch.view,
-  sourceControlView: sourceControl.view,
   runView: runDebug.view,
   onViewChange: (viewName) => {
     if (viewName === "search") workspaceSearch.refreshOutline();
-    if (viewName === "sourceControl") sourceControl.refresh();
     if (viewName === "run") runDebug.refreshConfiguration();
   },
   onLayoutChange: handlePanelVisibilityChange
@@ -244,14 +228,6 @@ bindTerminalSessions({
   showView: showBottomView,
   notify
 });
-
-function synchronizeTerminalBranch() {
-  const branch = sourceControl.provider.getCurrentBranch();
-  const branchLabel = elements.terminalView.querySelector(".terminal-prompt__branch");
-  if (branchLabel) branchLabel.textContent = `(${branch})`;
-}
-sourceControl.provider.subscribe(synchronizeTerminalBranch);
-synchronizeTerminalBranch();
 
 bindDiagnosticsTerminalCommand({
   terminalView: elements.terminalView,

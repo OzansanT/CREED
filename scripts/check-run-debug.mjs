@@ -150,7 +150,7 @@ const sourceNavigation = read("js/components/editor-panel/source-navigation.js")
 assert(sourceNavigation.includes("runtimeTargetLine"), "Runtime source navigation must retain the resolved target line in its editor-owned implementation.");
 
 const primarySidebar = read("js/components/primary-sidebar/primary-sidebar-input.js");
-assert(primarySidebar.includes('["explorer", "search", "sourceControl", "run"]'), "Primary sidebar must preserve the Run activity when additional activities are registered.");
+assert(primarySidebar.includes('["explorer", "search", "run"]'), "Primary sidebar must preserve the Run activity with the current activity set.");
 assert(primarySidebar.includes('runButton?.addEventListener'), "Run activity button binding must remain present.");
 const unavailable = read("js/ui/unavailable-controls.js");
 assert(!unavailable.includes('"#activityRunBtn"'), "Run activity must no longer be disabled.");

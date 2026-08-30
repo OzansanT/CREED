@@ -4,11 +4,9 @@ export function bindPrimarySidebar({
   layoutButton,
   explorerButton,
   searchButton,
-  sourceControlButton,
   runButton,
   explorerView,
   searchView,
-  sourceControlView,
   runView,
   onLayoutChange,
   onViewChange
@@ -25,7 +23,6 @@ export function bindPrimarySidebar({
     const controls = [
       ["explorer", explorerButton, explorerView],
       ["search", searchButton, searchView],
-      ["sourceControl", sourceControlButton, sourceControlView],
       ["run", runButton, runView]
     ];
     for (const [viewName, button, view] of controls) {
@@ -45,7 +42,7 @@ export function bindPrimarySidebar({
   }
 
   function setActiveView(viewName, { ensureVisible = true, notify = true } = {}) {
-    if (!["explorer", "search", "sourceControl", "run"].includes(viewName)) return false;
+    if (!["explorer", "search", "run"].includes(viewName)) return false;
     const changed = activeView !== viewName;
     activeView = viewName;
     if (ensureVisible) visible = true;
@@ -70,7 +67,6 @@ export function bindPrimarySidebar({
   layoutButton.addEventListener("click", toggle);
   explorerButton.addEventListener("click", () => activateFromButton("explorer"));
   searchButton?.addEventListener("click", () => activateFromButton("search"));
-  sourceControlButton?.addEventListener("click", () => activateFromButton("sourceControl"));
   runButton?.addEventListener("click", () => activateFromButton("run"));
   synchronize();
 
