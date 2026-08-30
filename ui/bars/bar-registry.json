@@ -15,7 +15,8 @@
       "js/components/primary-sidebar/primary-sidebar-main.js",
       "js/components/bottom-panel/bottom-panel-main.js",
       "js/components/secondary-sidebar/secondary-sidebar-main.js",
-      "js/components/infinite-canvas/infinitecanvas-main.js"
+      "js/components/infinite-canvas/infinitecanvas-main.js",
+      "js/components/edit-mode/edit-mode-main.js"
     ]
   },
   {
