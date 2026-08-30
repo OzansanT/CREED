@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { createWorkspaceFileSystem, normalizeWorkspacePath } from "../js/components/editor-panel/workspace-fs.js";
+import { WORKSPACE_FS_STORAGE_KEY } from "../js/core/config.js";
+import { createWorkspaceFileSystem, normalizeWorkspacePath, WORKSPACE_FS_SCHEMA_VERSION } from "../js/components/editor-panel/workspace-fs.js";
 
 const storageValues = new Map();
 const storage = {
@@ -53,5 +54,39 @@ assert.equal(rejectedDuplicate, true);
 const restored = createWorkspaceFileSystem({ baseFiles: [...baseline.keys()], storage, readBaseline });
 assert.equal(await restored.readFile("README.md"), "changed");
 assert.equal(restored.hasFile("docs/guides/intro.md"), true);
+
+const migrationValues = new Map([[WORKSPACE_FS_STORAGE_KEY, JSON.stringify({
+  version: 1,
+  overlays: {
+    "README.md": "keep this unrelated edit",
+    "js/main.js": "import { bindSourceControl } from './components/source-control/source-control-main.js';",
+    "js/components/source-control/source-control-main.js": "export const stale = true;",
+    "notes/custom.js": "export const keep = true;"
+  },
+  deleted: ["js/core/elements.js"],
+  directories: ["js/components/source-control", "notes"]
+})]]);
+const migrationStorage = {
+  getItem: (key) => migrationValues.has(key) ? migrationValues.get(key) : null,
+  setItem: (key, value) => migrationValues.set(key, String(value)),
+  removeItem: (key) => migrationValues.delete(key)
+};
+const migrationBaseline = new Map([
+  ["README.md", "fresh readme"],
+  ["js/main.js", "console.log('fresh app');"],
+  ["js/core/elements.js", "export const fresh = true;"]
+]);
+const migrated = createWorkspaceFileSystem({
+  baseFiles: [...migrationBaseline.keys()],
+  storage: migrationStorage,
+  readBaseline: async (path) => migrationBaseline.get(path)
+});
+assert.equal(await migrated.readFile("js/main.js"), "console.log('fresh app');", "Legacy Source Control-era overlays on migrated application files must reset to the current baseline.");
+assert.equal(await migrated.readFile("js/core/elements.js"), "export const fresh = true;", "Legacy deleted markers on migrated application files must be cleared.");
+assert.equal(migrated.hasFile("js/components/source-control/source-control-main.js"), false, "Retired Source Control files must not survive legacy WorkspaceFS overlays.");
+assert.equal(migrated.hasDirectory("js/components/source-control"), false, "Retired Source Control directories must not survive legacy WorkspaceFS state.");
+assert.equal(await migrated.readFile("README.md"), "keep this unrelated edit", "Unrelated persisted edits must survive the one-time WorkspaceFS migration.");
+assert.equal(await migrated.readFile("notes/custom.js"), "export const keep = true;", "User-created files outside the retired feature must survive migration.");
+assert.equal(JSON.parse(migrationValues.get(WORKSPACE_FS_STORAGE_KEY)).version, WORKSPACE_FS_SCHEMA_VERSION, "Legacy WorkspaceFS state must persist the upgraded schema immediately.");
 
 console.log("Workspace file-system check passed.");
