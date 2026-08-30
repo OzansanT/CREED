@@ -100,18 +100,19 @@ const loop = await runVerifyRepairLoop({
 assert.equal(loop.passed, true);
 assert.equal(repairCount, 1);
 
+const chat = read("js/components/ai/chat-main.js");
+assert(chat.includes("renderPatchApproval"), "Chat must render a diff approval UI for proposed patches.");
+assert(chat.includes("applyAIPatch(patch, workspace, { approved: true })"), "Approved patches must apply directly to the workspace.");
+assert(!chat.includes("selfDevelopment"), "AI chat must not retain the removed Source Control self-development path.");
 const aiMain = read("js/components/ai/ai-main.js");
 assert(aiMain.includes("createAgentToolSandbox"), "AI workbench must wire the tool sandbox.");
 assert(aiMain.includes("createSemanticRepositoryIndex"), "AI workbench must wire the semantic repository index.");
-assert(!aiMain.includes("bindAIChat"), "AI workbench must not retain the removed Secondary Sidebar chat UI.");
 assert(!aiMain.includes("self-development"), "AI workbench must not import the removed self-development workflow.");
 const unavailable = read("js/ui/unavailable-controls.js");
-assert(!unavailable.includes("chat"), "Unavailable-control wiring must not retain removed chat controls.");
+assert(!unavailable.includes('"#chatPromptInput"'));
+assert(!unavailable.includes('"#sendChatMessageBtn"'));
 const main = read("js/main.js");
-assert(main.includes("bindAIWorkbench"), "Application orchestration must keep the headless AI workbench services enabled.");
+assert(main.includes("bindAIWorkbench"), "Application orchestration must enable the Secondary Sidebar AI workbench.");
 assert(main.includes("globalThis.CREED_AI"), "External LLM providers must have an explicit registration surface.");
-assert(!main.includes("bindSecondarySidebar"), "Application orchestration must not retain Secondary Sidebar wiring.");
-const titleBar = read("ui/bars/title-bar/title-bar.html");
-assert(!titleBar.includes("toggleSecondarySidebarBtn"), "Title bar must not restore the removed Secondary Sidebar toggle.");
 
 console.log("AI workbench checks passed.");

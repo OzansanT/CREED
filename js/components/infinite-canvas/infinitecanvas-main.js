@@ -142,6 +142,7 @@ export function createInfiniteCanvasRuntime(elements, { stateAlreadyLoaded = sta
     showCanvas,
     resetEditorWorkspace,
     primarySidebar,
+    secondarySidebar,
     bottomPanel,
     panelResize,
     onAddJsonCard,
@@ -231,6 +232,7 @@ export function createInfiniteCanvasRuntime(elements, { stateAlreadyLoaded = sta
         onInfiniteReset?.();
         resetEditorWorkspace?.();
         primarySidebar.setVisible(true, false);
+        secondarySidebar.setVisible(true, false);
         bottomPanel.setVisible(true, false);
         panelResize.reset(false);
       }

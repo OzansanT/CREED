@@ -1,4 +1,5 @@
 @layer layout {
   .app-shell { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
   .app-shell.is-primary-sidebar-collapsed { --primary-sidebar-w: 0px; }
+  .app-shell.is-secondary-sidebar-collapsed { --secondary-sidebar-w: 0px; }
 }

@@ -18,6 +18,7 @@
     --status-h: 20px;
     --activity-w: 40px;
     --primary-sidebar-w: 293px;
+    --secondary-sidebar-w: 290px;
     --bottom-panel-h: 37%;
 
     --color-app-background: #fbfbfd;
@@ -244,6 +245,7 @@
 @layer layout {
   .app-shell { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
   .app-shell.is-primary-sidebar-collapsed { --primary-sidebar-w: 0px; }
+  .app-shell.is-secondary-sidebar-collapsed { --secondary-sidebar-w: 0px; }
 }
 
 
@@ -253,7 +255,7 @@
     position: absolute;
     z-index: 20;
     top: var(--workbench-top);
-    right: 0;
+    right: var(--secondary-sidebar-w);
     bottom: var(--status-h);
     left: calc(var(--activity-w) + var(--primary-sidebar-w));
     min-width: 0;
@@ -302,6 +304,7 @@
   .panel-resize-handle--vertical { top: 0; bottom: 0; width: 14px; cursor: ew-resize; }
   .panel-resize-handle--vertical::after { top: 0; bottom: 0; left: 6px; width: 2px; }
   .panel-resize-handle--primary { right: -7px; }
+  .panel-resize-handle--secondary { left: -7px; }
   .panel-resize-handle--horizontal { right: 0; left: 0; height: 14px; cursor: ns-resize; }
   .panel-resize-handle--horizontal::after { top: 6px; right: 0; left: 0; height: 2px; }
   .panel-resize-handle--bottom { top: -7px; }
@@ -1156,6 +1159,80 @@
 }
 
 
+/* source: css/components/secondary-sidebar/secondary-sidebar-main.css */
+
+/* source: css/components/secondary-sidebar/secondary-sidebar-shell.css */
+@layer components {
+  .secondary-sidebar { position: absolute; z-index: 30; top: var(--workbench-top); right: 0; bottom: var(--status-h); width: var(--secondary-sidebar-w); display: flex; flex-direction: column; overflow: hidden; border-left: 1px solid var(--color-chrome-border); background: var(--color-panel-background); }
+  .secondary-sidebar.is-maximized { z-index: 70; left: var(--activity-w); width: auto; }
+}
+
+
+/* source: css/components/secondary-sidebar/secondary-sidebar-header.css */
+@layer components {
+  .secondary-sidebar__header { height: 38px; display: flex; align-items: center; padding: 0 9px; }
+  .secondary-sidebar__title { padding: 5px 8px; border-radius: 4px; background: #e2e2e5; color: #29292d; font-size: 12px; font-weight: 650; }
+  .secondary-sidebar__actions { min-width: 0; margin-left: auto; display: flex; align-items: center; gap: 1px; color: #67676c; }
+}
+
+
+/* source: css/components/secondary-sidebar/secondary-sidebar-content.css */
+@layer components {
+  .secondary-sidebar__content { flex: 1 1 auto; overflow: hidden; }
+}
+
+
+/* source: css/components/secondary-sidebar/secondary-sidebar-footer.css */
+@layer components {
+  .secondary-sidebar__footer { height: 24px; display: flex; align-items: center; gap: 13px; padding: 0 14px 5px; color: #737378; font-size: 10px; }
+}
+
+
+/* source: css/components/chat/chat-view-main.css */
+
+/* source: css/components/chat/chat-empty-state.css */
+@layer components {
+  .chat-view { width: 100%; height: 100%; display: flex; flex-direction: column; }
+  .chat-view__empty { flex: 1 1 auto; display: grid; place-content: center; justify-items: center; padding: 20px; color: #5f5f64; text-align: center; }
+  .chat-view__empty svg { width: 43px; height: 43px; margin-bottom: 24px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+  .chat-view__empty strong { margin-bottom: 10px; color: #38383c; font-size: 13px; }
+  .chat-view__empty span { font-size: 11px; }
+}
+
+
+/* source: css/components/chat/chat-messages.css */
+@layer components {
+  .chat-view__messages { min-height: 0; overflow: auto; padding: 10px; }
+  .chat-view__messages:empty { display: none; }
+  .chat-message { max-width: 90%; margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: #f0f0f3; font-size: 12px; line-height: 1.45; }
+  .chat-message--user { margin-left: auto; background: #dcecf8; }
+  .chat-message--assistant { margin-right: auto; }
+}
+
+
+/* source: css/components/chat/chat-composer.css */
+@layer components {
+  .chat-composer { margin: 10px; padding: 9px; border: 1px solid #dedee3; border-radius: 8px; background: #fff; }
+  .chat-composer__input { width: 100%; min-height: 48px; margin-top: 8px; padding: 6px 0; resize: none; border: 0; outline: 0; background: transparent; color: var(--color-text); font-size: 12px; line-height: 1.4; }
+}
+
+
+/* source: css/components/chat/chat-context.css */
+@layer components {
+  .chat-composer__context { display: flex; align-items: center; gap: 5px; color: #646469; font-size: 11px; }
+  .chat-composer__context .ui-icon { width: 14px; height: 14px; }
+}
+
+
+/* source: css/components/chat/chat-tools.css */
+@layer components {
+  .chat-composer__toolbar { display: flex; align-items: center; gap: 10px; color: #6d6d72; font-size: 11px; }
+  .chat-composer__toolbar > .ui-icon { width: 14px; height: 14px; }
+  .chat-composer__send { margin-left: auto; color: #aaaab0; }
+  .chat-composer__send .ui-icon { width: 17px; height: 17px; }
+}
+
+
 /* source: css/components/feedback/feedback-main.css */
 
 /* source: css/components/feedback/notification-layer.css */
@@ -1208,6 +1285,7 @@
   @media (max-width: 1500px) {
     :root {
       --primary-sidebar-w: 270px;
+      --secondary-sidebar-w: 250px;
     }
     .command-center { width: min(520px, 42vw); }
     .editor-tab--canvas { min-width: 38px; width: 38px; padding: 0; justify-content: center; }
@@ -1215,6 +1293,9 @@
   }
 
   @media (max-width: 1180px) {
+    :root { --secondary-sidebar-w: 0px; }
+    .secondary-sidebar { display: none; }
+    .workbench { right: 0; }
     .toast-region { left: calc(var(--activity-w) + var(--primary-sidebar-w) + (100vw - var(--activity-w) - var(--primary-sidebar-w)) / 2); }
     .command-center { width: 40vw; }
   }

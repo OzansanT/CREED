@@ -8,7 +8,8 @@ export function disableUnavailableControls() {
     "#activitySettingsBtn",
     "button[aria-label='More Explorer actions']",
     "#editorActionsBtn",
-    "button[aria-label='More terminal actions']"
+    "button[aria-label='More terminal actions']",
+    "button[aria-label='More chat actions']"
   ];
 
   document.querySelectorAll(selectors.join(",")).forEach((control) => {
