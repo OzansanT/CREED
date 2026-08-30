@@ -13,6 +13,12 @@ assert(main.includes("sourceControl.provider.subscribe(synchronizeTerminalBranch
 assert(main.includes("secondarySidebar.setMaximized(false, false)"), "Infinite Reset must clear Secondary Sidebar maximization.");
 assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset must clear Bottom Panel maximization.");
 assert(main.includes("openFileAt,"), "Diagnostics must receive exact-location editor navigation.");
+assert(main.includes("function revealEditorLocation(line, column, attempt = 0)"), "Exact-location navigation must expose a transient visual reveal step.");
+assert(main.includes('marker.className = "source-editor__location-marker"'), "Exact columns must receive a visible runtime marker.");
+assert(main.includes('row.dataset.runtimeTarget = "true"'), "The revealed source row must expose transient target state.");
+assert(main.includes("elements.sourceScroller.focus({ preventScroll: true })"), "Exact-location navigation must focus the source editor without disturbing scroll position.");
+assert(main.includes("window.setTimeout(clearEditorLocationReveal, 1600)"), "Diagnostic target highlighting must clear automatically.");
+assert(main.includes("requestAnimationFrame(() => revealEditorLocation(safeLine, targetColumn))"), "Target highlighting must wait for the virtualized source row to render.");
 
 const chat = read("js/components/ai/chat-main.js");
 const clearStart = chat.indexOf("function clear()");
