@@ -1,11 +1,10 @@
 import { createAgentToolSandbox } from "./agent-sandbox.js";
 import { bindAIChat } from "./chat-main.js";
 import { createLLMProviderRegistry, createLocalContextProvider } from "./llm-provider.js";
-import { createSelfDevelopmentWorkflow } from "./self-development.js";
 import { createSemanticRepositoryIndex } from "./semantic-index.js";
 import { createWorkspaceContextEngine } from "./workspace-context.js";
 
-export function bindAIWorkbench({ elements, editorPanel, diagnostics, sourceControl, notify } = {}) {
+export function bindAIWorkbench({ elements, editorPanel, diagnostics, notify } = {}) {
   const workspace = editorPanel?.workspace;
   if (!workspace) throw new TypeError("AI workbench requires the editor workspace.");
 
@@ -20,11 +19,6 @@ export function bindAIWorkbench({ elements, editorPanel, diagnostics, sourceCont
   const providers = createLLMProviderRegistry();
   providers.register("local-context", createLocalContextProvider());
   const sandbox = createAgentToolSandbox({ workspace, semanticIndex, contextEngine });
-  const selfDevelopment = createSelfDevelopmentWorkflow({
-    workspace,
-    sourceControlProvider: sourceControl.provider,
-    diagnostics
-  });
   const chat = bindAIChat({
     messages: elements.chatMessages,
     emptyState: elements.chatEmptyState,
@@ -36,7 +30,6 @@ export function bindAIWorkbench({ elements, editorPanel, diagnostics, sourceCont
     contextEngine,
     toolSandbox: sandbox,
     workspace,
-    selfDevelopment,
     notify
   });
 
@@ -48,7 +41,6 @@ export function bindAIWorkbench({ elements, editorPanel, diagnostics, sourceCont
     semanticIndex,
     contextEngine,
     sandbox,
-    selfDevelopment,
     refreshIndex: semanticIndex.refresh
   });
 }
