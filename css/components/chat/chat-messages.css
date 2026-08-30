@@ -1,7 +1,0 @@
-@layer components {
-  .chat-view__messages { min-height: 0; overflow: auto; padding: 10px; }
-  .chat-view__messages:empty { display: none; }
-  .chat-message { max-width: 90%; margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: #f0f0f3; font-size: 12px; line-height: 1.45; }
-  .chat-message--user { margin-left: auto; background: #dcecf8; }
-  .chat-message--assistant { margin-right: auto; }
-}
