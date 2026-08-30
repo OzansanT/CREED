@@ -105,6 +105,9 @@ assert(terminalSource.includes("findTerminalSourceReferences(text, { workspace: 
 assert(terminalSource.includes("navigateTerminalSourceReference(reference, { openFile, openFileAt })"), "Terminal source links must use the shared exact-location navigation path.");
 assert(terminalSource.includes('line.cwd ?? session?.cwd ?? ""'), "Terminal rendering must prefer each row's captured cwd over the session's current cwd.");
 assert(terminalSource.includes("createTerminalOutputLine(line, kind, outputCwd)"), "Terminal writes must snapshot cwd on every output row.");
+assert(terminalSource.includes("MAX_PERSISTED_OUTPUT_LINES = 200"), "Persisted terminal output must remain bounded.");
+assert(terminalSource.includes("MAX_PERSISTED_LINE_LENGTH = 4096"), "Persisted terminal line size must remain bounded.");
+assert(terminalSource.includes("lines: session.lines"), "Terminal session persistence must include the bounded output buffer.");
 
 const opened = [];
 const exactOpened = [];
@@ -217,13 +220,45 @@ assert.equal(saveTerminalState(terminalStorage, {
   activeId: "terminal-2",
   nextSessionId: 3,
   sessions: [
-    { id: "terminal-1", name: "browser 1", cwd: "", history: ["pwd"] },
-    { id: "terminal-2", name: "split 2", cwd: "src", history: ["cd src", "ls"] }
+    {
+      id: "terminal-1",
+      name: "browser 1",
+      cwd: "",
+      history: ["pwd"],
+      lines: [createTerminalOutputLine("README.md:4:2", "output", "")]
+    },
+    {
+      id: "terminal-2",
+      name: "split 2",
+      cwd: "src",
+      history: ["cd src", "ls"],
+      lines: [createTerminalOutputLine("util.js:3", "error", "src")]
+    }
   ]
 }), true);
 const restored = loadTerminalState(terminalStorage);
 assert.equal(restored.activeId, "terminal-2");
 assert.equal(restored.sessions[1].cwd, "src");
 assert.deepEqual(restored.sessions[1].history, ["cd src", "ls"]);
+assert.deepEqual(
+  restored.sessions[1].lines,
+  [{ text: "util.js:3", kind: "error", cwd: "src" }],
+  "Persisted terminal output must retain text, kind, and the source-reference cwd snapshot."
+);
+
+const oversizedLines = Array.from({ length: 205 }, (_, index) => ({
+  text: index === 204 ? "x".repeat(5000) : `line-${index}`,
+  kind: "output",
+  cwd: "src"
+}));
+assert.equal(saveTerminalState(terminalStorage, {
+  activeId: "terminal-1",
+  sessions: [{ id: "terminal-1", name: "browser 1", cwd: "src", history: [], lines: oversizedLines }]
+}), true);
+const boundedRestore = loadTerminalState(terminalStorage);
+assert.equal(boundedRestore.sessions[0].lines.length, 200, "Only the newest 200 terminal rows may be persisted.");
+assert.equal(boundedRestore.sessions[0].lines[0].text, "line-5", "Persistence must retain the newest terminal rows when trimming.");
+assert.equal(boundedRestore.sessions[0].lines.at(-1).text.length, 4096, "Persisted terminal rows must cap individual text size.");
+assert.equal(boundedRestore.sessions[0].lines.at(-1).cwd, "src");
 
 console.log("Writable browser terminal checks passed.");
