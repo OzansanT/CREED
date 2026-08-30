@@ -6,6 +6,12 @@ const DEFAULT_FIND_OPTIONS = Object.freeze({
   wholeWord: false,
   useRegex: false
 });
+const LOCATION_REVEAL_DURATION_MS = 1600;
+const LOCATION_READY_ATTEMPTS = 120;
+const LOCATION_ROW_ATTEMPTS = 8;
+const LOCATION_DEFAULT_LINE_HEIGHT = 19;
+const LOCATION_DEFAULT_CHARACTER_WIDTH = 7.2;
+const LOCATION_GUTTER_WIDTH = 48;
 
 function isInteractiveTarget(target) {
   if (!(target instanceof Element)) return false;
@@ -179,6 +185,124 @@ export function parseSourceLocation(value) {
     line: Number.parseInt(match[1], 10),
     column: match[2] ? Number.parseInt(match[2], 10) : 1
   };
+}
+
+export function createSourceLocationNavigator({
+  openFile,
+  getActiveFile,
+  sourceContent,
+  sourceScroller,
+  requestFrame = (callback) => requestAnimationFrame(callback),
+  setTimer = (callback, delay) => window.setTimeout(callback, delay),
+  clearTimer = (timer) => window.clearTimeout(timer),
+  getStyle = (element) => getComputedStyle(element),
+  createElement = (tagName) => document.createElement(tagName),
+  revealDuration = LOCATION_REVEAL_DURATION_MS
+} = {}) {
+  if (typeof openFile !== "function" || typeof getActiveFile !== "function") {
+    throw new TypeError("Source location navigation requires file open and active-file accessors.");
+  }
+  if (!sourceContent || !sourceScroller) {
+    throw new TypeError("Source location navigation requires source content and scroller elements.");
+  }
+
+  let revealTimer = 0;
+  let revealState = null;
+  let navigationGeneration = 0;
+
+  function clearReveal() {
+    if (revealTimer) clearTimer(revealTimer);
+    revealTimer = 0;
+    if (!revealState) return;
+    const { row, marker, background, boxShadow, position } = revealState;
+    marker.remove();
+    row.style.background = background;
+    row.style.boxShadow = boxShadow;
+    row.style.position = position;
+    delete row.dataset.runtimeTarget;
+    revealState = null;
+  }
+
+  function revealTarget(line, column, generation, attempt = 0) {
+    if (generation !== navigationGeneration) return false;
+    const row = sourceContent.querySelector(`.source-editor__line[data-line-number="${line}"]`);
+    if (!row) {
+      if (attempt < LOCATION_ROW_ATTEMPTS) {
+        requestFrame(() => revealTarget(line, column, generation, attempt + 1));
+      }
+      return false;
+    }
+
+    clearReveal();
+    const marker = createElement("span");
+    marker.className = "source-editor__location-marker";
+    marker.setAttribute("aria-hidden", "true");
+    Object.assign(marker.style, {
+      position: "absolute",
+      zIndex: "2",
+      top: "1px",
+      bottom: "1px",
+      left: `${LOCATION_GUTTER_WIDTH + (Math.max(1, column) - 1) * LOCATION_DEFAULT_CHARACTER_WIDTH}px`,
+      width: "2px",
+      borderRadius: "1px",
+      background: "var(--color-status)",
+      pointerEvents: "none"
+    });
+
+    revealState = {
+      row,
+      marker,
+      background: row.style.background,
+      boxShadow: row.style.boxShadow,
+      position: row.style.position
+    };
+    row.dataset.runtimeTarget = "true";
+    row.style.position = "relative";
+    row.style.background = "color-mix(in srgb, var(--color-status) 16%, transparent)";
+    row.style.boxShadow = "inset 2px 0 var(--color-status)";
+    row.append(marker);
+
+    if (!sourceScroller.hasAttribute("tabindex")) sourceScroller.tabIndex = -1;
+    sourceScroller.focus({ preventScroll: true });
+    revealTimer = setTimer(clearReveal, revealDuration);
+    return true;
+  }
+
+  function openFileAt(fileName, line = 1, column = 1) {
+    if (!openFile(fileName)) return false;
+    const targetLine = Math.max(1, Math.trunc(Number(line) || 1));
+    const targetColumn = Math.max(1, Math.trunc(Number(column) || 1));
+    const generation = ++navigationGeneration;
+    let attempts = 0;
+
+    function revealLocation() {
+      if (generation !== navigationGeneration) return;
+      attempts += 1;
+      if (getActiveFile() !== fileName) return;
+      const lineCount = Number(sourceContent.dataset.lineCount || 0);
+      if (!lineCount) {
+        if (attempts < LOCATION_READY_ATTEMPTS) requestFrame(revealLocation);
+        return;
+      }
+      const lineHeight = Number.parseFloat(getStyle(sourceContent).lineHeight) || LOCATION_DEFAULT_LINE_HEIGHT;
+      const safeLine = Math.min(lineCount, targetLine);
+      sourceScroller.scrollTop = Math.max(0, ((safeLine - 1) * lineHeight) - (sourceScroller.clientHeight * 0.45));
+      sourceScroller.scrollLeft = Math.max(0, ((targetColumn - 1) * LOCATION_DEFAULT_CHARACTER_WIDTH) - 80);
+      sourceContent.dataset.runtimeTargetLine = String(safeLine);
+      sourceContent.dataset.runtimeTargetColumn = String(targetColumn);
+      requestFrame(() => revealTarget(safeLine, targetColumn, generation));
+    }
+
+    requestFrame(revealLocation);
+    return true;
+  }
+
+  function clear() {
+    navigationGeneration += 1;
+    clearReveal();
+  }
+
+  return Object.freeze({ openFileAt, clear });
 }
 
 export function bindSourceNavigation({ host, viewport, isSourceActive, getActiveFile, onStatus }) {
