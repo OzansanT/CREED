@@ -73,6 +73,40 @@ const dependencies = await buildDependencyModel({
 assert(dependencies.edges.some((edge) => edge.type === "import" && edge.to === "file:js/run.js"));
 assert(dependencies.edges.some((edge) => edge.type === "css-import" && edge.to === "file:css/base.css"));
 
+const fixtureSource = [
+  'const workspace = { "js/main.js": "import { run } from \'./run.js\';\\nrun();" };',
+  '// import "./comment-only.js";',
+  '/* export { value } from "./block-comment.js"; */',
+  'const sample = `import("./template-only.js")`;'
+].join("\n");
+const fixtureArchitecture = await findArchitectureViolations({
+  listFiles: () => ["scripts/check-ai-workbench.mjs"],
+  readFile: async () => fixtureSource
+});
+assert.equal(
+  fixtureArchitecture.filter((item) => item.code === "UNRESOLVED-IMPORT").length,
+  0,
+  "Imports embedded in JavaScript strings, comments, or templates must not be reported as dependencies."
+);
+
+const lexicalDependencies = await buildDependencyModel({
+  listFiles: () => [
+    "scripts/check-ai-workbench.mjs",
+    "scripts/run.js",
+    "scripts/real-export.js",
+    "scripts/real-dynamic.js"
+  ],
+  readFile: async (path) => ({
+    "scripts/check-ai-workbench.mjs": fixtureSource,
+    "scripts/run.js": "export const run = true;",
+    "scripts/real-export.js": 'export { run } from "./run.js";',
+    "scripts/real-dynamic.js": 'export async function load(){ return import("./run.js"); }'
+  })[path] || ""
+});
+assert(!lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/check-ai-workbench.mjs"), "Fixture strings must not create dependency edges.");
+assert(lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/real-export.js" && edge.to === "file:scripts/run.js"));
+assert(lexicalDependencies.edges.some((edge) => edge.from === "file:scripts/real-dynamic.js" && edge.to === "file:scripts/run.js"));
+
 let clock = 0;
 const profiler = createPerformanceProfiler({ now: () => clock });
 const measured = await profiler.measure("test", async () => {

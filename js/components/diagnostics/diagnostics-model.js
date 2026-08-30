@@ -136,17 +136,168 @@ export function parseCheckOutput(text, { source = "npm-check" } = {}) {
   return diagnostics;
 }
 
-function collectRelativeImports(source, extension) {
-  const values = [];
-  const patterns = extension === "css"
-    ? [/@import\s+(?:url\(\s*)?["']([^"']+)["']/g]
-    : [
-      /\b(?:import|export)\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/g,
-      /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g
-    ];
-  for (const pattern of patterns) {
-    for (const match of String(source || "").matchAll(pattern)) if (match[1]?.startsWith(".")) values.push(match[1]);
+function isIdentifierStart(character) {
+  return Boolean(character) && /[A-Za-z_$]/.test(character);
+}
+
+function isIdentifierPart(character) {
+  return Boolean(character) && /[A-Za-z0-9_$]/.test(character);
+}
+
+function readIdentifier(source, start) {
+  if (!isIdentifierStart(source[start])) return null;
+  let end = start + 1;
+  while (end < source.length && isIdentifierPart(source[end])) end += 1;
+  return { value: source.slice(start, end), end };
+}
+
+function readQuotedString(source, start) {
+  const quote = source[start];
+  if (quote !== '"' && quote !== "'") return null;
+  let value = "";
+  for (let index = start + 1; index < source.length; index += 1) {
+    const character = source[index];
+    if (character === "\\") {
+      if (index + 1 >= source.length) return null;
+      value += source[index + 1];
+      index += 1;
+      continue;
+    }
+    if (character === quote) return { value, end: index + 1 };
+    if (character === "\n" || character === "\r") return null;
+    value += character;
   }
+  return null;
+}
+
+function skipTemplateLiteral(source, start) {
+  for (let index = start + 1; index < source.length; index += 1) {
+    if (source[index] === "\\") {
+      index += 1;
+      continue;
+    }
+    if (source[index] === "`") return index + 1;
+  }
+  return source.length;
+}
+
+function skipLineComment(source, start) {
+  const end = source.indexOf("\n", start + 2);
+  return end < 0 ? source.length : end + 1;
+}
+
+function skipBlockComment(source, start) {
+  const end = source.indexOf("*/", start + 2);
+  return end < 0 ? source.length : end + 2;
+}
+
+function skipTrivia(source, start) {
+  let index = start;
+  while (index < source.length) {
+    if (/\s/.test(source[index])) {
+      index += 1;
+      continue;
+    }
+    if (source[index] === "/" && source[index + 1] === "/") {
+      index = skipLineComment(source, index);
+      continue;
+    }
+    if (source[index] === "/" && source[index + 1] === "*") {
+      index = skipBlockComment(source, index);
+      continue;
+    }
+    break;
+  }
+  return index;
+}
+
+function readJavaScriptModuleSpecifier(source, start, keyword) {
+  let index = skipTrivia(source, start);
+  if (keyword === "import") {
+    if (source[index] === ".") return null;
+    if (source[index] === "(") {
+      const literalStart = skipTrivia(source, index + 1);
+      const literal = readQuotedString(source, literalStart);
+      return literal ? { value: literal.value, end: literal.end } : null;
+    }
+    const direct = readQuotedString(source, index);
+    if (direct) return { value: direct.value, end: direct.end };
+  }
+
+  while (index < source.length) {
+    index = skipTrivia(source, index);
+    const character = source[index];
+    if (!character || character === ";") return null;
+    if (character === '"' || character === "'") {
+      const literal = readQuotedString(source, index);
+      index = literal ? literal.end : index + 1;
+      continue;
+    }
+    if (character === "`") {
+      index = skipTemplateLiteral(source, index);
+      continue;
+    }
+    const token = readIdentifier(source, index);
+    if (!token) {
+      index += 1;
+      continue;
+    }
+    if (token.value === "from") {
+      const literalStart = skipTrivia(source, token.end);
+      const literal = readQuotedString(source, literalStart);
+      if (literal) return { value: literal.value, end: literal.end };
+    }
+    index = token.end;
+  }
+  return null;
+}
+
+function collectJavaScriptRelativeImports(source) {
+  const text = String(source || "");
+  const values = [];
+  let index = 0;
+  while (index < text.length) {
+    const character = text[index];
+    if (character === '"' || character === "'") {
+      const literal = readQuotedString(text, index);
+      index = literal ? literal.end : index + 1;
+      continue;
+    }
+    if (character === "`") {
+      index = skipTemplateLiteral(text, index);
+      continue;
+    }
+    if (character === "/" && text[index + 1] === "/") {
+      index = skipLineComment(text, index);
+      continue;
+    }
+    if (character === "/" && text[index + 1] === "*") {
+      index = skipBlockComment(text, index);
+      continue;
+    }
+    const token = readIdentifier(text, index);
+    if (!token) {
+      index += 1;
+      continue;
+    }
+    if (token.value === "import" || token.value === "export") {
+      const result = readJavaScriptModuleSpecifier(text, token.end, token.value);
+      if (result?.value.startsWith(".")) values.push(result.value);
+      if (result) {
+        index = result.end;
+        continue;
+      }
+    }
+    index = token.end;
+  }
+  return values;
+}
+
+function collectRelativeImports(source, extension) {
+  if (extension !== "css") return collectJavaScriptRelativeImports(source);
+  const values = [];
+  const pattern = /@import\s+(?:url\(\s*)?["']([^"']+)["']/g;
+  for (const match of String(source || "").matchAll(pattern)) if (match[1]?.startsWith(".")) values.push(match[1]);
   return values;
 }
 
