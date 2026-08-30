@@ -16,8 +16,8 @@ assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset 
 assert(!main.includes("createSourceLocationNavigator"), "Application orchestration must not construct source-location internals directly.");
 assert.equal(
   (main.match(/openFileAt: editorPanel\.openFileAt/g) || []).length,
-  3,
-  "Workspace Search, Run/Debug, and Diagnostics must consume the editor panel exact-location API."
+  4,
+  "Workspace Search, Run/Debug, Diagnostics, and Terminal must consume the editor panel exact-location API."
 );
 assert(!main.includes("sourceLocationNavigator"), "Application orchestration must not retain editor navigation implementation state.");
 assert(!main.includes("function revealEditorLocation("), "Exact-location reveal implementation must not live in application orchestration.");
@@ -151,6 +151,10 @@ assert(workbench.includes('change.type === "directory-renamed"'), "Primary edito
 assert(workbench.includes("createSourceLocationNavigator"), "Editor panel must construct its exact-location navigator internally.");
 assert(workbench.includes("openFileAt: sourceLocationNavigator.openFileAt"), "Editor panel API must expose exact-location navigation.");
 assert(workbench.includes("sourceLocationNavigator?.clear()"), "Editor panel lifecycle must clear stale source-location decoration.");
+
+const terminal = read("js/components/bottom-panel/terminal-session.js");
+assert(terminal.includes("parseTerminalOpenTarget"), "Terminal open must parse optional line and column suffixes.");
+assert(terminal.includes("openFileAt(fileName, target.line, target.column)"), "Terminal exact locations must route through the editor panel navigation callback.");
 
 const split = read("js/components/editor-panel/split-editor.js");
 assert(split.includes("function renameSession(oldName, newName)"), "Split editor must preserve file sessions across renames.");
