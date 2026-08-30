@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { navigateToDiagnostic } from "../js/components/diagnostics/diagnostics-main.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
@@ -11,6 +12,7 @@ assert(main.includes("function synchronizeTerminalBranch()"), "Terminal prompt m
 assert(main.includes("sourceControl.provider.subscribe(synchronizeTerminalBranch)"), "Terminal branch synchronization must subscribe to Source Control.");
 assert(main.includes("secondarySidebar.setMaximized(false, false)"), "Infinite Reset must clear Secondary Sidebar maximization.");
 assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset must clear Bottom Panel maximization.");
+assert(main.includes("openFileAt,"), "Diagnostics must receive exact-location editor navigation.");
 
 const chat = read("js/components/ai/chat-main.js");
 const clearStart = chat.indexOf("function clear()");
@@ -25,6 +27,33 @@ assert(cancellationCheck > firstProviderCall && cancellationCheck < firstToolCal
 const diagnostics = read("js/components/diagnostics/diagnostics-main.js");
 assert(diagnostics.includes("return buildDependencyModel(workspace);"), "Diagnostics must build fresh dependency state from the workspace.");
 assert(diagnostics.includes("workspace.subscribe?.(scheduleWorkspaceDiagnostics)"), "Diagnostics must refresh when WorkspaceFS changes outside the Problems panel.");
+assert(diagnostics.includes("navigateToDiagnostic(problem, { openFile, openFileAt })"), "Problems rows must navigate through exact diagnostic locations.");
+
+const navigationCalls = [];
+assert.equal(
+  navigateToDiagnostic(
+    { fileName: "js/example.js", line: 4, column: 7 },
+    { openFileAt: (...args) => { navigationCalls.push(args); return true; } }
+  ),
+  true,
+  "Problem navigation must report successful exact-location navigation."
+);
+assert.deepEqual(
+  navigationCalls,
+  [["js/example.js", 5, 8]],
+  "Zero-based diagnostic positions must convert to one-based editor locations."
+);
+const fallbackCalls = [];
+assert.equal(
+  navigateToDiagnostic(
+    { fileName: "js/fallback.js", line: 2, column: 3 },
+    { openFile: (fileName) => { fallbackCalls.push(fileName); return true; } }
+  ),
+  true,
+  "Diagnostics must preserve plain file-opening fallback behavior."
+);
+assert.deepEqual(fallbackCalls, ["js/fallback.js"]);
+assert.equal(navigateToDiagnostic({ message: "fileless" }, { openFileAt: () => true }), false, "Fileless diagnostics must not navigate.");
 
 const workbench = read("js/components/editor-panel/workbench-input.js");
 assert(workbench.includes("workspace.subscribe((change) =>"), "Primary editor must subscribe to external WorkspaceFS mutations.");

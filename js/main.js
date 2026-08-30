@@ -203,6 +203,7 @@ const diagnostics = bindDiagnostics({
   problemsView: elements.problemsView,
   workspace: editorPanel.workspace,
   openFile: editorPanel.openFile,
+  openFileAt,
   showBottomView,
   notify
 });
