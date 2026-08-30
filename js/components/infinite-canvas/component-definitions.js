@@ -10,7 +10,7 @@ export function registerDefaultCanvasComponents(registry) {
     defaultWidth: 320,
     defaultHeight: 180,
     mount({ content }) {
-      Object.assign(content.style, { display: "grid", placeItems: "center", padding: "18px" });
+      Object.assign(content.style, { display: "grid", placeItems: "center", padding: "8px 0 0" });
       const button = document.createElement("button");
       button.type = "button";
       button.className = "button--primary";
@@ -25,13 +25,16 @@ export function registerDefaultCanvasComponents(registry) {
   registry.register({
     type: "system-graph",
     title: "System Graph",
-    description: "Visualize files, DOM IDs, imports and ownership relationships.",
+    description: "Visualize files, DOM IDs, imports and ownership relationships as connected cards on Infinite Canvas.",
     singleton: true,
-    defaultWidth: 920,
-    defaultHeight: 620,
-    mount({ content, context, notify }) {
+    defaultWidth: 360,
+    defaultHeight: 300,
+    mount({ shell, content, record, world, context, notify }) {
       const graph = bindSystemGraph({
-        host: content,
+        host: world,
+        controlsHost: content,
+        anchorRecord: record,
+        anchorElement: shell,
         service: context.systemGraphService,
         openFile: context.openFile,
         notify,
