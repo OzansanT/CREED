@@ -162,8 +162,10 @@ assert(launcherBridge.includes('const serverUrl = "http://localhost:8000/"'), "F
 assert(launcherBridge.includes("window.location.replace(serverUrl)"), "A detected local server must open automatically from file:// launch.");
 assert(launcherBridge.includes("css/generated/creed.css?creed-launch-probe="), "File launch must probe a CREED-specific local resource before redirecting.");
 assert(launcherBridge.includes('button.addEventListener("click", openLauncher)'), "Starting the local launcher must remain a user-gesture action for browser compatibility.");
-assert(launcherBridge.includes("Double-click <code>Start-CREED.cmd</code> beside <code>index.html</code>"), "File launch guidance must prioritize the root Start-CREED.cmd cold-start path.");
-assert(launcherBridge.includes(">Use registered launcher</button>"), "The custom-protocol launcher must be presented as a secondary registered-launcher fallback.");
+assert(launcherBridge.includes(">Start CREED</button>"), "The file-launch fallback must expose Start CREED as the primary launcher action.");
+assert(launcherBridge.includes("button.focus({ preventScroll: true })"), "The launcher action must receive focus when the local server is unavailable.");
+assert(launcherBridge.includes("First launch on this Windows account"), "File launch guidance must explain the one-time root launcher registration path.");
+assert(launcherBridge.includes("Start-CREED.cmd</code> once"), "First-run guidance must point to the root Start-CREED.cmd launcher.");
 assert(!launcherBridge.includes("optional/windows-local-launcher/Start-CREED.cmd"), "File launch guidance must not send users into the optional launcher directory for normal cold starts.");
 assert(!launcherBridge.includes("window.setTimeout(openLauncher"), "File launch must not rely on a blocked timer-driven custom-protocol navigation.");
 
