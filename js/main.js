@@ -32,7 +32,6 @@ import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infini
 import { createCanvasComponentRegistry } from "./components/infinite-canvas/component-registry.js";
 import { bindCanvasComponentManager } from "./components/infinite-canvas/component-manager.js";
 import { registerDefaultCanvasComponents } from "./components/infinite-canvas/component-definitions.js";
-import { createSystemGraphService } from "./components/infinite-canvas/system-graph-service.js";
 import { bindDiagnostics } from "./components/diagnostics/diagnostics-main.js";
 import { bindDiagnosticsTerminalCommand } from "./components/diagnostics/diagnostics-terminal.js";
 import { bindAIWorkbench } from "./components/ai/ai-main.js";
@@ -46,8 +45,7 @@ const unifiedWorkspaceState = createUnifiedWorkspaceState({
     WORKSPACE_FS_STORAGE_KEY,
     EDITOR_BUFFER_STORAGE_KEY,
     TERMINAL_SESSIONS_STORAGE_KEY,
-    GIT_WORKSPACE_STORAGE_KEY,
-    "creedSystemGraphViews.v1"
+    GIT_WORKSPACE_STORAGE_KEY
   ]
 });
 unifiedWorkspaceState.restoreMissing();
@@ -187,31 +185,8 @@ const sourceControl = bindSourceControl({
 
 elements.activitySourceControlBtn?.setAttribute("aria-controls", sourceControl.view.id);
 
-const systemGraph = createSystemGraphService({
-  workspace: editorPanel.workspace,
-  notify
-});
-
-let diagnostics = null;
-const diagnosticGraph = Object.freeze({
-  getGraph: systemGraph.getGraph,
-  setDiagnostics(problems = []) {
-    const counts = new Map();
-    for (const problem of problems) {
-      if (!problem.fileName) continue;
-      counts.set(problem.fileName, (counts.get(problem.fileName) || 0) + 1);
-    }
-    elements.world.querySelectorAll(".system-graph-node").forEach((node) => {
-      const count = counts.get(node.dataset.fileName) || 0;
-      node.style.outline = count ? "2px solid #dc2626" : "";
-      node.style.outlineOffset = count ? "2px" : "";
-      if (count) node.title = `${count} diagnostic problem(s) · ${node.dataset.fileName}`;
-      else node.removeAttribute("title");
-    });
-  }
-});
-
 const componentRegistry = registerDefaultCanvasComponents(createCanvasComponentRegistry());
+state.canvasComponents = (state.canvasComponents || []).filter((item) => componentRegistry.has(item.type));
 const componentManager = bindCanvasComponentManager({
   canvas: elements.canvas,
   world: elements.world,
@@ -220,34 +195,22 @@ const componentManager = bindCanvasComponentManager({
   update: infiniteCanvas.update,
   persist: infiniteCanvas.persist,
   history: infiniteCanvas.history,
-  notify,
-  context: {
-    systemGraphService: systemGraph,
-    openFile: editorPanel.openFile,
-    onSystemGraphMounted: () => requestAnimationFrame(() => diagnosticGraph.setDiagnostics(diagnostics?.model.list() || [])),
-    onSystemGraphUnmounted: () => {}
-  }
+  notify
 });
+infiniteCanvas.persist();
 
-diagnostics = bindDiagnostics({
+const diagnostics = bindDiagnostics({
   problemsView: elements.problemsView,
   workspace: editorPanel.workspace,
-  systemGraph: diagnosticGraph,
   openFile: editorPanel.openFile,
   showBottomView,
   notify
 });
 
-const diagnosticGraphObserver = new MutationObserver(() => {
-  diagnosticGraph.setDiagnostics(diagnostics.model.list());
-});
-diagnosticGraphObserver.observe(elements.world, { childList: true, subtree: true });
-
 const aiWorkbench = bindAIWorkbench({
   elements,
   editorPanel,
   diagnostics,
-  systemGraph,
   sourceControl,
   notify
 });
@@ -351,7 +314,6 @@ infiniteCanvas.bind({
     const reset = editorPanel.resetWorkspace();
     secondarySidebar.setMaximized(false, false);
     bottomPanel.setMaximized(false, false);
-    systemGraph.refresh();
     aiWorkbench.refreshIndex();
     diagnostics.runChecks({ reveal: false }).catch(() => {});
     return reset;
@@ -363,8 +325,6 @@ infiniteCanvas.bind({
 });
 
 requestAnimationFrame(() => componentManager.renderAll());
-systemGraph.refresh()
-  .then(() => diagnostics.runChecks({ reveal: false }))
-  .catch(() => {});
+diagnostics.runChecks({ reveal: false }).catch(() => {});
 unifiedWorkspaceState.bindLifecycle();
 unifiedWorkspaceState.snapshot();
