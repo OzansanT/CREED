@@ -156,6 +156,13 @@ const terminal = read("js/components/bottom-panel/terminal-session.js");
 assert(terminal.includes("parseTerminalOpenTarget"), "Terminal open must parse optional line and column suffixes.");
 assert(terminal.includes("openFileAt(fileName, target.line, target.column)"), "Terminal exact locations must route through the editor panel navigation callback.");
 
+const launcherBridge = read("optional/windows-local-launcher/launcher-bridge.html");
+assert(launcherBridge.includes('const serverUrl = "http://localhost:8000/"'), "File launch must know the canonical CREED local server URL.");
+assert(launcherBridge.includes("window.location.replace(serverUrl)"), "A detected local server must open automatically from file:// launch.");
+assert(launcherBridge.includes("css/generated/creed.css?creed-launch-probe="), "File launch must probe a CREED-specific local resource before redirecting.");
+assert(launcherBridge.includes('button.addEventListener("click", openLauncher)'), "Starting the local launcher must remain a user-gesture action for browser compatibility.");
+assert(!launcherBridge.includes("window.setTimeout(openLauncher"), "File launch must not rely on a blocked timer-driven custom-protocol navigation.");
+
 const split = read("js/components/editor-panel/split-editor.js");
 assert(split.includes("function renameSession(oldName, newName)"), "Split editor must preserve file sessions across renames.");
 assert(split.includes("function renameDirectorySessions(oldPath, newPath)"), "Split editor must preserve directory-renamed sessions.");
