@@ -27,7 +27,6 @@ export function bindAIChat({
   contextEngine,
   toolSandbox,
   workspace,
-  selfDevelopment,
   notify
 } = {}) {
   if (!messages || !promptInput || !sendButton || !providerRegistry || !contextEngine) {
@@ -75,22 +74,6 @@ export function bindAIChat({
       patch: response.patch,
       workspace,
       onApprove: async (patch) => {
-        if (response.workflow === "self-development") {
-          const result = await selfDevelopment.execute({
-            issue: response.issue || null,
-            patch,
-            approved: true,
-            title: response.title || patch.title || "CREED self-development change",
-            maxAttempts: response.maxAttempts || 3
-          });
-          appendMessage(messages, "assistant", [
-            `Self-development branch: ${result.branch}`,
-            `Commit: ${result.commit?.id || "none"}`,
-            `Verification: ${result.verification?.passed ? "passed" : "failed"}`,
-            `Review: ${result.pullRequestProposal?.head} → ${result.pullRequestProposal?.base}`
-          ].join("\n"));
-          return result;
-        }
         const applied = await applyAIPatch(patch, workspace, { approved: true });
         appendMessage(messages, "assistant", `Approved patch applied to ${applied.length} file(s).`);
         return applied;
