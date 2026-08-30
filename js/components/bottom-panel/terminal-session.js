@@ -87,7 +87,7 @@ export function formatTerminalPath(cwd = "") {
 export function parseTerminalOpenTarget(value) {
   const raw = String(value ?? "").trim();
   if (!raw) return { path: "", line: null, column: null };
-  const match = raw.match(/^(.*):(\d+)(?::(\d+))?$/);
+  const match = raw.match(/^(.*?):(\d+)(?::(\d+))?$/);
   if (!match || !match[1]) return { path: raw, line: null, column: null };
   return {
     path: match[1],
