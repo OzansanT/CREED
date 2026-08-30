@@ -97,12 +97,6 @@ export function loadState(canvas) {
     state.secondarySidebarView = ["chat", "components"].includes(saved.secondarySidebarView)
       ? saved.secondarySidebarView
       : "chat";
-    state.secondarySidebarChatSubView = ["conversation", "settings"].includes(saved.secondarySidebarChatSubView)
-      ? saved.secondarySidebarChatSubView
-      : "conversation";
-    state.secondarySidebarComponentsSubView = ["library", "instances"].includes(saved.secondarySidebarComponentsSubView)
-      ? saved.secondarySidebarComponentsSubView
-      : "library";
 
     const originCard = normalizeWorldPoint(saved.originCard);
     state.originCard = originCard || { worldX: 0, worldY: 0 };
