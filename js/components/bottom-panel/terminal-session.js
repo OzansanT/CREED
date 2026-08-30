@@ -162,6 +162,14 @@ export async function navigateTerminalSourceReference(reference, { openFile, ope
   return false;
 }
 
+export function createTerminalOutputLine(text, kind = "output", cwd = "") {
+  return {
+    text: String(text ?? ""),
+    kind: typeof kind === "string" && kind ? kind : "output",
+    cwd: resolveTerminalPath(cwd || ".", "")
+  };
+}
+
 export function listWorkspaceDirectory(workspace, directory = "") {
   const source = getWorkspace(workspace);
   const normalized = resolveTerminalPath(directory, "");
@@ -603,7 +611,7 @@ export function bindTerminalSessions({
     for (const session of restored.sessions) {
       sessions.push({
         ...session,
-        lines: [{ text: "Restored CREED terminal session.", kind: "output" }],
+        lines: [createTerminalOutputLine("Restored CREED terminal session.", "output", session.cwd)],
         historyIndex: session.history.length
       });
     }
@@ -697,7 +705,7 @@ export function bindTerminalSessions({
     const fragment = document.createDocumentFragment();
     for (const line of session?.lines || []) {
       const row = document.createElement("div");
-      appendOutputText(row, line.text, session?.cwd || "");
+      appendOutputText(row, line.text, line.cwd ?? session?.cwd ?? "");
       if (line.kind === "error") row.setAttribute("role", "alert");
       fragment.append(row);
     }
@@ -708,7 +716,8 @@ export function bindTerminalSessions({
   function write(text, kind = "output") {
     const session = activeSession();
     if (!session) return;
-    String(text ?? "").split("\n").forEach((line) => session.lines.push({ text: line, kind }));
+    const outputCwd = session.cwd;
+    String(text ?? "").split("\n").forEach((line) => session.lines.push(createTerminalOutputLine(line, kind, outputCwd)));
     if (session.lines.length > MAX_OUTPUT_LINES) {
       session.lines.splice(0, session.lines.length - MAX_OUTPUT_LINES);
     }
@@ -728,7 +737,7 @@ export function bindTerminalSessions({
       id,
       name: `${label} ${nextSessionId}`,
       cwd: "",
-      lines: [{ text: "CREED safe browser terminal. Type help for commands.", kind: "output" }],
+      lines: [createTerminalOutputLine("CREED safe browser terminal. Type help for commands.")],
       history: [],
       historyIndex: 0
     };
