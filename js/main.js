@@ -26,6 +26,7 @@ import { bindEditorPanel } from "./components/editor-panel/editor-panel-main.js"
 import { bindQuickOpen } from "./components/editor-panel/quick-open.js";
 import { bindSplitEditor } from "./components/editor-panel/split-editor.js";
 import { bindEditMode } from "./components/edit-mode/edit-mode-main.js";
+import { bindEditModeStructurePersistence } from "./components/edit-mode/structure-persistence.js";
 import { createInfiniteCanvasRuntime } from "./components/infinite-canvas/infinitecanvas-main.js";
 import { createCanvasComponentRegistry } from "./components/infinite-canvas/component-registry.js";
 import { bindCanvasComponentManager } from "./components/infinite-canvas/component-manager.js";
@@ -61,7 +62,7 @@ bindAccessibilityNavigation({
 
 const infiniteCanvas = createInfiniteCanvasRuntime(elements);
 const notify = (message) => showToast(elements.toast, message);
-bindEditMode({ resetButton: elements.infiniteResetBtn, notify });
+const editMode = bindEditMode({ resetButton: elements.infiniteResetBtn, notify });
 
 const editorPanel = bindEditorPanel({
   rootToggle: elements.workspaceDisclosureBtn,
@@ -259,7 +260,14 @@ infiniteCanvas.bind({
   panelResize
 });
 
-requestAnimationFrame(() => componentManager.renderAll());
+requestAnimationFrame(() => {
+  componentManager.renderAll();
+  bindEditModeStructurePersistence({
+    editMode,
+    resetButton: elements.infiniteResetBtn,
+    notify
+  });
+});
 diagnostics.runChecks({ reveal: false }).catch(() => {});
 unifiedWorkspaceState.bindLifecycle();
 unifiedWorkspaceState.snapshot();
