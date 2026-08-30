@@ -94,15 +94,6 @@ export function loadState(canvas) {
     state.sidebarView = ["canvas", "infiniteCanvas", "components"].includes(saved.sidebarView)
       ? saved.sidebarView
       : "canvas";
-    state.secondarySidebarView = ["chat", "components"].includes(saved.secondarySidebarView)
-      ? saved.secondarySidebarView
-      : "chat";
-    state.secondarySidebarChatSubView = ["conversation", "settings"].includes(saved.secondarySidebarChatSubView)
-      ? saved.secondarySidebarChatSubView
-      : "conversation";
-    state.secondarySidebarComponentsSubView = ["library", "instances"].includes(saved.secondarySidebarComponentsSubView)
-      ? saved.secondarySidebarComponentsSubView
-      : "library";
 
     const originCard = normalizeWorldPoint(saved.originCard);
     state.originCard = originCard || { worldX: 0, worldY: 0 };
@@ -147,7 +138,6 @@ function normalizePanelDimensions(saved) {
   if (!saved) return null;
   const layout = {
     primaryWidth: Math.round(Number(saved.primaryWidth)),
-    secondaryWidth: Math.round(Number(saved.secondaryWidth)),
     bottomPanelHeight: Math.round(Number(saved.bottomPanelHeight ?? saved.terminalHeight))
   };
   return Object.values(layout).every((value) => Number.isFinite(value) && value > 0)
@@ -167,7 +157,6 @@ export function savePanelLayout(layoutState) {
   const dimensions = normalizePanelDimensions(layoutState);
   const visibility = {
     primaryVisible: layoutState?.primaryVisible,
-    secondaryVisible: layoutState?.secondaryVisible,
     bottomPanelVisible: layoutState?.bottomPanelVisible
   };
   if (!dimensions || !Object.values(visibility).every((value) => typeof value === "boolean")) {
@@ -190,7 +179,6 @@ export function loadPanelLayout() {
   const dimensions = normalizePanelDimensions(saved);
   const visibility = {
     primaryVisible: saved?.primaryVisible,
-    secondaryVisible: saved?.secondaryVisible,
     bottomPanelVisible: saved?.bottomPanelVisible ?? saved?.terminalVisible
   };
   if (dimensions && Object.values(visibility).every((value) => typeof value === "boolean")) {
@@ -204,7 +192,6 @@ export function loadPanelLayout() {
   const migrated = {
     ...legacyDimensions,
     primaryVisible: true,
-    secondaryVisible: true,
     bottomPanelVisible: true
   };
   savePanelLayout(migrated);

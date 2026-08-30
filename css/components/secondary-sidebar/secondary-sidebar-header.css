@@ -1,5 +1,0 @@
-@layer components {
-  .secondary-sidebar__header { height: 38px; display: flex; align-items: center; padding: 0 9px; }
-  .secondary-sidebar__title { padding: 5px 8px; border-radius: 4px; background: #e2e2e5; color: #29292d; font-size: 12px; font-weight: 650; }
-  .secondary-sidebar__actions { min-width: 0; margin-left: auto; display: flex; align-items: center; gap: 1px; color: #67676c; }
-}

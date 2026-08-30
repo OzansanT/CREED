@@ -6,10 +6,8 @@ import {
 } from "../../core/storage.js";
 
 const DEFAULT_PRIMARY_WIDTH = 293;
-const DEFAULT_SECONDARY_WIDTH = 290;
 const DEFAULT_BOTTOM_PANEL_HEIGHT = 320;
 const MIN_PRIMARY_WIDTH = 180;
-const MIN_SECONDARY_WIDTH = 220;
 const MIN_BOTTOM_PANEL_HEIGHT = 120;
 const MIN_EDITOR_WIDTH = 320;
 const MIN_EDITOR_HEIGHT = 160;
@@ -17,10 +15,8 @@ const KEYBOARD_STEP = 10;
 const LARGE_KEYBOARD_STEP = 40;
 const COMPACT_LAYOUT_WIDTH = 1500;
 const NARROW_LAYOUT_WIDTH = 820;
-const HIDDEN_SECONDARY_WIDTH = 1180;
 const COMPACT_PRIMARY_MAX = 270;
 const NARROW_PRIMARY_MAX = 230;
-const COMPACT_SECONDARY_MAX = 250;
 
 function getActivityWidth(app) {
   const value = Number.parseFloat(getComputedStyle(app).getPropertyValue("--activity-w"));
@@ -43,12 +39,6 @@ function getResponsiveMaximum(storageKey) {
     if (window.innerWidth <= NARROW_LAYOUT_WIDTH) return NARROW_PRIMARY_MAX;
     if (window.innerWidth <= COMPACT_LAYOUT_WIDTH) return COMPACT_PRIMARY_MAX;
   }
-
-  if (storageKey === "secondaryWidth") {
-    if (window.innerWidth <= HIDDEN_SECONDARY_WIDTH) return 0;
-    if (window.innerWidth <= COMPACT_LAYOUT_WIDTH) return COMPACT_SECONDARY_MAX;
-  }
-
   return Number.POSITIVE_INFINITY;
 }
 
@@ -57,35 +47,28 @@ export function bindPanelResize({
   app,
   workbench,
   primaryPanel,
-  secondaryPanel,
   bottomPanel,
   primaryController,
-  secondaryController,
   bottomController,
   primaryHandle,
-  secondaryHandle,
   bottomHandle,
   onLayoutChange
 }) {
   let layoutState = {
     primaryWidth: getRenderedSize(primaryPanel, "width", DEFAULT_PRIMARY_WIDTH),
-    secondaryWidth: getRenderedSize(secondaryPanel, "width", DEFAULT_SECONDARY_WIDTH),
     bottomPanelHeight: getRenderedSize(bottomPanel, "height", DEFAULT_BOTTOM_PANEL_HEIGHT),
     primaryVisible: primaryController.isVisible(),
-    secondaryVisible: secondaryController.isVisible(),
     bottomPanelVisible: bottomController.isVisible(),
     ...loadPanelLayout()
   };
 
   primaryController.setVisible(layoutState.primaryVisible, false);
-  secondaryController.setVisible(layoutState.secondaryVisible, false);
   bottomController.setVisible(layoutState.bottomPanelVisible, false);
 
-  function getHorizontalMaximum(otherPanel) {
-    const otherWidth = otherPanel.hidden ? 0 : otherPanel.getBoundingClientRect().width;
+  function getHorizontalMaximum() {
     return Math.max(
       MIN_PRIMARY_WIDTH,
-      app.clientWidth - getActivityWidth(app) - otherWidth - MIN_EDITOR_WIDTH
+      app.clientWidth - getActivityWidth(app) - MIN_EDITOR_WIDTH
     );
   }
 
@@ -98,22 +81,7 @@ export function bindPanelResize({
       storageKey: "primaryWidth",
       minimum: MIN_PRIMARY_WIDTH,
       current: () => primaryPanel.getBoundingClientRect().width,
-      maximum: () => getHorizontalMaximum(secondaryPanel)
-    },
-    {
-      handle: secondaryHandle,
-      axis: "x",
-      direction: -1,
-      variable: "--secondary-sidebar-w",
-      storageKey: "secondaryWidth",
-      minimum: MIN_SECONDARY_WIDTH,
-      current: () => secondaryPanel.getBoundingClientRect().width,
-      maximum: () => Math.max(
-        MIN_SECONDARY_WIDTH,
-        app.clientWidth - getActivityWidth(app) -
-          (primaryPanel.hidden ? 0 : primaryPanel.getBoundingClientRect().width) -
-          MIN_EDITOR_WIDTH
-      )
+      maximum: getHorizontalMaximum
     },
     {
       handle: bottomHandle,
@@ -141,7 +109,7 @@ export function bindPanelResize({
     setSeparatorValue(
       configuration.handle,
       renderedSize,
-      responsiveMaximum === 0 ? 0 : Math.min(configuration.minimum, responsiveMaximum),
+      Math.min(configuration.minimum, responsiveMaximum),
       Math.min(maximum, responsiveMaximum)
     );
     if (notify) onLayoutChange?.();
@@ -150,7 +118,6 @@ export function bindPanelResize({
 
   function persistLayout() {
     layoutState.primaryVisible = primaryController.isVisible();
-    layoutState.secondaryVisible = secondaryController.isVisible();
     layoutState.bottomPanelVisible = bottomController.isVisible();
     savePanelLayout(layoutState);
   }
@@ -165,7 +132,7 @@ export function bindPanelResize({
     setSeparatorValue(
       configuration.handle,
       current,
-      responsiveMaximum === 0 ? 0 : Math.min(configuration.minimum, responsiveMaximum),
+      Math.min(configuration.minimum, responsiveMaximum),
       Math.min(maximum, responsiveMaximum)
     );
   }
@@ -248,10 +215,8 @@ export function bindPanelResize({
     configurations.forEach(({ variable }) => root.style.removeProperty(variable));
     layoutState = {
       primaryWidth: getRenderedSize(primaryPanel, "width", DEFAULT_PRIMARY_WIDTH),
-      secondaryWidth: getRenderedSize(secondaryPanel, "width", DEFAULT_SECONDARY_WIDTH),
       bottomPanelHeight: getRenderedSize(bottomPanel, "height", DEFAULT_BOTTOM_PANEL_HEIGHT),
       primaryVisible: primaryController.isVisible(),
-      secondaryVisible: secondaryController.isVisible(),
       bottomPanelVisible: bottomController.isVisible()
     };
     configurations.forEach((configuration) => {
