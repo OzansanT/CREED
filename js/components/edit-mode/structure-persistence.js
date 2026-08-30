@@ -266,6 +266,7 @@ export function bindEditModeStructurePersistence({
 
   window.addEventListener("keydown", (event) => {
     if (!editMode.isActive() || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") return;
+    if (event.target instanceof Element && event.target.closest("input, textarea, [contenteditable=\"true\"]")) return;
     queueMicrotask(save);
   }, true);
 
