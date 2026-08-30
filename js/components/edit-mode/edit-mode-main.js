@@ -90,6 +90,13 @@ function restoreStyle(element, snapshot) {
   }
 }
 
+function applyStyleState(element, property, state) {
+  if (!(element instanceof HTMLElement) || !property) return false;
+  if (state?.value) element.style.setProperty(property, state.value, state.priority || "");
+  else element.style.removeProperty(property);
+  return true;
+}
+
 function getDropPosition(target, clientY) {
   const rect = target.getBoundingClientRect();
   if (!Number.isFinite(rect.height) || rect.height <= 0) return "inside";
@@ -479,12 +486,59 @@ export function bindEditMode({ resetButton, notify = () => {} } = {}) {
     return true;
   }
 
+  function editSelectedStyle(property, value) {
+    const source = selectedState?.element;
+    if (!active || !(source instanceof HTMLElement) || !property) return false;
+
+    const before = {
+      value: source.style.getPropertyValue(property),
+      priority: source.style.getPropertyPriority(property)
+    };
+    const after = { value: String(value || "").trim(), priority: "" };
+    if (before.value === after.value && before.priority === after.priority) return false;
+
+    applyStyleState(source, property, after);
+    recordTransaction({
+      undo: () => applyStyleState(source, property, before),
+      redo: () => applyStyleState(source, property, after)
+    });
+    return true;
+  }
+
+  function editSelectedText(value) {
+    const source = selectedState?.element;
+    if (!active || !(source instanceof HTMLElement) || source.children.length > 0) return false;
+    const before = source.textContent;
+    const after = String(value ?? "");
+    if (before === after) return false;
+
+    source.textContent = after;
+    recordTransaction({
+      undo: () => {
+        source.textContent = before;
+        return true;
+      },
+      redo: () => {
+        source.textContent = after;
+        return true;
+      }
+    });
+    return true;
+  }
+
+  function editSelectedProperty(change) {
+    if (!change || !selectedState?.element) return false;
+    if (change.kind === "text") return editSelectedText(change.value);
+    return editSelectedStyle(change.property, change.value);
+  }
+
   const inspector = createElementInspector({
     onClear: clearSelection,
     onDelete: deleteSelected,
     onDuplicate: duplicateSelected,
     onMoveUp: () => moveSelected(-1),
-    onMoveDown: () => moveSelected(1)
+    onMoveDown: () => moveSelected(1),
+    onPropertyChange: editSelectedProperty
   });
 
   function captureLayout() {
