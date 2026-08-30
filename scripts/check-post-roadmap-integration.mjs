@@ -9,8 +9,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
 
 const main = read("js/main.js");
-assert(main.includes("function synchronizeTerminalBranch()"), "Terminal prompt must synchronize with Source Control branch changes.");
-assert(main.includes("sourceControl.provider.subscribe(synchronizeTerminalBranch)"), "Terminal branch synchronization must subscribe to Source Control.");
+assert(!main.includes("SourceControl"), "Application orchestration must not retain removed Source Control wiring.");
+assert(!main.includes("sourceControl"), "Application orchestration must not retain removed Source Control state.");
 assert(main.includes("secondarySidebar.setMaximized(false, false)"), "Infinite Reset must clear Secondary Sidebar maximization.");
 assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset must clear Bottom Panel maximization.");
 assert(!main.includes("createSourceLocationNavigator"), "Application orchestration must not construct source-location internals directly.");
@@ -110,6 +110,7 @@ const firstProviderCall = chat.indexOf("providerRegistry.complete");
 const firstToolCall = chat.indexOf("executeToolCalls(response.toolCalls)");
 const cancellationCheck = chat.indexOf("if (token !== generation) return false;", firstProviderCall);
 assert(cancellationCheck > firstProviderCall && cancellationCheck < firstToolCall, "Cancelled AI requests must not execute tool calls.");
+assert(!chat.includes("selfDevelopment"), "Chat must not retain removed Source Control self-development routing.");
 
 const diagnostics = read("js/components/diagnostics/diagnostics-main.js");
 assert(diagnostics.includes("return buildDependencyModel(workspace);"), "Diagnostics must build fresh dependency state from the workspace.");
@@ -144,7 +145,7 @@ assert.equal(navigateToDiagnostic({ message: "fileless" }, { openFileAt: () => t
 
 const workbench = read("js/components/editor-panel/workbench-input.js");
 assert(workbench.includes("workspace.subscribe((change) =>"), "Primary editor must subscribe to external WorkspaceFS mutations.");
-assert(workbench.includes("pendingWorkspaceReset"), "Branch/workspace resets must invalidate clean editor caches.");
+assert(workbench.includes("pendingWorkspaceReset"), "Workspace resets must invalidate clean editor caches.");
 assert(workbench.includes("buffers.isDirty(fileName)"), "External workspace reconciliation must protect dirty primary buffers.");
 assert(workbench.includes('change.type === "file-renamed"'), "Primary editor must preserve open tabs across external file renames.");
 assert(workbench.includes('change.type === "directory-renamed"'), "Primary editor must preserve directory-renamed sessions.");
@@ -180,8 +181,5 @@ const bottom = read("js/components/bottom-panel/bottom-panel-input.js");
 const secondary = read("js/components/secondary-sidebar/secondary-sidebar-input.js");
 assert(bottom.includes("setMaximized"), "Bottom Panel controller must expose explicit maximize lifecycle control.");
 assert(secondary.includes("setMaximized"), "Secondary Sidebar controller must expose explicit maximize lifecycle control.");
-
-const conflicts = read("js/components/source-control/merge-conflict-editor.js");
-assert(conflicts.includes("content === currentContent"), "Accept Current must resolve a no-op conflict without attempting to stage an unchanged HEAD file.");
 
 console.log("Post-roadmap integration audit checks passed.");
