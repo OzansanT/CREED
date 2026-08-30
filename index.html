@@ -29,8 +29,18 @@
     .creed-file-launch__card h1 { margin: 0 0 10px; font-size: 20px; }
     .creed-file-launch__card p { margin: 8px 0; }
     .creed-file-launch__card code { font-family: Consolas, monospace; }
+    .creed-file-launch__command {
+      margin: 16px 0;
+      padding: 14px;
+      border: 1px solid #d6d6de;
+      border-radius: 8px;
+      background: #f8f8fb;
+    }
+    .creed-file-launch__command strong,
+    .creed-file-launch__command span { display: block; }
+    .creed-file-launch__secondary { color: #60606a; }
     .creed-file-launch__card button {
-      margin-top: 12px;
+      margin-top: 8px;
       padding: 8px 14px;
       border: 1px solid #b8b8c2;
       border-radius: 6px;
@@ -53,15 +63,19 @@
         shell.className = "creed-file-launch";
         shell.innerHTML = `
           <section class="creed-file-launch__card">
-            <h1>Starting CREED locally</h1>
+            <h1>Open CREED locally</h1>
             <p>CREED JavaScript modules cannot run directly from <code>file://</code>. Checking whether the CREED local server is already available.</p>
             <p data-creed-launch-status role="status">Checking <code>${serverUrl}</code>…</p>
-            <p>If the server is not running, use <strong>Start CREED</strong>. On the first run for this Windows account, run <code>optional/windows-local-launcher/Start-CREED.cmd</code> once to register the <code>creed://</code> launcher.</p>
-            <button type="button">Start CREED</button>
+            <div class="creed-file-launch__command">
+              <strong>Cold start</strong>
+              <span>Double-click <code>Start-CREED.cmd</code> beside <code>index.html</code>. It starts the local server and opens CREED automatically.</span>
+            </div>
+            <p class="creed-file-launch__secondary">If the <code>creed://</code> protocol is already registered for this Windows account, you can use the fallback below instead.</p>
+            <button data-creed-protocol-launch type="button">Use registered launcher</button>
           </section>`;
 
         const status = shell.querySelector("[data-creed-launch-status]");
-        const button = shell.querySelector("button");
+        const button = shell.querySelector("[data-creed-protocol-launch]");
         button.addEventListener("click", openLauncher);
         document.body.prepend(shell);
 
@@ -76,8 +90,7 @@
             redirectToServer();
             return;
           }
-          status.innerHTML = `Local server is not running. Click <strong>Start CREED</strong> to launch it.`;
-          button.focus({ preventScroll: true });
+          status.innerHTML = `Local server is not running. Double-click <code>Start-CREED.cmd</code> beside <code>index.html</code> to start it.`;
         };
 
         probe.rel = "stylesheet";
