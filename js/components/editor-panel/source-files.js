@@ -219,6 +219,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "scripts/check-terminal-session.mjs",
   "scripts/check-workspace-fs.mjs",
   "scripts/check-workspace-intelligence.mjs",
+  "Start-CREED.cmd",
   "ui/bars/activity-bar/activity-bar.html",
   "ui/bars/bar-registry.json",
   "ui/bars/bottom-panel/bottom-panel-bar.html",
