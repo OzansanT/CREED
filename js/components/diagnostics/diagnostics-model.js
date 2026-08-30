@@ -252,6 +252,60 @@ function readJavaScriptModuleSpecifier(source, start, keyword) {
   return null;
 }
 
+function findTemplateExpressionEnd(source, start) {
+  let depth = 1;
+  let index = start;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '"' || character === "'") {
+      const literal = readQuotedString(source, index);
+      index = literal ? literal.end : index + 1;
+      continue;
+    }
+    if (character === "`") {
+      index = skipTemplateLiteral(source, index);
+      continue;
+    }
+    if (character === "/" && source[index + 1] === "/") {
+      index = skipLineComment(source, index);
+      continue;
+    }
+    if (character === "/" && source[index + 1] === "*") {
+      index = skipBlockComment(source, index);
+      continue;
+    }
+    if (character === "{") depth += 1;
+    else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) return index + 1;
+    }
+    index += 1;
+  }
+  return source.length;
+}
+
+function collectTemplateExpressionImports(source, start) {
+  const values = [];
+  let index = start + 1;
+  while (index < source.length) {
+    if (source[index] === "\\") {
+      index += 2;
+      continue;
+    }
+    if (source[index] === "`") return { values, end: index + 1 };
+    if (source[index] === "$" && source[index + 1] === "{") {
+      const expressionStart = index + 2;
+      const expressionEnd = findTemplateExpressionEnd(source, expressionStart);
+      const expressionSource = source.slice(expressionStart, Math.max(expressionStart, expressionEnd - 1));
+      values.push(...collectJavaScriptRelativeImports(expressionSource));
+      index = expressionEnd;
+      continue;
+    }
+    index += 1;
+  }
+  return { values, end: source.length };
+}
+
 function collectJavaScriptRelativeImports(source) {
   const text = String(source || "");
   const values = [];
@@ -264,7 +318,9 @@ function collectJavaScriptRelativeImports(source) {
       continue;
     }
     if (character === "`") {
-      index = skipTemplateLiteral(text, index);
+      const template = collectTemplateExpressionImports(text, index);
+      values.push(...template.values);
+      index = template.end;
       continue;
     }
     if (character === "/" && text[index + 1] === "/") {
