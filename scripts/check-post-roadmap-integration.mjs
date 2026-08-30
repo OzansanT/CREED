@@ -11,13 +11,15 @@ const read = (path) => readFileSync(resolve(root, path), "utf8");
 const main = read("js/main.js");
 assert(!main.includes("SourceControl"), "Application orchestration must not retain removed Source Control wiring.");
 assert(!main.includes("sourceControl"), "Application orchestration must not retain removed Source Control state.");
+assert(!main.includes("bindRunDebug"), "Application orchestration must not retain removed Run and Debug wiring.");
+assert(!main.includes("runDebug"), "Application orchestration must not retain removed Run and Debug state.");
 assert(main.includes("secondarySidebar.setMaximized(false, false)"), "Infinite Reset must clear Secondary Sidebar maximization.");
 assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset must clear Bottom Panel maximization.");
 assert(!main.includes("createSourceLocationNavigator"), "Application orchestration must not construct source-location internals directly.");
 assert.equal(
   (main.match(/openFileAt: editorPanel\.openFileAt/g) || []).length,
-  4,
-  "Workspace Search, Run/Debug, Diagnostics, and Terminal must consume the editor panel exact-location API."
+  3,
+  "Workspace Search, Diagnostics, and Terminal must consume the editor panel exact-location API."
 );
 assert(!main.includes("sourceLocationNavigator"), "Application orchestration must not retain editor navigation implementation state.");
 assert(!main.includes("function revealEditorLocation("), "Exact-location reveal implementation must not live in application orchestration.");

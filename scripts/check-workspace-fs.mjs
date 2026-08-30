@@ -89,4 +89,35 @@ assert.equal(await migrated.readFile("README.md"), "keep this unrelated edit", "
 assert.equal(await migrated.readFile("notes/custom.js"), "export const keep = true;", "User-created files outside the retired feature must survive migration.");
 assert.equal(JSON.parse(migrationValues.get(WORKSPACE_FS_STORAGE_KEY)).version, WORKSPACE_FS_SCHEMA_VERSION, "Legacy WorkspaceFS state must persist the upgraded schema immediately.");
 
+const runDebugMigrationValues = new Map([[WORKSPACE_FS_STORAGE_KEY, JSON.stringify({
+  version: 2,
+  overlays: {
+    "js/main.js": "import { bindRunDebug } from './components/run-debug/run-debug-main.js';",
+    "js/components/run-debug/run-debug-main.js": "export const stale = true;",
+    "notes/keep.js": "export const keep = true;"
+  },
+  deleted: ["ui/bars/activity-bar/activity-bar.html"],
+  directories: ["js/components/run-debug", "notes"]
+})]]);
+const runDebugMigrationStorage = {
+  getItem: (key) => runDebugMigrationValues.has(key) ? runDebugMigrationValues.get(key) : null,
+  setItem: (key, value) => runDebugMigrationValues.set(key, String(value)),
+  removeItem: (key) => runDebugMigrationValues.delete(key)
+};
+const runDebugMigrationBaseline = new Map([
+  ["js/main.js", "console.log('run-debug removed');"],
+  ["ui/bars/activity-bar/activity-bar.html", "<nav>fresh activity bar</nav>"]
+]);
+const runDebugMigrated = createWorkspaceFileSystem({
+  baseFiles: [...runDebugMigrationBaseline.keys()],
+  storage: runDebugMigrationStorage,
+  readBaseline: async (path) => runDebugMigrationBaseline.get(path)
+});
+assert.equal(await runDebugMigrated.readFile("js/main.js"), "console.log('run-debug removed');", "Run and Debug-era application overlays must reset to the current baseline.");
+assert.equal(await runDebugMigrated.readFile("ui/bars/activity-bar/activity-bar.html"), "<nav>fresh activity bar</nav>", "Run and Debug-era deleted markers on the Activity Bar must be cleared.");
+assert.equal(runDebugMigrated.hasFile("js/components/run-debug/run-debug-main.js"), false, "Retired Run and Debug files must not survive WorkspaceFS overlays.");
+assert.equal(runDebugMigrated.hasDirectory("js/components/run-debug"), false, "Retired Run and Debug directories must not survive WorkspaceFS state.");
+assert.equal(await runDebugMigrated.readFile("notes/keep.js"), "export const keep = true;", "Unrelated user-created files must survive the Run and Debug migration.");
+assert.equal(JSON.parse(runDebugMigrationValues.get(WORKSPACE_FS_STORAGE_KEY)).version, WORKSPACE_FS_SCHEMA_VERSION, "Run and Debug WorkspaceFS state must persist the upgraded schema immediately.");
+
 console.log("Workspace file-system check passed.");
