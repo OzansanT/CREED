@@ -55,12 +55,41 @@ const STYLE_PROPERTIES = Object.freeze([
   { label: "Color", property: "color", placeholder: "#222 / currentColor" }
 ]);
 
+const EDIT_BLUE = "#007acc";
+const MIN_RESIZE_PX = 8;
+
 function describeElement(element) {
   if (!(element instanceof Element)) return "—";
   const tag = element.tagName.toLowerCase();
   if (element.id) return `${tag}#${element.id}`;
   const classes = [...element.classList].slice(0, 2);
   return classes.length ? `${tag}.${classes.join(".")}` : tag;
+}
+
+function px(value) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function clamp(value, minimum = 0) {
+  return Math.max(minimum, Number.isFinite(value) ? value : minimum);
+}
+
+function rounded(value) {
+  return Math.round(value * 10) / 10;
+}
+
+function boxShorthand(values) {
+  return `${rounded(values.top)}px ${rounded(values.right)}px ${rounded(values.bottom)}px ${rounded(values.left)}px`;
+}
+
+function readBox(computed, prefix) {
+  return {
+    top: px(computed.getPropertyValue(`${prefix}-top`)),
+    right: px(computed.getPropertyValue(`${prefix}-right`)),
+    bottom: px(computed.getPropertyValue(`${prefix}-bottom`)),
+    left: px(computed.getPropertyValue(`${prefix}-left`))
+  };
 }
 
 function createRow(label) {
@@ -212,6 +241,256 @@ function createSectionTitle(text) {
   return title;
 }
 
+function createFixedLayer(zIndex, border) {
+  const layer = document.createElement("div");
+  layer.hidden = true;
+  layer.dataset.editModeLocked = "true";
+  layer.dataset.editModeControl = "true";
+  Object.assign(layer.style, {
+    position: "fixed",
+    zIndex: String(zIndex),
+    pointerEvents: "none",
+    boxSizing: "border-box",
+    border
+  });
+  document.body.append(layer);
+  return layer;
+}
+
+function createResizeHandle(direction, cursor) {
+  const handle = document.createElement("button");
+  handle.type = "button";
+  handle.dataset.resizeDirection = direction;
+  handle.dataset.editModeLocked = "true";
+  handle.dataset.editModeControl = "true";
+  handle.setAttribute("aria-label", `Resize selected element ${direction}`);
+  handle.title = "Drag: size · Shift+drag: margin · Alt+drag: padding";
+  Object.assign(handle.style, {
+    position: "fixed",
+    zIndex: "10003",
+    width: "10px",
+    height: "10px",
+    padding: "0",
+    margin: "0",
+    border: "2px solid #ffffff",
+    borderRadius: direction === "corner" ? "2px" : "50%",
+    background: EDIT_BLUE,
+    boxShadow: "0 0 0 1px #005a9e",
+    cursor,
+    touchAction: "none"
+  });
+  document.body.append(handle);
+  return handle;
+}
+
+function createBoxModelOverlay({ onPropertyChange, onPreviewSize }) {
+  const marginLayer = createFixedLayer(9997, "1px dashed rgba(217, 119, 6, .9)");
+  const borderLayer = createFixedLayer(9998, `1px solid ${EDIT_BLUE}`);
+  const contentLayer = createFixedLayer(9999, "1px dotted rgba(22, 163, 74, .95)");
+
+  const badge = document.createElement("div");
+  badge.hidden = true;
+  badge.dataset.editModeLocked = "true";
+  badge.dataset.editModeControl = "true";
+  Object.assign(badge.style, {
+    position: "fixed",
+    zIndex: "10002",
+    pointerEvents: "none",
+    maxWidth: "420px",
+    padding: "3px 6px",
+    borderRadius: "4px",
+    background: "rgba(20, 24, 32, .92)",
+    color: "#fff",
+    font: "10px/1.3 Segoe UI, system-ui, sans-serif",
+    whiteSpace: "nowrap"
+  });
+  document.body.append(badge);
+
+  const rightHandle = createResizeHandle("right", "ew-resize");
+  const bottomHandle = createResizeHandle("bottom", "ns-resize");
+  const cornerHandle = createResizeHandle("corner", "nwse-resize");
+  const handles = [rightHandle, bottomHandle, cornerHandle];
+
+  let element = null;
+  let drag = null;
+
+  function setRect(layer, rect) {
+    Object.assign(layer.style, {
+      left: `${rect.left}px`,
+      top: `${rect.top}px`,
+      width: `${Math.max(0, rect.width)}px`,
+      height: `${Math.max(0, rect.height)}px`
+    });
+  }
+
+  function setHandlePosition(handle, left, top) {
+    handle.style.left = `${left - 5}px`;
+    handle.style.top = `${top - 5}px`;
+  }
+
+  function renderGeometry(rect, margin, padding, border, modeLabel = "") {
+    const marginRect = {
+      left: rect.left - margin.left,
+      top: rect.top - margin.top,
+      width: rect.width + margin.left + margin.right,
+      height: rect.height + margin.top + margin.bottom
+    };
+    const contentRect = {
+      left: rect.left + border.left + padding.left,
+      top: rect.top + border.top + padding.top,
+      width: Math.max(0, rect.width - border.left - border.right - padding.left - padding.right),
+      height: Math.max(0, rect.height - border.top - border.bottom - padding.top - padding.bottom)
+    };
+
+    setRect(marginLayer, marginRect);
+    setRect(borderLayer, rect);
+    setRect(contentLayer, contentRect);
+    setHandlePosition(rightHandle, rect.left + rect.width, rect.top + rect.height / 2);
+    setHandlePosition(bottomHandle, rect.left + rect.width / 2, rect.top + rect.height);
+    setHandlePosition(cornerHandle, rect.left + rect.width, rect.top + rect.height);
+
+    badge.style.left = `${Math.max(4, rect.left)}px`;
+    badge.style.top = `${Math.max(4, rect.top - 24)}px`;
+    badge.textContent = `${modeLabel ? `${modeLabel} · ` : ""}${Math.round(rect.width)}×${Math.round(rect.height)} · M ${Math.round(margin.top)}/${Math.round(margin.right)}/${Math.round(margin.bottom)}/${Math.round(margin.left)} · P ${Math.round(padding.top)}/${Math.round(padding.right)}/${Math.round(padding.bottom)}/${Math.round(padding.left)}`;
+    onPreviewSize(`${Math.round(rect.width)} × ${Math.round(rect.height)} px`);
+  }
+
+  function getGeometry(target) {
+    const rect = target.getBoundingClientRect();
+    const computed = getComputedStyle(target);
+    return {
+      rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      margin: readBox(computed, "margin"),
+      padding: readBox(computed, "padding"),
+      border: {
+        top: px(computed.borderTopWidth),
+        right: px(computed.borderRightWidth),
+        bottom: px(computed.borderBottomWidth),
+        left: px(computed.borderLeftWidth)
+      }
+    };
+  }
+
+  function show(target) {
+    element = target instanceof HTMLElement && target.isConnected ? target : null;
+    if (!element) return hide();
+    const geometry = getGeometry(element);
+    marginLayer.hidden = false;
+    borderLayer.hidden = false;
+    contentLayer.hidden = false;
+    badge.hidden = false;
+    handles.forEach((handle) => { handle.hidden = false; });
+    renderGeometry(geometry.rect, geometry.margin, geometry.padding, geometry.border);
+    return true;
+  }
+
+  function hide() {
+    element = null;
+    drag = null;
+    marginLayer.hidden = true;
+    borderLayer.hidden = true;
+    contentLayer.hidden = true;
+    badge.hidden = true;
+    handles.forEach((handle) => { handle.hidden = true; });
+    return false;
+  }
+
+  function update() {
+    if (!element?.isConnected || drag) return false;
+    return show(element);
+  }
+
+  function resolveMode(event) {
+    if (event.altKey) return "padding";
+    if (event.shiftKey) return "margin";
+    return "size";
+  }
+
+  function handlePointerDown(event) {
+    if (!element?.isConnected) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const handle = event.currentTarget;
+    const geometry = getGeometry(element);
+    drag = {
+      pointerId: event.pointerId,
+      direction: handle.dataset.resizeDirection,
+      mode: resolveMode(event),
+      startX: event.clientX,
+      startY: event.clientY,
+      geometry
+    };
+    handle.setPointerCapture?.(event.pointerId);
+  }
+
+  function previewDrag(event) {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    event.preventDefault();
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    const { direction, mode, geometry } = drag;
+    const rect = { ...geometry.rect };
+    const margin = { ...geometry.margin };
+    const padding = { ...geometry.padding };
+
+    if (mode === "size") {
+      if (direction === "right" || direction === "corner") rect.width = clamp(geometry.rect.width + dx, MIN_RESIZE_PX);
+      if (direction === "bottom" || direction === "corner") rect.height = clamp(geometry.rect.height + dy, MIN_RESIZE_PX);
+    } else if (mode === "margin") {
+      if (direction === "right" || direction === "corner") margin.right = clamp(geometry.margin.right + dx);
+      if (direction === "bottom" || direction === "corner") margin.bottom = clamp(geometry.margin.bottom + dy);
+    } else {
+      if (direction === "right" || direction === "corner") padding.right = clamp(geometry.padding.right + dx);
+      if (direction === "bottom" || direction === "corner") padding.bottom = clamp(geometry.padding.bottom + dy);
+    }
+
+    drag.preview = { rect, margin, padding };
+    renderGeometry(rect, margin, padding, geometry.border, mode === "size" ? "Resize" : mode === "margin" ? "Margin" : "Padding");
+  }
+
+  function commitDrag(event) {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const current = drag;
+    drag = null;
+    const preview = current.preview;
+    if (!preview) {
+      update();
+      return;
+    }
+
+    const { direction, mode, geometry } = current;
+    if (mode === "size") {
+      if ((direction === "right" || direction === "corner") && Math.abs(preview.rect.width - geometry.rect.width) >= 0.5) {
+        onPropertyChange({ kind: "style", property: "width", value: `${rounded(preview.rect.width)}px` });
+      }
+      if ((direction === "bottom" || direction === "corner") && Math.abs(preview.rect.height - geometry.rect.height) >= 0.5) {
+        onPropertyChange({ kind: "style", property: "height", value: `${rounded(preview.rect.height)}px` });
+      }
+    } else if (mode === "margin") {
+      onPropertyChange({ kind: "style", property: "margin", value: boxShorthand(preview.margin) });
+    } else {
+      onPropertyChange({ kind: "style", property: "padding", value: boxShorthand(preview.padding) });
+    }
+    requestAnimationFrame(update);
+  }
+
+  function cancelDrag(event) {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    drag = null;
+    update();
+  }
+
+  handles.forEach((handle) => handle.addEventListener("pointerdown", handlePointerDown));
+  document.addEventListener("pointermove", previewDrag, true);
+  document.addEventListener("pointerup", commitDrag, true);
+  document.addEventListener("pointercancel", cancelDrag, true);
+  window.addEventListener("resize", update);
+  window.addEventListener("scroll", update, true);
+
+  hide();
+  return Object.freeze({ show, hide, update });
+}
+
 export function createElementInspector({
   onClear = () => {},
   onDelete = () => {},
@@ -261,6 +540,17 @@ export function createElementInspector({
   const propertyControls = STYLE_PROPERTIES.map((definition) => createPropertyControl(definition, onPropertyChange));
   const textControl = createTextControl(onPropertyChange);
 
+  const resizeHint = document.createElement("div");
+  resizeHint.textContent = "Canvas handles: drag = size · Shift = margin · Alt = padding";
+  Object.assign(resizeHint.style, {
+    marginTop: "8px",
+    padding: "6px 7px",
+    borderRadius: "4px",
+    background: "#f4f8fb",
+    color: "#51606f",
+    lineHeight: "1.35"
+  });
+
   const actions = document.createElement("div");
   Object.assign(actions.style, {
     display: "grid",
@@ -286,6 +576,7 @@ export function createElementInspector({
     fields.size.row,
     fields.position.row,
     fields.display.row,
+    resizeHint,
     propertiesTitle,
     ...propertyControls.map((control) => control.row),
     textControl.row,
@@ -293,9 +584,17 @@ export function createElementInspector({
   );
   document.body.append(panel);
 
+  const boxModelOverlay = createBoxModelOverlay({
+    onPropertyChange,
+    onPreviewSize: (value) => {
+      fields.size.value.textContent = value;
+    }
+  });
+
   function update(element) {
     if (!(element instanceof Element) || !element.isConnected) {
       panel.hidden = true;
+      boxModelOverlay.hide();
       return false;
     }
 
@@ -329,11 +628,13 @@ export function createElementInspector({
     moveUpButton.disabled = !element.previousElementSibling;
     moveDownButton.disabled = !element.nextElementSibling;
     panel.hidden = false;
+    boxModelOverlay.show(element);
     return true;
   }
 
   function hide() {
     panel.hidden = true;
+    boxModelOverlay.hide();
   }
 
   return Object.freeze({ panel, update, hide });
