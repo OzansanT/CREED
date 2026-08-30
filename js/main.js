@@ -61,7 +61,7 @@ bindAccessibilityNavigation({
 
 const infiniteCanvas = createInfiniteCanvasRuntime(elements);
 const notify = (message) => showToast(elements.toast, message);
-bindEditMode({ resetButton: elements.infiniteResetBtn });
+bindEditMode({ resetButton: elements.infiniteResetBtn, notify });
 
 const editorPanel = bindEditorPanel({
   rootToggle: elements.workspaceDisclosureBtn,
