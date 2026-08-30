@@ -12,7 +12,7 @@ import { bindExplorerFileActions } from "./explorer-file-actions.js";
 import { getFileKind, getLanguageLabel } from "./file-metadata.js";
 import { createMinimapController } from "./minimap-controller.js";
 import { createSourceLoader } from "./source-loader.js";
-import { bindSourceNavigation } from "./source-navigation.js";
+import { bindSourceNavigation, createSourceLocationNavigator } from "./source-navigation.js";
 import { createSourceViewport } from "./source-viewport.js";
 import { createWorkspaceFileSystem } from "./workspace-fs.js";
 
@@ -44,6 +44,7 @@ export function bindWorkbenchFiles({
   let activeFile = "";
   let baseStatusLanguage = "{ } Canvas";
   let tabs = null;
+  let sourceLocationNavigator = null;
   let persistTimer = 0;
   let workspaceReconcileTimer = 0;
   let restoringWorkspace = true;
@@ -148,6 +149,7 @@ export function bindWorkbenchFiles({
   }
 
   function showCanvasPanel() {
+    sourceLocationNavigator?.clear();
     captureActiveSession();
     editing.setActiveFile("");
     sourceNavigation.reset();
@@ -234,6 +236,7 @@ export function bindWorkbenchFiles({
       return;
     }
     if (activeFile === fileName && !codeView.hidden) return;
+    sourceLocationNavigator?.clear();
     captureActiveSession();
     editing.setActiveFile(fileName);
     sourceNavigation.reset();
@@ -277,6 +280,13 @@ export function bindWorkbenchFiles({
     tabs.open(fileName, getFileKind(fileName));
     return true;
   }
+
+  sourceLocationNavigator = createSourceLocationNavigator({
+    openFile,
+    getActiveFile: () => activeFile,
+    sourceContent: codeContent,
+    sourceScroller
+  });
 
   function renameSingleOpenFile(oldName, newName) {
     const session = sessions.get(oldName);
@@ -400,6 +410,7 @@ export function bindWorkbenchFiles({
     workspaceReconcileTimer = 0;
     pendingWorkspaceReset = false;
     pendingWorkspacePaths.clear();
+    sourceLocationNavigator?.clear();
     restoringWorkspace = true;
     tabs.clear();
     sessions.clear();
@@ -439,6 +450,7 @@ export function bindWorkbenchFiles({
       if (fileName) tabs.activate(fileName);
     },
     openFile,
+    openFileAt: sourceLocationNavigator.openFileAt,
     saveFile: editing.saveActive,
     saveAll: editing.saveAll,
     revertFile: editing.revertActive,
