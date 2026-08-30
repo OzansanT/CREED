@@ -203,6 +203,7 @@ export const WORKSPACE_FILES = Object.freeze([
   "scripts/check-canvas-components.mjs",
   "scripts/check-canvas-navigation.mjs",
   "scripts/check-command-history.mjs",
+  "scripts/check-diagnostic-locations.mjs",
   "scripts/check-diagnostics.mjs",
   "scripts/check-editor-buffers.mjs",
   "scripts/check-editor-engine.mjs",
