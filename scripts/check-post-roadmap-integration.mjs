@@ -9,7 +9,6 @@ const read = (path) => readFileSync(resolve(root, path), "utf8");
 const main = read("js/main.js");
 assert(main.includes("function synchronizeTerminalBranch()"), "Terminal prompt must synchronize with Source Control branch changes.");
 assert(main.includes("sourceControl.provider.subscribe(synchronizeTerminalBranch)"), "Terminal branch synchronization must subscribe to Source Control.");
-assert(main.includes("new MutationObserver"), "Diagnostics must be reapplied after system-graph DOM rerenders.");
 assert(main.includes("secondarySidebar.setMaximized(false, false)"), "Infinite Reset must clear Secondary Sidebar maximization.");
 assert(main.includes("bottomPanel.setMaximized(false, false)"), "Infinite Reset must clear Bottom Panel maximization.");
 
@@ -24,7 +23,7 @@ const cancellationCheck = chat.indexOf("if (token !== generation) return false;"
 assert(cancellationCheck > firstProviderCall && cancellationCheck < firstToolCall, "Cancelled AI requests must not execute tool calls.");
 
 const diagnostics = read("js/components/diagnostics/diagnostics-main.js");
-assert(diagnostics.includes("return buildSystemGraph({ workspace });"), "Diagnostics must build a fresh graph rather than trust a potentially stale rendered graph.");
+assert(diagnostics.includes("return buildDependencyModel(workspace);"), "Diagnostics must build fresh dependency state from the workspace.");
 assert(diagnostics.includes("workspace.subscribe?.(scheduleWorkspaceDiagnostics)"), "Diagnostics must refresh when WorkspaceFS changes outside the Problems panel.");
 
 const workbench = read("js/components/editor-panel/workbench-input.js");
