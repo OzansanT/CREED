@@ -6,6 +6,12 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const framePath = resolve(repositoryRoot, "ui/main-frame.html");
 const registryPath = resolve(repositoryRoot, "ui/bars/bar-registry.json");
 const outputPath = resolve(repositoryRoot, "index.html");
+const requiredPartials = Object.freeze([
+  {
+    slot: "infinite-canvas",
+    template: "ui/infinite-canvas.html"
+  }
+]);
 const optionalPartials = Object.freeze([
   {
     slot: "windows-local-launcher",
@@ -60,6 +66,23 @@ function indentPartial(source, indentation) {
   return source.trim().split("\n").map((line) => line ? indentation + line : "").join("\n");
 }
 
+function renderRequiredPartials(frame) {
+  let output = frame;
+
+  for (const partial of requiredPartials) {
+    const marker = new RegExp("^([ \\t]*)<!-- @partial " + partial.slot + " -->[ \\t]*$", "m");
+    const matches = [...output.matchAll(new RegExp(marker.source, "gm"))];
+    assert(matches.length === 1, "Expected exactly one required main-frame partial for " + partial.slot + ".");
+
+    const templatePath = resolve(repositoryRoot, partial.template);
+    assert(existsSync(templatePath), "Missing required main-frame partial: " + partial.template);
+    output = output.replace(marker, (_, indentation) => indentPartial(readFileSync(templatePath, "utf8"), indentation));
+  }
+
+  assert(!/<!-- @partial /.test(output), "Unresolved required main-frame partial remains.");
+  return output;
+}
+
 function renderOptionalPartials(frame) {
   let output = frame;
 
@@ -81,7 +104,8 @@ function renderOptionalPartials(frame) {
 
 export function renderMainFrame() {
   const bars = readRegistry();
-  let frame = renderOptionalPartials(readFileSync(framePath, "utf8"));
+  let frame = renderRequiredPartials(readFileSync(framePath, "utf8"));
+  frame = renderOptionalPartials(frame);
 
   for (const bar of bars) {
     const marker = new RegExp("^([ \\t]*)<!-- @bar " + bar.slot + " -->[ \\t]*$", "m");
@@ -115,9 +139,9 @@ export function checkMainFrame() {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv.includes("--check")) {
     checkMainFrame();
-    console.log("Main frame is synchronized with registered bar and optional partials.");
+    console.log("Main frame is synchronized with registered bars and reusable partials.");
   } else {
     const output = buildMainFrame();
-    console.log("Built index.html from ui/main-frame.html and " + readRegistry().length + " registered bar partials (" + output.length + " bytes).");
+    console.log("Built index.html from ui/main-frame.html, reusable partials and " + readRegistry().length + " registered bar partials (" + output.length + " bytes).");
   }
 }
