@@ -1,0 +1,36 @@
+<main id="canvasViewport" class="infinite-canvas" aria-label="CREED infinite canvas">
+  <div class="infinite-canvas__grid" data-grid-order="1"></div>
+  <div class="infinite-canvas__grid" data-grid-order="2"></div>
+  <div class="infinite-canvas__grid" data-grid-order="4"></div>
+  <div class="infinite-canvas__grid" data-grid-order="8"></div>
+
+  <div id="canvasWorld" class="infinite-canvas__world">
+    <section id="originCard" class="canvas-card canvas-card--origin" tabindex="0" aria-label="Draggable CREED origin card">
+      <small>● WORLD ORIGIN</small>
+      <h1>CREED</h1>
+      <p>Infinite canvas inside a Codespaces-inspired workbench. Pan, zoom, save views and place components.</p>
+    </section>
+
+    <section id="jsonComponentCard" class="canvas-card canvas-card--component" tabindex="0" aria-label="JSON file component" hidden>
+      <small>COMPONENT</small>
+      <h2>JSON File</h2>
+      <button id="openJsonFileBtn" class="button--primary" type="button">Open JSON File</button>
+    </section>
+
+    <div id="anchorMarker" class="canvas-anchor">
+      <span class="canvas-anchor__label">Saved canvas view</span>
+    </div>
+  </div>
+
+  <div id="canvasOverlay" class="infinite-canvas__overlay">
+    <div class="canvas-hint">Drag to pan · Ctrl/Cmd + wheel to zoom</div>
+
+    <div id="canvasZoomControls" class="canvas-zoom" aria-label="Zoom control">
+      <button id="zoomOutBtn" class="canvas-zoom__button" type="button" title="Zoom out">−</button>
+      <input id="zoomRange" class="canvas-zoom__range" type="range" min="20" max="300" value="100" step="1" aria-label="Zoom percentage" />
+      <div id="zoomReadout" class="canvas-zoom__readout">100%</div>
+      <div id="lodBadge" class="canvas-lod-badge">GRID 1×</div>
+      <button id="zoomInBtn" class="canvas-zoom__button" type="button" title="Zoom in">+</button>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CREED — Infinite Canvas</title>
+  <link rel="stylesheet" href="../css/generated/creed.css" />
+  <link rel="stylesheet" href="../css/components/infinite-canvas/standalone.css" />
+</head>
+<body>
+  <main class="standalone-canvas-shell" aria-label="Standalone CREED Infinite Canvas">
+    <div id="standaloneCanvasView" class="standalone-canvas-shell__view">
+      <noscript>
+        <div class="standalone-canvas-shell__error">JavaScript is required to run the CREED Infinite Canvas.</div>
+      </noscript>
+    </div>
+
+    <div id="notificationLayer" class="notification-layer" aria-live="polite">
+      <div id="toastRegion" class="toast-region toast" role="status"></div>
+    </div>
+  </main>
+
+  <script>
+    if (window.location.protocol === "file:") {
+      const host = document.getElementById("standaloneCanvasView");
+      host.innerHTML = '<div class="standalone-canvas-shell__error">Run CREED through its local HTTP server, then open <strong>/infinite-canvas/</strong>. ES modules and the shared canvas partial cannot run reliably from file://.</div>';
+    }
+  </script>
+  <script type="module" src="../js/components/infinite-canvas/standalone-main.js"></script>
+</body>
+</html>
